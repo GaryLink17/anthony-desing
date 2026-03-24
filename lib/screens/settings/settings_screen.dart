@@ -1,0 +1,418 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../../app.dart';
+import 'package:provider/provider.dart';
+import '../../providers/app_provider.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _footerMsgCtrl = TextEditingController();
+  final _footerTermsCtrl = TextEditingController();
+
+  String? _logoPath;
+  String _footerType = 'message'; // 'message', 'terms', 'invoice_number'
+  bool _saved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _nameCtrl.text = prefs.getString('company_name') ?? '';
+      _phoneCtrl.text = prefs.getString('company_phone') ?? '';
+      _logoPath = prefs.getString('company_logo');
+      _footerType = prefs.getString('footer_type') ?? 'message';
+      _footerMsgCtrl.text =
+          prefs.getString('footer_message') ?? '¡Gracias por su compra!';
+      _footerTermsCtrl.text =
+          prefs.getString('footer_terms') ??
+          'Mercancía no se acepta devolución después de 24 horas.';
+    });
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('company_name', _nameCtrl.text.trim());
+    await prefs.setString('company_phone', _phoneCtrl.text.trim());
+    await prefs.setString('footer_type', _footerType);
+    await prefs.setString('footer_message', _footerMsgCtrl.text.trim());
+    await prefs.setString('footer_terms', _footerTermsCtrl.text.trim());
+    if (_logoPath != null) {
+      await prefs.setString('company_logo', _logoPath!);
+    }
+
+    if (mounted) {
+      await context.read<AppProvider>().loadCompanyData();
+    }
+
+    setState(() => _saved = true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _saved = false);
+    });
+  }
+
+  Future<void> _pickLogo() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _logoPath = picked.path);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.bgColor,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildCompanySection(),
+            const SizedBox(height: 20),
+            _buildFooterSection(),
+            const SizedBox(height: 24),
+            _buildSaveButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Configuración',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF2C2C2A),
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Datos del negocio y opciones de factura',
+          style: TextStyle(fontSize: 13, color: Color(0xFF888780)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompanySection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Datos del negocio',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF2C2C2A),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Logo
+              Column(
+                children: [
+                  GestureDetector(
+                    onTap: _pickLogo,
+                    child: Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0EEE8),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.08),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: _logoPath != null && File(_logoPath!).existsSync()
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(_logoPath!),
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate_rounded,
+                                  size: 24,
+                                  color: Color(0xFFB4B2A9),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Logo',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFFB4B2A9),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: _pickLogo,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(90, 20),
+                    ),
+                    child: const Text(
+                      'Cambiar',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF185FA5)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 20),
+              // Campos
+              Expanded(
+                child: Column(
+                  children: [
+                    _field(_nameCtrl, 'Nombre del negocio', required: true),
+                    const SizedBox(height: 12),
+                    _field(_phoneCtrl, 'Teléfono'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Pie de página de la factura',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF2C2C2A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Selecciona qué aparece al final de cada factura impresa',
+            style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+          ),
+          const SizedBox(height: 16),
+          // Opciones
+          _footerOption(
+            value: 'message',
+            label: 'Mensaje de agradecimiento',
+            icon: Icons.favorite_border_rounded,
+            child: _field(_footerMsgCtrl, 'Mensaje'),
+          ),
+          const SizedBox(height: 10),
+          _footerOption(
+            value: 'terms',
+            label: 'Términos y condiciones',
+            icon: Icons.gavel_rounded,
+            child: TextField(
+              controller: _footerTermsCtrl,
+              maxLines: 2,
+              style: const TextStyle(fontSize: 12),
+              decoration: InputDecoration(
+                hintText: 'Escribe los términos...',
+                hintStyle: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFFB4B2A9),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.all(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _footerOption(
+            value: 'invoice_number',
+            label: 'Solo número de factura',
+            icon: Icons.tag_rounded,
+            child: const Padding(
+              padding: EdgeInsets.only(left: 4, top: 4),
+              child: Text(
+                'Ejemplo: Factura #0047',
+                style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _footerOption({
+    required String value,
+    required String label,
+    required IconData icon,
+    required Widget child,
+  }) {
+    final isSelected = _footerType == value;
+    return GestureDetector(
+      onTap: () => setState(() => _footerType = value),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE1F5EE) : const Color(0xFFF8F7F4),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.primaryBlue
+                : Colors.black.withOpacity(0.06),
+            width: isSelected ? 1.5 : 0.5,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected
+                      ? AppTheme.primaryBlue
+                      : const Color(0xFF888780),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected
+                        ? AppTheme.primaryBlue
+                        : const Color(0xFF444441),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? AppTheme.primaryBlue
+                          : const Color(0xFFB4B2A9),
+                      width: 1.5,
+                    ),
+                    color: isSelected
+                        ? AppTheme.primaryBlue
+                        : Colors.transparent,
+                  ),
+                  child: isSelected
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 10,
+                          color: Colors.white,
+                        )
+                      : null,
+                ),
+              ],
+            ),
+            if (isSelected) ...[const SizedBox(height: 10), child],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Row(
+      children: [
+        ElevatedButton(
+          onPressed: _save,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.accentMagenta,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('Guardar cambios'),
+        ),
+        if (_saved) ...[
+          const SizedBox(width: 12),
+          const Icon(
+            Icons.check_circle_rounded,
+            size: 18,
+            color: Color(0xFF3B6D11),
+          ),
+          const SizedBox(width: 6),
+          const Text(
+            'Guardado correctamente',
+            style: TextStyle(fontSize: 13, color: Color(0xFF3B6D11)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _field(
+    TextEditingController ctrl,
+    String label, {
+    bool required = false,
+  }) {
+    return TextFormField(
+      controller: ctrl,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+      ),
+    );
+  }
+}

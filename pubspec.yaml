@@ -1,0 +1,27 @@
+name: inventario_y_facturacion
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite_common_ffi: ^2.3.3      # SQLite para Windows (desktop)
+  path: ^1.9.0                     # Para rutas de archivos
+  provider: ^6.1.2                 # Manejo de estado
+  intl: ^0.19.0                    # Formato de fechas y moneda
+  shared_preferences: ^2.3.2       # Guardar config de empresa
+  image_picker: ^1.1.2             # Seleccionar logo
+  pdf: ^3.11.1                     # Generar facturas PDF
+  printing: ^5.13.1                # Imprimir / exportar PDF
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
