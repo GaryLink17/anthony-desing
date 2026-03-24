@@ -1,0 +1,37 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Compilar Windows
+        run: flutter build windows --release
+
+      - name: Comprimir resultado
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath AnthonyDesign_Setup.zip
+
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnthonyDesign_Windows
+          path: AnthonyDesign_Setup.zip
+          retention-days: 30
