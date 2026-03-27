@@ -25,6 +25,7 @@ class Sidebar extends StatelessWidget {
   static const _mainItems = [
     SidebarItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
     SidebarItem(label: 'Facturas', icon: Icons.receipt_long_rounded),
+    SidebarItem(label: 'Cotizaciones', icon: Icons.description_rounded),
     SidebarItem(label: 'Inventario', icon: Icons.inventory_2_rounded),
   ];
 
@@ -43,11 +44,11 @@ class Sidebar extends StatelessWidget {
         children: [
           _buildHeader(context),
           _buildGroup('Principal', _mainItems, startIndex: 0),
-          _buildGroup('Análisis', _analysisItems, startIndex: 3),
+          _buildGroup('Análisis', _analysisItems, startIndex: 4),
           const Spacer(),
           _buildGroup('Sistema', const [
             SidebarItem(label: 'Configuración', icon: Icons.settings_rounded),
-          ], startIndex: 5),
+          ], startIndex: 6),
           const SizedBox(height: 16),
         ],
       ),

@@ -354,8 +354,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
           TextButton(
             onPressed: () async {
               await _repo.delete(p.id!);
-              Navigator.pop(context);
-              _loadProducts();
+              if (mounted) {
+                Navigator.pop(context);
+                _loadProducts();
+              }
             },
             child: const Text(
               'Eliminar',

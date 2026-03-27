@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/invoices/invoices_screen.dart';
+import 'screens/quotes/quotes_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/history/history_screen.dart';
@@ -34,6 +35,7 @@ class _MainLayoutState extends State<MainLayout> {
   final List<Widget> _screens = const [
     HomeScreen(),
     InvoicesScreen(),
+    QuotesScreen(),
     InventoryScreen(),
     ReportsScreen(),
     HistoryScreen(),

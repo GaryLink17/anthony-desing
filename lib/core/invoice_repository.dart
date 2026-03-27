@@ -1,11 +1,9 @@
 import 'database.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
-import 'product_repository.dart';
 
 class InvoiceRepository {
   final _db = DatabaseHelper.instance;
-  final _productRepo = ProductRepository();
 
   // Obtener todas las facturas
   Future<List<Invoice>> getAll() async {

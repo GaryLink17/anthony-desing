@@ -84,4 +84,25 @@ class ProductRepository {
     if (product == null) return false;
     return product.stock >= quantity;
   }
+
+  // Insertar producto directo (para seed data)
+  Future<int> insertRaw({
+    required String name,
+    required String category,
+    required double purchasePrice,
+    required double salePrice,
+    required int stock,
+    required int minStock,
+  }) async {
+    final db = await _db.database;
+    return await db.insert('products', {
+      'name': name,
+      'category': category,
+      'purchase_price': purchasePrice,
+      'sale_price': salePrice,
+      'stock': stock,
+      'min_stock': minStock,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
 }

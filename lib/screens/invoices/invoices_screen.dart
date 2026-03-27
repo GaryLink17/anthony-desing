@@ -594,7 +594,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   // Cada item: {product, quantity, unitPrice, discount}
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
-  bool _showProductList = false;
+  bool _showProductList = true;
 
   final _currency = NumberFormat.currency(
     locale: 'es_DO',
@@ -663,28 +663,24 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   }
 
   // Agregar producto a la lista de items
-  void _addProduct(Product p) {
+  void _addProduct(Product p) async {
     if (p.stock <= 0) return;
 
-    setState(() {
-      final existing = _items.indexWhere((i) => i['product'].id == p.id);
-      if (existing >= 0) {
-        final currentQty = _items[existing]['quantity'] as int;
-        if (currentQty < p.stock) {
-          _items[existing]['quantity']++;
-        }
-      } else {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => _ProductConfigDialog(product: p, currency: _currency),
+    );
+
+    if (result != null) {
+      setState(() {
         _items.add({
           'product': p,
-          'quantity': 1,
-          'unitPrice': p.salePrice,
-          'discount': 0.0,
+          'quantity': result['quantity'],
+          'unitPrice': result['unitPrice'],
+          'discount': result['discount'],
         });
-      }
-      _showProductList = false;
-      _searchCtrl.clear();
-      _filteredProducts = widget.products;
-    });
+      });
+    }
   }
 
   bool _validateStock() {
@@ -821,123 +817,83 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Buscador de productos
-            TextField(
-              controller: _searchCtrl,
-              style: const TextStyle(fontSize: 13),
-              onChanged: (v) {
-                _filterProducts(v);
-                setState(() => _showProductList = v.isNotEmpty);
-              },
-              onTap: () => setState(() => _showProductList = true),
-              decoration: InputDecoration(
-                labelText: 'Buscar y agregar producto',
-                labelStyle: const TextStyle(fontSize: 12),
-                prefixIcon: const Icon(Icons.search_rounded, size: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Spacer(),
+                SizedBox(
+                  width: 100,
+                  child: TextField(
+                    controller: _discountCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Desc. %',
+                      labelStyle: const TextStyle(fontSize: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
+              ],
             ),
-            if (_showProductList) ...[
-              const SizedBox(height: 4),
-              Container(
-                height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black.withOpacity(0.1)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListView.builder(
-                  itemCount: _filteredProducts.length,
-                  itemBuilder: (_, i) {
-                    final p = _filteredProducts[i];
-                    final isOutOfStock = p.stock <= 0;
-                    return ListTile(
-                      dense: true,
-                      enabled: !isOutOfStock,
-                      title: Text(
-                        p.name,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isOutOfStock
-                              ? const Color(0xFFB4B2A9)
-                              : const Color(0xFF2C2C2A),
-                        ),
-                      ),
-                      subtitle: Text(
-                        _currency.format(p.salePrice),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isOutOfStock
-                              ? const Color(0xFFB4B2A9)
-                              : const Color(0xFF888780),
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Stock: ${p.stock}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isOutOfStock
-                                  ? FontWeight.w500
-                                  : FontWeight.normal,
-                              color: isOutOfStock
-                                  ? const Color(0xFFE24B4A)
-                                  : p.isLowStock
-                                  ? const Color(0xFFA32D2D)
-                                  : const Color(0xFF888780),
-                            ),
-                          ),
-                          if (isOutOfStock) ...[
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.block_rounded,
-                              size: 14,
-                              color: Color(0xFFE24B4A),
-                            ),
-                          ],
-                        ],
-                      ),
-                      onTap: isOutOfStock ? null : () => _addProduct(p),
-                    );
-                  },
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            // Lista de items agregados
+            const SizedBox(height: 16),
             const Text(
-              'Productos en la factura',
+              'Productos',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF888780),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _searchCtrl,
+              onChanged: _filterProducts,
+              style: const TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'Buscar producto...',
+                hintStyle: const TextStyle(fontSize: 12),
+                prefixIcon: const Icon(Icons.search, size: 18),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             Expanded(
-              child: _items.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'Agrega productos usando el buscador',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFB4B2A9),
-                        ),
+              child: _showProductList || _searchCtrl.text.isNotEmpty
+                  ? Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ListView.builder(
+                        itemCount: _filteredProducts.length,
+                        itemBuilder: (_, i) {
+                          final p = _filteredProducts[i];
+                          return ListTile(
+                            dense: true,
+                            title: Text(p.name, style: const TextStyle(fontSize: 13)),
+                            subtitle: Text(
+                              '${_currency.format(p.salePrice)} - Stock: ${p.stock}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            onTap: p.stock > 0 ? () => _addProduct(p) : null,
+                          );
+                        },
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: _items.length,
-                      itemBuilder: (_, i) => _buildItemRow(i),
-                    ),
+                  : const SizedBox(),
             ),
           ],
         ),
@@ -1091,77 +1047,159 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   }
 
   Widget _buildRightPanel() {
-    return Container(
-      width: 200,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF8F7F4),
-        border: Border(left: BorderSide(color: Color(0x12000000))),
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(12)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Resumen',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
-            ),
+    return Expanded(
+      flex: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAFAF8),
+          border: Border(
+            left: BorderSide(color: Colors.grey.shade200),
           ),
-          const SizedBox(height: 16),
-          _summaryRow('Subtotal', _currency.format(_subtotal)),
-          const SizedBox(height: 12),
-          const Text(
-            'Descuento global',
-            style: TextStyle(fontSize: 11, color: Color(0xFF888780)),
-          ),
-          const SizedBox(height: 4),
-          TextField(
-            controller: _discountCtrl,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(fontSize: 13),
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: '0',
-              suffixText: '%',
-              suffixStyle: const TextStyle(
-                fontSize: 13,
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Items de la factura',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: Color(0xFF888780),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _items.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Agrega productos',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFB4B2A9),
+                        ),
+                      ),
+                    )
+                    : ListView.builder(
+                      itemCount: _items.length,
+                      itemBuilder: (_, i) {
+                        final item = _items[i];
+                        final p = item['product'] as Product;
+                        final qty = item['quantity'] as int;
+                        final price = item['unitPrice'] as double;
+                        final disc = item['discount'] as double;
+                        final subtotal = (price * (1 - disc / 100)) * qty;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      p.name,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$qty x ${_currency.format(price)}'
+                                      '${disc > 0 ? ' (-${disc.toStringAsFixed(0)}%)' : ''}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF888780),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                _currency.format(subtotal),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => _removeItem(i),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: Color(0xFFE24B4A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    )),
+            const Divider(),
+            _buildSummaryRow('Subtotal', _subtotal),
+            if (_globalDiscount > 0)
+              _buildSummaryRow('Descuento', -_globalDiscount, isDiscount: true),
+            _buildSummaryRow('Total', _total, isTotal: true),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _items.isEmpty ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentMagenta,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Confirmar factura'),
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          const Divider(height: 24),
-          _summaryRow(
-            'Total',
-            _currency.format(_total),
-            bold: true,
-            large: true,
+  Widget _buildSummaryRow(String label, double amount,
+      {bool isDiscount = false, bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 13 : 12,
+              fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
+              color: isDiscount
+                  ? const Color(0xFFE24B4A)
+                  : const Color(0xFF444441),
+            ),
           ),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _items.isEmpty ? null : _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentMagenta,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade200,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Confirmar factura'),
+          Text(
+            isDiscount
+                ? '- ${_currency.format(amount.abs())}'
+                : _currency.format(amount),
+            style: TextStyle(
+              fontSize: isTotal ? 14 : 12,
+              fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
+              color: isDiscount
+                  ? const Color(0xFFE24B4A)
+                  : const Color(0xFF444441),
             ),
           ),
         ],
@@ -1195,6 +1233,174 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProductConfigDialog extends StatefulWidget {
+  final Product product;
+  final NumberFormat currency;
+
+  const _ProductConfigDialog({
+    required this.product,
+    required this.currency,
+  });
+
+  @override
+  State<_ProductConfigDialog> createState() => _ProductConfigDialogState();
+}
+
+class _ProductConfigDialogState extends State<_ProductConfigDialog> {
+  late TextEditingController _quantityCtrl;
+  late TextEditingController _priceCtrl;
+  late TextEditingController _discountCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _quantityCtrl = TextEditingController(text: '1');
+    _priceCtrl = TextEditingController(text: widget.product.salePrice.toStringAsFixed(0));
+    _discountCtrl = TextEditingController(text: '0');
+  }
+
+  @override
+  void dispose() {
+    _quantityCtrl.dispose();
+    _priceCtrl.dispose();
+    _discountCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _subtotal {
+    final qty = int.tryParse(_quantityCtrl.text) ?? 1;
+    final price = double.tryParse(_priceCtrl.text) ?? widget.product.salePrice;
+    final disc = double.tryParse(_discountCtrl.text) ?? 0;
+    return (price * (1 - disc / 100)) * qty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        width: 320,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.product.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2C2C2A),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quantityCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 13),
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Cantidad',
+                      labelStyle: TextStyle(fontSize: 11),
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _discountCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 13),
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Desc. %',
+                      labelStyle: TextStyle(fontSize: 11),
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _priceCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 13),
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Precio unitario',
+                labelStyle: TextStyle(fontSize: 11),
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAFAF8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Subtotal:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2C2C2A),
+                    ),
+                  ),
+                  Text(
+                    widget.currency.format(_subtotal),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C2C2A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context, {
+                      'quantity': int.tryParse(_quantityCtrl.text) ?? 1,
+                      'unitPrice': double.tryParse(_priceCtrl.text) ?? widget.product.salePrice,
+                      'discount': double.tryParse(_discountCtrl.text) ?? 0,
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentMagenta,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Agregar'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

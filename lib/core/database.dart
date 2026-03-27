@@ -4,8 +4,16 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static bool _initialized = false;
 
   DatabaseHelper._init();
+
+  static Future<void> initialize() async {
+    if (_initialized) return;
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    _initialized = true;
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -14,9 +22,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String fileName) async {
-    // En Windows, sqflite necesita esta inicialización especial
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    await initialize();
 
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, fileName);
@@ -36,6 +42,32 @@ class DatabaseHelper {
       await db.execute(
         "ALTER TABLE invoices ADD COLUMN status TEXT DEFAULT 'active'",
       );
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS quotes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          customer_name TEXT,
+          subtotal REAL NOT NULL,
+          discount_global REAL DEFAULT 0,
+          total REAL NOT NULL,
+          created_at TEXT NOT NULL,
+          expires_at TEXT,
+          is_converted INTEGER DEFAULT 0
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS quote_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          quote_id INTEGER NOT NULL,
+          product_id INTEGER NOT NULL,
+          product_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_price REAL NOT NULL,
+          discount_item REAL DEFAULT 0,
+          subtotal REAL NOT NULL,
+          FOREIGN KEY (quote_id) REFERENCES quotes(id),
+          FOREIGN KEY (product_id) REFERENCES products(id)
+        )
+      ''');
     }
   }
 
@@ -79,6 +111,36 @@ class DatabaseHelper {
         discount_item REAL DEFAULT 0,
         subtotal REAL NOT NULL,
         FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+        FOREIGN KEY (product_id) REFERENCES products(id)
+      )
+    ''');
+
+    // Tabla de cotizaciones
+    await db.execute('''
+      CREATE TABLE quotes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT,
+        subtotal REAL NOT NULL,
+        discount_global REAL DEFAULT 0,
+        total REAL NOT NULL,
+        created_at TEXT NOT NULL,
+        expires_at TEXT,
+        is_converted INTEGER DEFAULT 0
+      )
+    ''');
+
+    // Tabla de líneas de cotización
+    await db.execute('''
+      CREATE TABLE quote_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quote_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        product_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        unit_price REAL NOT NULL,
+        discount_item REAL DEFAULT 0,
+        subtotal REAL NOT NULL,
+        FOREIGN KEY (quote_id) REFERENCES quotes(id),
         FOREIGN KEY (product_id) REFERENCES products(id)
       )
     ''');
