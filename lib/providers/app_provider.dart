@@ -132,4 +132,9 @@ class AppProvider extends ChangeNotifier {
       );
     }
   }
+
+  Future<void> reloadAfterRestore() async {
+    await loadCompanyData();
+    await loadDashboard();
+  }
 }

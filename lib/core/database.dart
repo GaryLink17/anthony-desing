@@ -145,4 +145,12 @@ class DatabaseHelper {
       )
     ''');
   }
+
+  static Future<void> closeAndReset() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+    // NO resetear _initialized — sqfliteFfiInit() no debe llamarse dos veces
+  }
 }

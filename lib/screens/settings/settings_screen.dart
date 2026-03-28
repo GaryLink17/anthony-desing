@@ -8,6 +8,9 @@ import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../utils/responsive_helper.dart';
+import '../../core/app_exception.dart';
+import '../../core/backup_service.dart';
+import '../../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -25,6 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _logoPath;
   String _footerType = 'message'; // 'message', 'terms', 'invoice_number'
   bool _saved = false;
+  bool _backupLoading = false;
+  bool _restoreLoading = false;
 
   @override
   void initState() {
@@ -90,6 +95,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildCompanySection(),
             const SizedBox(height: 20),
             _buildAppearanceSection(),
+            const SizedBox(height: 20),
+            _buildBackupSection(),
             const SizedBox(height: 20),
             _buildFooterSection(),
             const SizedBox(height: 24),
@@ -470,6 +477,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ],
     );
+  }
+
+  Widget _buildBackupSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: ThemeHelper.getCardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Respaldo de datos',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: ThemeHelper.getTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Exporta o restaura la base de datos de la aplicación',
+            style: TextStyle(
+              fontSize: 12,
+              color: ThemeHelper.getTextLightColor(context),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _backupLoading ? null : _exportBackup,
+                icon: _backupLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_rounded, size: 16),
+                label: const Text('Exportar respaldo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ThemeHelper.getInteractiveColor(context),
+                  side: BorderSide(color: ThemeHelper.getInteractiveColor(context)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: _restoreLoading ? null : _restoreBackup,
+                icon: _restoreLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_rounded, size: 16),
+                label: const Text('Restaurar respaldo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ThemeHelper.getWarningTextColor(context),
+                  side: BorderSide(color: ThemeHelper.getWarningTextColor(context)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportBackup() async {
+    setState(() => _backupLoading = true);
+    try {
+      final path = await BackupService.instance.exportBackup();
+      if (path != null && mounted) {
+        NotificationService().success('Respaldo guardado correctamente');
+      }
+    } on AppException catch (e) {
+      if (mounted) NotificationService().error(e.message);
+    } catch (e) {
+      if (mounted) NotificationService().error('Error inesperado al exportar el respaldo.');
+    } finally {
+      if (mounted) setState(() => _backupLoading = false);
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Restaurar respaldo?'),
+        content: const Text(
+          'Esta acción reemplazará todos los datos actuales '
+          '(productos, facturas, cotizaciones) con los del archivo seleccionado. '
+          'Esta operación no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.warningColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Restaurar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _restoreLoading = true);
+    try {
+      final result = await BackupService.instance.restoreBackup();
+      if (result == true && mounted) {
+        await context.read<AppProvider>().reloadAfterRestore();
+        NotificationService().success('Base de datos restaurada correctamente');
+      }
+    } on AppException catch (e) {
+      if (mounted) NotificationService().error(e.message);
+    } catch (e) {
+      if (mounted) {
+        NotificationService().error(
+          'Error inesperado al restaurar. La base de datos anterior se conservó.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _restoreLoading = false);
+    }
   }
 
   Widget _field(

@@ -17,6 +17,7 @@ dependencies:
   image_picker: ^1.1.2             # Seleccionar logo
   pdf: ^3.11.1                     # Generar facturas PDF
   printing: ^5.13.1                # Imprimir / exportar PDF
+  file_selector: ^0.9.3+2          # Selector de archivos/carpetas (backup)
 
 dev_dependencies:
   flutter_test:
