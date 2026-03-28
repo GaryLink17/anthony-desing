@@ -30,7 +30,7 @@ class DatabaseHelper {
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 2,
+        version: 3,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
       ),
@@ -69,6 +69,11 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE invoices ADD COLUMN payment_status TEXT DEFAULT 'pending'",
+      );
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -95,6 +100,7 @@ class DatabaseHelper {
         discount_global REAL DEFAULT 0,
         total REAL NOT NULL,
         status TEXT DEFAULT 'active',
+        payment_status TEXT DEFAULT 'pending',
         created_at TEXT NOT NULL
       )
     ''');

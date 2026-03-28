@@ -27,6 +27,7 @@ class QuotesScreen extends StatefulWidget {
 class _QuotesScreenState extends State<QuotesScreen> {
   final _quoteRepo = QuoteRepository();
   final _invoiceRepo = InvoiceRepository();
+  final _searchCtrl = TextEditingController();
   List<Quote> _quotes = [];
   bool _loading = true;
 
@@ -42,10 +43,18 @@ class _QuotesScreenState extends State<QuotesScreen> {
     _load();
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load([String query = '']) async {
     setState(() => _loading = true);
     try {
-      final result = await _quoteRepo.getAll();
+      final result = query.isEmpty
+          ? await _quoteRepo.getAll()
+          : await _quoteRepo.search(query);
       setState(() {
         _quotes = result;
         _loading = false;
@@ -67,6 +76,8 @@ class _QuotesScreenState extends State<QuotesScreen> {
           children: [
             _buildHeader(),
             const SizedBox(height: 20),
+            _buildSearchBar(),
+            const SizedBox(height: 16),
             Expanded(child: _buildContent()),
           ],
         ),
@@ -112,6 +123,32 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return SizedBox(
+      width: 320,
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: _load,
+        decoration: InputDecoration(
+          hintText: 'Buscar por cliente...',
+          hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
+          prefixIcon: Icon(Icons.search_rounded, size: 18, color: ThemeHelper.getHintColor(context)),
+          filled: true,
+          fillColor: ThemeHelper.getCardColor(context),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent() {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
@@ -128,7 +165,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
             const SizedBox(height: 12),
             Text(
               'No hay cotizaciones aún',
-              style: TextStyle(fontSize: 14, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: ThemeHelper.getTextLightColor(context)),
             ),
             const SizedBox(height: 4),
             Text(

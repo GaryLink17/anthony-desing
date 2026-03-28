@@ -23,6 +23,7 @@ class InvoicesScreen extends StatefulWidget {
 
 class _InvoicesScreenState extends State<InvoicesScreen> {
   final _invoiceRepo = InvoiceRepository();
+  final _searchCtrl = TextEditingController();
   List<Invoice> _invoices = [];
   bool _loading = true;
 
@@ -36,6 +37,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _printInvoice(Invoice inv) async {
@@ -56,10 +63,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     }
   }
 
-  Future<void> _load() async {
+  Future<void> _load([String query = '']) async {
     setState(() => _loading = true);
     try {
-      final result = await _invoiceRepo.getAll();
+      final result = query.isEmpty
+          ? await _invoiceRepo.getAll()
+          : await _invoiceRepo.search(query);
       setState(() {
         _invoices = result;
         _loading = false;
@@ -81,6 +90,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           children: [
             _buildHeader(),
             const SizedBox(height: 20),
+            _buildSearchBar(),
+            const SizedBox(height: 16),
             Expanded(child: _buildContent()),
           ],
         ),
@@ -126,6 +137,32 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return SizedBox(
+      width: 320,
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: _load,
+        decoration: InputDecoration(
+          hintText: 'Buscar por cliente...',
+          hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
+          prefixIcon: Icon(Icons.search_rounded, size: 18, color: ThemeHelper.getHintColor(context)),
+          filled: true,
+          fillColor: ThemeHelper.getCardColor(context),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent() {
     return StateBuilder(
       isLoading: _loading,
@@ -167,13 +204,13 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       ),
       child: Row(
         children: [
-          SizedBox(width: 70, child: Text('#', style: style)),
+          SizedBox(width: 90, child: Text('#', style: style)),
           Expanded(flex: 3, child: Text('Cliente', style: style)),
           Expanded(flex: 2, child: Text('Fecha', style: style)),
           Expanded(flex: 2, child: Text('Subtotal', style: style)),
           Expanded(flex: 2, child: Text('Descuento', style: style)),
           Expanded(flex: 2, child: Text('Total', style: style)),
-          SizedBox(width: 110, child: Text('', style: style)),
+          SizedBox(width: 140, child: Text('', style: style)),
         ],
       ),
     );
@@ -196,48 +233,40 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       child: Row(
         children: [
           SizedBox(
-            width: isCancelled ? 90 : 70,
-            child: isCancelled
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '#${inv.id.toString().padLeft(4, '0')}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: ThemeHelper.getTextLightColor(context),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE24B4A),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: const Text(
-                          'ANULADA',
-                          style: TextStyle(
-                            fontSize: 7,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Text(
-                    '#${inv.id.toString().padLeft(4, '0')}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: ThemeHelper.getTextLightColor(context),
+            width: 90,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '#${inv.id.toString().padLeft(4, '0')}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: ThemeHelper.getTextLightColor(context),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: isCancelled
+                        ? const Color(0xFFE24B4A)
+                        : inv.isPaid
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFFE65100),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(
+                    isCancelled ? 'ANULADA' : inv.isPaid ? 'PAGADA' : 'PENDIENTE',
+                    style: const TextStyle(
+                      fontSize: 7,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
+              ],
+            ),
           ),
           Expanded(
             flex: 3,
@@ -306,7 +335,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             ),
           ),
           SizedBox(
-            width: 110,
+            width: 140,
             child: Row(
               children: [
                 IconButton(
@@ -336,6 +365,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   padding: const EdgeInsets.all(6),
                 ),
                 IconButton(
+                  onPressed: isCancelled ? null : () => _togglePaymentStatus(inv),
+                  icon: Icon(
+                    inv.isPaid ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    size: 16,
+                    color: isCancelled
+                        ? ThemeHelper.getTextLightColor(context)
+                        : inv.isPaid
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFFE65100),
+                  ),
+                  tooltip: isCancelled
+                      ? 'Factura anulada'
+                      : inv.isPaid
+                          ? 'Marcar como pendiente'
+                          : 'Marcar como pagada',
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(6),
+                ),
+                IconButton(
                   onPressed: isCancelled ? null : () => _confirmCancel(inv),
                   icon: Icon(
                     Icons.cancel_outlined,
@@ -354,6 +402,16 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _togglePaymentStatus(Invoice inv) async {
+    final newStatus = inv.isPaid ? 'pending' : 'paid';
+    try {
+      await _invoiceRepo.updatePaymentStatus(inv.id!, newStatus);
+      await _load(_searchCtrl.text);
+    } on AppException catch (e) {
+      if (mounted) NotificationService().error(e.message);
+    }
   }
 
   void _confirmCancel(Invoice inv) {

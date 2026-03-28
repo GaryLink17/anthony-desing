@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -25,6 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _footerMsgCtrl = TextEditingController();
   final _footerTermsCtrl = TextEditingController();
 
+  final _formKey = GlobalKey<FormState>();
   String? _logoPath;
   String _footerType = 'message'; // 'message', 'terms', 'invoice_number'
   bool _saved = false;
@@ -53,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('company_name', _nameCtrl.text.trim());
     await prefs.setString('company_phone', _phoneCtrl.text.trim());
@@ -85,7 +88,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      body: SingleChildScrollView(
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
         padding: context.responsivePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,6 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSaveButton(),
           ],
         ),
+      ),
       ),
     );
   }
@@ -208,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     _field(_nameCtrl, 'Nombre del negocio', required: true),
                     const SizedBox(height: 12),
-                    _field(_phoneCtrl, 'Teléfono'),
+                    _field(_phoneCtrl, 'Teléfono', isPhone: true),
                   ],
                 ),
               ),
@@ -615,10 +621,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     TextEditingController ctrl,
     String label, {
     bool required = false,
+    bool isPhone = false,
   }) {
     return TextFormField(
       controller: ctrl,
       style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+      keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
+      inputFormatters: isPhone
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-\+\(\)]'))]
+          : null,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
@@ -628,6 +639,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           vertical: 10,
         ),
       ),
+      validator: required
+          ? (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null
+          : null,
     );
   }
 }

@@ -23,6 +23,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  msix: ^3.16.7
 
 flutter:
   uses-material-design: true
+
+msix_config:
+  display_name: Anthony Design
+  publisher_display_name: Anthony Design
+  identity_name: com.anthonydesign.inventario
+  msix_version: 1.0.0.0
+  logo_path: windows\runner\resources\app_icon.ico
+  capabilities: fileOpenPicker, fileSavePicker, picturesLibrary

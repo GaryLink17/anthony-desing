@@ -5,6 +5,7 @@ class Invoice {
   final double discountGlobal;
   final double total;
   final String status;
+  final String paymentStatus;
   final String createdAt;
 
   Invoice({
@@ -14,11 +15,14 @@ class Invoice {
     this.discountGlobal = 0,
     required this.total,
     this.status = 'active',
+    this.paymentStatus = 'pending',
     required this.createdAt,
   });
 
   bool get isCancelled => status == 'cancelled';
   bool get isActive => status == 'active';
+  bool get isPaid => paymentStatus == 'paid';
+  bool get isPending => paymentStatus == 'pending';
 
   Invoice copyWith({
     int? id,
@@ -27,6 +31,7 @@ class Invoice {
     double? discountGlobal,
     double? total,
     String? status,
+    String? paymentStatus,
     String? createdAt,
   }) {
     return Invoice(
@@ -36,6 +41,7 @@ class Invoice {
       discountGlobal: discountGlobal ?? this.discountGlobal,
       total: total ?? this.total,
       status: status ?? this.status,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -48,6 +54,7 @@ class Invoice {
       'discount_global': discountGlobal,
       'total': total,
       'status': status,
+      'payment_status': paymentStatus,
       'created_at': createdAt,
     };
   }
@@ -60,6 +67,7 @@ class Invoice {
       discountGlobal: map['discount_global'] ?? 0,
       total: map['total'],
       status: map['status'] ?? 'active',
+      paymentStatus: map['payment_status'] ?? 'pending',
       createdAt: map['created_at'],
     );
   }

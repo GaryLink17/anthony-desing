@@ -19,6 +19,24 @@ class QuoteRepository {
     }
   }
 
+  Future<List<Quote>> search(String query) async {
+    try {
+      final db = await _db.database;
+      final result = await db.query(
+        'quotes',
+        where: 'customer_name LIKE ?',
+        whereArgs: ['%$query%'],
+        orderBy: 'created_at DESC',
+      );
+      return result.map(Quote.fromMap).toList();
+    } catch (e) {
+      throw AppException(
+        'Error al buscar cotizaciones.',
+        technical: e.toString(),
+      );
+    }
+  }
+
   Future<List<QuoteItem>> getItems(int quoteId) async {
     try {
       final db = await _db.database;

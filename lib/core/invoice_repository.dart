@@ -19,6 +19,41 @@ class InvoiceRepository {
     }
   }
 
+  Future<void> updatePaymentStatus(int invoiceId, String paymentStatus) async {
+    try {
+      final db = await _db.database;
+      await db.update(
+        'invoices',
+        {'payment_status': paymentStatus},
+        where: 'id = ?',
+        whereArgs: [invoiceId],
+      );
+    } catch (e) {
+      throw AppException(
+        'No se pudo actualizar el estado de pago.',
+        technical: e.toString(),
+      );
+    }
+  }
+
+  Future<List<Invoice>> search(String query) async {
+    try {
+      final db = await _db.database;
+      final result = await db.query(
+        'invoices',
+        where: 'customer_name LIKE ?',
+        whereArgs: ['%$query%'],
+        orderBy: 'created_at DESC',
+      );
+      return result.map(Invoice.fromMap).toList();
+    } catch (e) {
+      throw AppException(
+        'Error al buscar facturas.',
+        technical: e.toString(),
+      );
+    }
+  }
+
   Future<List<InvoiceItem>> getItems(int invoiceId) async {
     try {
       final db = await _db.database;
@@ -64,6 +99,7 @@ class InvoiceRepository {
           'discount_global': invoice.discountGlobal,
           'total': invoice.total,
           'status': invoice.status,
+          'payment_status': invoice.paymentStatus,
           'created_at': invoice.createdAt,
         });
 
