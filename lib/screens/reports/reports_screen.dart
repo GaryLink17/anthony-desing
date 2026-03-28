@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../app.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/theme_helper.dart';
 import '../../core/reports_repository.dart';
+import '../../utils/responsive_helper.dart';
+import '../../core/app_exception.dart';
+import '../../services/notification_service.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -121,31 +125,37 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        _repo.getSummary(_startDate, _endDate),
+        _repo.getSalesByDay(_startDate, _endDate),
+        _repo.getTopProducts(_startDate, _endDate),
+        _repo.getTopCategories(_startDate, _endDate),
+      ]);
 
-    final results = await Future.wait([
-      _repo.getSummary(_startDate, _endDate),
-      _repo.getSalesByDay(_startDate, _endDate),
-      _repo.getTopProducts(_startDate, _endDate),
-      _repo.getTopCategories(_startDate, _endDate),
-    ]);
-
-    setState(() {
-      _summary = results[0] as Map<String, dynamic>;
-      _chartData = results[1] as List<Map<String, dynamic>>;
-      _topProducts = results[2] as List<Map<String, dynamic>>;
-      _topCategories = results[3] as List<Map<String, dynamic>>;
-      _loading = false;
-    });
+      if (mounted) {
+        setState(() {
+          _summary = results[0] as Map<String, dynamic>;
+          _chartData = results[1] as List<Map<String, dynamic>>;
+          _topProducts = results[2] as List<Map<String, dynamic>>;
+          _topCategories = results[3] as List<Map<String, dynamic>>;
+          _loading = false;
+        });
+      }
+    } on AppException catch (e) {
+      if (mounted) setState(() => _loading = false);
+      NotificationService().error(e.message);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(28),
+              padding: context.responsivePadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -175,7 +185,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -183,13 +193,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C2C2A),
+                color: ThemeHelper.getTextColor(context),
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Resumen de ventas y ganancias',
-              style: TextStyle(fontSize: 13, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
             ),
           ],
         ),
@@ -201,12 +211,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
             const SizedBox(width: 12),
             Container(
               decoration: BoxDecoration(
-                color: isToday ? const Color(0xFFEAF3DE) : Colors.white,
+                color: isToday ? ThemeHelper.getSuccessLightBg(context) : ThemeHelper.getCardColor(context),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: isToday
-                      ? const Color(0xFF3B6D11)
-                      : Colors.black.withOpacity(0.07),
+                      ? ThemeHelper.getSuccessTextColor(context)
+                      : ThemeHelper.getBorderColor(context),
                   width: 0.5,
                 ),
               ),
@@ -226,8 +236,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: isToday
-                            ? const Color(0xFF27500A)
-                            : const Color(0xFF888780),
+                            ? ThemeHelper.getSuccessTextColor(context)
+                            : ThemeHelper.getTextLightColor(context),
                       ),
                     ),
                   ),
@@ -246,10 +256,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.getCardColor(context),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: Colors.black.withOpacity(0.07),
+              color: ThemeHelper.getBorderColor(context),
               width: 0.5,
             ),
           ),
@@ -271,7 +281,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   decoration: BoxDecoration(
                     border: Border.symmetric(
                       vertical: BorderSide(
-                        color: Colors.black.withOpacity(0.07),
+                        color: ThemeHelper.getBorderColor(context),
                         width: 0.5,
                       ),
                     ),
@@ -289,17 +299,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         children: [
                           Text(
                             label,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9,
-                              color: Color(0xFF888780),
+                              color: ThemeHelper.getTextLightColor(context),
                             ),
                           ),
                           Text(
                             _dateFormat.format(date),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF2C2C2A),
+                              color: ThemeHelper.getTextColor(context),
                             ),
                           ),
                         ],
@@ -326,7 +336,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 16, color: const Color(0xFF888780)),
+        child: Icon(icon, size: 16, color: ThemeHelper.getTextLightColor(context)),
       ),
     );
   }
@@ -337,7 +347,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         Expanded(
           child: _MetricCard(
             icon: Icons.trending_up_rounded,
-            iconBg: const Color(0xFFE1F5EE),
+            iconBg: ThemeHelper.getSuccessLightBg(context),
             iconColor: const Color(0xFF0F6E56),
             label: 'Total vendido',
             value: _currency.format(_summary['total']),
@@ -347,7 +357,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         Expanded(
           child: _MetricCard(
             icon: Icons.star_rounded,
-            iconBg: const Color(0xFFEAF3DE),
+            iconBg: ThemeHelper.getSuccessLightBg(context),
             iconColor: const Color(0xFF639922),
             label: 'Ganancia neta',
             value: _currency.format(_summary['profit']),
@@ -360,7 +370,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         Expanded(
           child: _MetricCard(
             icon: Icons.receipt_long_rounded,
-            iconBg: const Color(0xFFE6F1FB),
+            iconBg: ThemeHelper.getInfoLightBg(context),
             iconColor: const Color(0xFF185FA5),
             label: 'Facturas',
             value: '${_summary['count']}',
@@ -370,8 +380,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         Expanded(
           child: _MetricCard(
             icon: Icons.point_of_sale_rounded,
-            iconBg: const Color(0xFFFAEEDA),
-            iconColor: const Color(0xFFBA7517),
+            iconBg: ThemeHelper.getWarningLightBg(context),
+            iconColor: AppTheme.warningDark,
             label: 'Venta promedio por factura',
             value: _currency.format(_summary['avgTicket']),
           ),
@@ -383,12 +393,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildChart() {
     if (_chartData.isEmpty) {
       return _panel(
-        child: const Center(
+        child: Center(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
               'Sin ventas en este período',
-              style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
             ),
           ),
         ),
@@ -457,9 +467,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 9,
-                        color: Color(0xFFB4B2A9),
+                        color: ThemeHelper.getTextLightColor(context),
                       ),
                     ),
                   ],
@@ -487,9 +497,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return _panel(
       title: 'Productos más vendidos',
       child: _topProducts.isEmpty
-          ? const Text(
+          ? Text(
               'Sin datos para este período',
-              style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
             )
           : Column(
               children: _topProducts.asMap().entries.map((entry) {
@@ -506,8 +516,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         height: 22,
                         decoration: BoxDecoration(
                           color: i == 0
-                              ? const Color(0xFFFAEEDA)
-                              : const Color(0xFFF1EFE8),
+                              ? ThemeHelper.getWarningLightBg(context)
+                              : ThemeHelper.getHoverColor(context),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Center(
@@ -517,8 +527,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
                               color: i == 0
-                                  ? const Color(0xFFBA7517)
-                                  : const Color(0xFF888780),
+                                  ? AppTheme.warningDark
+                                  : ThemeHelper.getTextLightColor(context),
                             ),
                           ),
                         ),
@@ -527,9 +537,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Expanded(
                         child: Text(
                           p['product_name'].toString(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF444441),
+                            color: ThemeHelper.getTextMediumColor(context),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -537,18 +547,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '$qty u.',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF888780),
+                          color: ThemeHelper.getTextLightColor(context),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         _currency.format(amount),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF2C2C2A),
+                          color: ThemeHelper.getTextColor(context),
                         ),
                       ),
                     ],
@@ -568,9 +578,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return _panel(
       title: 'Categorías más vendidas',
       child: _topCategories.isEmpty
-          ? const Text(
+          ? Text(
               'Sin datos para este período',
-              style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
             )
           : Column(
               children: _topCategories.map((cat) {
@@ -586,16 +596,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         children: [
                           Text(
                             cat['category'].toString(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF444441),
+                              color: ThemeHelper.getTextMediumColor(context),
                             ),
                           ),
                           Text(
                             '${(pct * 100).toStringAsFixed(1)}%',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF888780),
+                              color: ThemeHelper.getTextLightColor(context),
                             ),
                           ),
                         ],
@@ -606,7 +616,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: LinearProgressIndicator(
                           value: pct,
                           minHeight: 5,
-                          backgroundColor: const Color(0xFFF1EFE8),
+                          backgroundColor: ThemeHelper.getHoverColor(context),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             AppTheme.primaryBlue,
                           ),
@@ -615,9 +625,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         _currency.format(amount),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: Color(0xFF888780),
+                          color: ThemeHelper.getTextLightColor(context),
                         ),
                       ),
                     ],
@@ -633,19 +643,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const SizedBox(height: 14),
@@ -678,9 +688,9 @@ class _MetricCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,22 +707,22 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF888780)),
+            style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
           ),
           if (sub != null) ...[
             const SizedBox(height: 2),
             Text(
               sub!,
-              style: const TextStyle(fontSize: 10, color: Color(0xFF3B6D11)),
+              style: TextStyle(fontSize: 10, color: ThemeHelper.getSuccessTextColor(context)),
             ),
           ],
         ],

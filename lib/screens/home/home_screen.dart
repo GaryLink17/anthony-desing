@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/app_provider.dart';
-import '../../app.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/metric_card.dart';
+import '../../utils/responsive_helper.dart';
+import '../../theme/theme_helper.dart';
+import '../../core/app_exception.dart';
+import '../../services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,8 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     // Carga los datos al abrir la pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppProvider>().loadDashboard();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await context.read<AppProvider>().loadDashboard();
+      } on AppException catch (e) {
+        NotificationService().error(e.message);
+      }
     });
   }
 
@@ -32,9 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.watch<AppProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
+        padding: context.responsivePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -61,32 +70,32 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               _getGreeting(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C2C2A),
+                color: ThemeHelper.getTextColor(context),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Resumen del mes actual',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
             ),
           ],
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.getCardColor(context),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.black.withOpacity(0.07),
+              color: ThemeHelper.getBorderColor(context),
               width: 0.5,
             ),
           ),
           child: Text(
             dateStr,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF888780)),
+            style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
           ),
         ),
       ],
@@ -97,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
-          child: _MetricCard(
+          child: MetricCard(
             icon: Icons.trending_up_rounded,
             iconBg: AppTheme.lightMagenta,
             iconColor: AppTheme.accentMagenta,
@@ -109,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _MetricCard(
+          child: MetricCard(
             icon: Icons.receipt_long_rounded,
             iconBg: AppTheme.lightBlue,
             iconColor: AppTheme.primaryBlue,
@@ -121,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _MetricCard(
+          child: MetricCard(
             icon: Icons.inventory_2_rounded,
             iconBg: AppTheme.lightOrange,
             iconColor: AppTheme.accentOrange,
@@ -135,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _MetricCard(
+          child: MetricCard(
             icon: Icons.star_rounded,
             iconBg: AppTheme.lightMagenta,
             iconColor: AppTheme.accentMagenta,
@@ -180,76 +189,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String value;
-  final String label;
-  final String delta;
-  final bool deltaPositive;
-
-  const _MetricCard({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.value,
-    required this.label,
-    required this.delta,
-    required this.deltaPositive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 17, color: iconColor),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF888780)),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            delta,
-            style: TextStyle(
-              fontSize: 10,
-              color: deltaPositive
-                  ? const Color(0xFF3B6D11)
-                  : const Color(0xFF854F0B),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SalesPanel extends StatelessWidget {
   final List<double> weeklySales;
   final List<Map<String, dynamic>> recentInvoices;
@@ -276,19 +215,19 @@ class _SalesPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ventas — últimos 7 días',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -327,7 +266,7 @@ class _SalesPanel extends StatelessWidget {
                             fontSize: 9,
                             color: isToday
                                 ? AppTheme.accentMagenta
-                                : const Color(0xFFB4B2A9),
+                                : ThemeHelper.getTextLightColor(context),
                             fontWeight: isToday
                                 ? FontWeight.w500
                                 : FontWeight.w400,
@@ -341,23 +280,23 @@ class _SalesPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Divider(height: 1, color: Color(0x12000000)),
+          Divider(height: 1, color: ThemeHelper.getBorderColor(context)),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Últimas facturas',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const SizedBox(height: 8),
           if (recentInvoices.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'No hay facturas aún',
-                style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+                style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
               ),
             )
           else
@@ -368,27 +307,27 @@ class _SalesPanel extends StatelessWidget {
                   children: [
                     Text(
                       '#${inv['id'].toString().padLeft(4, '0')}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF888780),
+                        color: ThemeHelper.getTextLightColor(context),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         inv['customer_name'] ?? 'Cliente general',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF444441),
+                          color: ThemeHelper.getTextMediumColor(context),
                         ),
                       ),
                     ),
                     Text(
                       currency.format(inv['total']),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF2C2C2A),
+                        color: ThemeHelper.getTextColor(context),
                       ),
                     ),
                   ],
@@ -411,9 +350,9 @@ class _LowStockPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,12 +360,12 @@ class _LowStockPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Stock agotándose',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF2C2C2A),
+                  color: ThemeHelper.getTextColor(context),
                 ),
               ),
               if (products.isNotEmpty)
@@ -436,14 +375,14 @@ class _LowStockPanel extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFCEBEB),
+                    color: ThemeHelper.getErrorLightBg(context),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     '${products.length} alertas',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: Color(0xFFA32D2D),
+                      color: ThemeHelper.getErrorTextColor(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -452,11 +391,11 @@ class _LowStockPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (products.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'Todo el stock está bien',
-                style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+                style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
               ),
             )
           else
@@ -478,9 +417,9 @@ class _LowStockPanel extends StatelessWidget {
                         Expanded(
                           child: Text(
                             p.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF444441),
+                              color: ThemeHelper.getTextMediumColor(context),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -492,8 +431,8 @@ class _LowStockPanel extends StatelessWidget {
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: isRed
-                                ? const Color(0xFFA32D2D)
-                                : const Color(0xFF854F0B),
+                                ? ThemeHelper.getErrorTextColor(context)
+                                : ThemeHelper.getWarningTextColor(context),
                           ),
                         ),
                       ],
@@ -504,7 +443,7 @@ class _LowStockPanel extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: ratio.clamp(0.0, 1.0),
                         minHeight: 4,
-                        backgroundColor: const Color(0xFFF1EFE8),
+                        backgroundColor: ThemeHelper.getHoverColor(context),
                         valueColor: AlwaysStoppedAnimation<Color>(barColor),
                       ),
                     ),

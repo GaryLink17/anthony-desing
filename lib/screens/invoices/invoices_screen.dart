@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/theme_helper.dart';
 import '../../core/invoice_repository.dart';
 import '../../core/product_repository.dart';
 import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../models/product.dart';
 import '../../core/pdf_service.dart';
-import '../../app.dart';
+import '../../widgets/state_builder.dart';
+import '../../core/app_exception.dart';
+import '../../services/notification_service.dart';
+import '../../utils/responsive_helper.dart';
 import 'invoice_preview_screen.dart';
 
 class InvoicesScreen extends StatefulWidget {
@@ -34,34 +39,43 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   }
 
   Future<void> _printInvoice(Invoice inv) async {
-    final items = await _invoiceRepo.getItems(inv.id!);
-    final pdfBytes = await PdfService.generate(inv, items);
+    try {
+      final items = await _invoiceRepo.getItems(inv.id!);
+      final pdfBytes = await PdfService.generate(inv, items);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv),
-      ),
-    );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv),
+        ),
+      );
+    } on AppException catch (e) {
+      NotificationService().error(e.message);
+    }
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final result = await _invoiceRepo.getAll();
-    setState(() {
-      _invoices = result;
-      _loading = false;
-    });
+    try {
+      final result = await _invoiceRepo.getAll();
+      setState(() {
+        _invoices = result;
+        _loading = false;
+      });
+    } on AppException catch (e) {
+      if (mounted) setState(() => _loading = false);
+      NotificationService().error(e.message);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: context.responsivePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -81,17 +95,17 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Facturas',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C2C2A),
+                color: ThemeHelper.getTextColor(context),
               ),
             ),
             Text(
               '${_invoices.length} facturas generadas',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
             ),
           ],
         ),
@@ -113,65 +127,45 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   }
 
   Widget _buildContent() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
-
-    if (_invoices.isEmpty) {
-      return Center(
+    return StateBuilder(
+      isLoading: _loading,
+      isEmpty: _invoices.isEmpty,
+      icon: Icons.receipt_long_outlined,
+      emptyTitle: 'No hay facturas aún',
+      emptyDescription: 'Presiona "Nueva factura" para comenzar',
+      child: Container(
+        decoration: BoxDecoration(
+          color: ThemeHelper.getCardColor(context),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 48,
-              color: Colors.grey.shade300,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'No hay facturas aún',
-              style: TextStyle(fontSize: 14, color: Color(0xFF888780)),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Presiona "Nueva factura" para comenzar',
-              style: TextStyle(fontSize: 12, color: Color(0xFFB4B2A9)),
+            _buildTableHeader(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _invoices.length,
+                itemBuilder: (_, i) => _buildRow(_invoices[i], i),
+              ),
             ),
           ],
         ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
-      ),
-      child: Column(
-        children: [
-          _buildTableHeader(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _invoices.length,
-              itemBuilder: (_, i) => _buildRow(_invoices[i], i),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildTableHeader() {
-    const style = TextStyle(
+    final style = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w500,
-      color: Color(0xFF888780),
+      color: ThemeHelper.getTextLightColor(context),
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0x12000000))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: ThemeHelper.getBorderColor(context))),
       ),
-      child: const Row(
+      child: Row(
         children: [
           SizedBox(width: 70, child: Text('#', style: style)),
           Expanded(flex: 3, child: Text('Cliente', style: style)),
@@ -195,10 +189,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: isCancelled
-          ? const Color(0xFFFCEBEB).withOpacity(0.3)
+          ? ThemeHelper.getErrorLightBg(context).withOpacity(0.3)
           : isEven
           ? Colors.transparent
-          : const Color(0xFFFAFAF8),
+          : ThemeHelper.getAltRowColor(context),
       child: Row(
         children: [
           SizedBox(
@@ -209,10 +203,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     children: [
                       Text(
                         '#${inv.id.toString().padLeft(4, '0')}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFFB4B2A9),
+                          color: ThemeHelper.getTextLightColor(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -238,10 +232,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   )
                 : Text(
                     '#${inv.id.toString().padLeft(4, '0')}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF888780),
+                      color: ThemeHelper.getTextLightColor(context),
                     ),
                   ),
           ),
@@ -252,8 +246,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               style: TextStyle(
                 fontSize: 13,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF2C2C2A),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextColor(context),
                 decoration: isCancelled
                     ? TextDecoration.lineThrough
                     : TextDecoration.none,
@@ -267,8 +261,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF888780),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextLightColor(context),
               ),
             ),
           ),
@@ -279,8 +273,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF444441),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextMediumColor(context),
               ),
             ),
           ),
@@ -293,8 +287,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: inv.discountGlobal > 0
-                    ? const Color(0xFFA32D2D)
-                    : const Color(0xFFB4B2A9),
+                    ? ThemeHelper.getErrorTextColor(context)
+                    : ThemeHelper.getTextLightColor(context),
               ),
             ),
           ),
@@ -306,8 +300,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF2C2C2A),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextColor(context),
               ),
             ),
           ),
@@ -321,7 +315,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     Icons.print_rounded,
                     size: 16,
                     color: isCancelled
-                        ? const Color(0xFFB4B2A9)
+                        ? ThemeHelper.getTextLightColor(context)
                         : AppTheme.primaryBlue,
                   ),
                   tooltip: isCancelled ? 'Factura anulada' : 'Imprimir',
@@ -334,7 +328,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     Icons.edit_rounded,
                     size: 16,
                     color: isCancelled
-                        ? const Color(0xFFB4B2A9)
+                        ? ThemeHelper.getTextLightColor(context)
                         : AppTheme.accentOrange,
                   ),
                   tooltip: isCancelled ? 'Factura anulada' : 'Editar',
@@ -347,7 +341,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     Icons.cancel_outlined,
                     size: 16,
                     color: isCancelled
-                        ? const Color(0xFFB4B2A9)
+                        ? ThemeHelper.getTextLightColor(context)
                         : const Color(0xFFE24B4A),
                   ),
                   tooltip: isCancelled ? 'Factura anulada' : 'Anular',
@@ -417,35 +411,35 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   children: [
                     Text(
                       '¿Anular la factura #${inv.id.toString().padLeft(4, '0')}?',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF2C2C2A),
+                        color: ThemeHelper.getTextColor(context),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'La factura quedará registrada pero marcada como anulada y no se incluirá en los reportes.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+                      style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       '¿Desea reponer el stock de los productos?',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF444441)),
+                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextMediumColor(context)),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Seleccione "Sí" si el cliente devolvió los productos.',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF888780)),
+                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
                     ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFAFAF8),
-                  borderRadius: BorderRadius.vertical(
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getAltRowColor(context),
+                  borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(8),
                   ),
                 ),
@@ -455,8 +449,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF888780),
-                          side: const BorderSide(color: Color(0xFFB4B2A9)),
+                          foregroundColor: ThemeHelper.getTextLightColor(context),
+                          side: BorderSide(color: ThemeHelper.getBorderColor(context)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
@@ -469,13 +463,13 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () async {
-                          await _invoiceRepo.cancel(
-                            inv.id!,
-                            restoreStock: false,
-                          );
-                          if (mounted) {
-                            Navigator.pop(context);
-                            _load();
+                          try {
+                            await _invoiceRepo.cancel(inv.id!, restoreStock: false);
+                            NotificationService().success('Factura anulada');
+                            if (mounted) { Navigator.pop(context); _load(); }
+                          } on AppException catch (e) {
+                            if (mounted) Navigator.pop(context);
+                            NotificationService().error(e.message);
                           }
                         },
                         style: OutlinedButton.styleFrom(
@@ -493,13 +487,13 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
-                          await _invoiceRepo.cancel(
-                            inv.id!,
-                            restoreStock: true,
-                          );
-                          if (mounted) {
-                            Navigator.pop(context);
-                            _load();
+                          try {
+                            await _invoiceRepo.cancel(inv.id!, restoreStock: true);
+                            NotificationService().success('Factura anulada');
+                            if (mounted) { Navigator.pop(context); _load(); }
+                          } on AppException catch (e) {
+                            if (mounted) Navigator.pop(context);
+                            NotificationService().error(e.message);
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -533,8 +527,13 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       builder: (_) => _NewInvoiceDialog(
         products: products,
         onSave: (invoice, items) async {
-          await _invoiceRepo.save(invoice, items);
-          _load();
+          try {
+            await _invoiceRepo.save(invoice, items);
+            NotificationService().success('Factura creada correctamente');
+            _load();
+          } on AppException catch (e) {
+            NotificationService().error(e.message);
+          }
         },
       ),
     );
@@ -551,16 +550,21 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       builder: (_) => _NewInvoiceDialog(
         products: products,
         onSave: (updatedInvoice, items) async {
-          final invoiceWithId = Invoice(
-            id: inv.id,
-            customerName: updatedInvoice.customerName,
-            subtotal: updatedInvoice.subtotal,
-            discountGlobal: updatedInvoice.discountGlobal,
-            total: updatedInvoice.total,
-            createdAt: inv.createdAt,
-          );
-          await _invoiceRepo.update(invoiceWithId, items);
-          _load();
+          try {
+            final invoiceWithId = Invoice(
+              id: inv.id,
+              customerName: updatedInvoice.customerName,
+              subtotal: updatedInvoice.subtotal,
+              discountGlobal: updatedInvoice.discountGlobal,
+              total: updatedInvoice.total,
+              createdAt: inv.createdAt,
+            );
+            await _invoiceRepo.update(invoiceWithId, items);
+            NotificationService().success('Factura actualizada correctamente');
+            _load();
+          } on AppException catch (e) {
+            NotificationService().error(e.message);
+          }
         },
         existingInvoice: inv,
         existingItems: existingItems,
@@ -590,6 +594,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   final _customerCtrl = TextEditingController();
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   // Cada item: {product, quantity, unitPrice, discount}
   final List<Map<String, dynamic>> _items = [];
@@ -700,14 +705,10 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
 
   void _save() {
     if (_items.isEmpty) return;
+    if (!_formKey.currentState!.validate()) return;
 
     if (!_validateStock()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay stock suficiente para algunos productos'),
-          backgroundColor: Color(0xFFE24B4A),
-        ),
-      );
+      NotificationService().error('No hay stock suficiente para algunos productos');
       return;
     }
 
@@ -746,16 +747,19 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        width: 700,
-        height: 580,
-        child: Column(
-          children: [
-            _buildDialogHeader(),
-            Expanded(
-              child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
-            ),
-          ],
+      child: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: 700,
+          height: 580,
+          child: Column(
+            children: [
+              _buildDialogHeader(),
+              Expanded(
+                child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -804,10 +808,10 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
           children: [
             TextField(
               controller: _customerCtrl,
-              style: const TextStyle(fontSize: 13),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
               decoration: InputDecoration(
                 labelText: 'Nombre del cliente (opcional)',
-                labelStyle: const TextStyle(fontSize: 12),
+                labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -823,13 +827,13 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                 const Spacer(),
                 SizedBox(
                   width: 100,
-                  child: TextField(
+                  child: TextFormField(
                     controller: _discountCtrl,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(fontSize: 13),
+                    style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
                     decoration: InputDecoration(
                       labelText: 'Desc. %',
-                      labelStyle: const TextStyle(fontSize: 12),
+                      labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -838,27 +842,34 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                         vertical: 10,
                       ),
                     ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return null;
+                      final n = double.tryParse(v.trim());
+                      if (n == null) return 'Número inválido';
+                      if (n < 0 || n > 100) return '0 - 100';
+                      return null;
+                    },
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Productos',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF888780),
+                color: ThemeHelper.getTextLightColor(context),
               ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _searchCtrl,
               onChanged: _filterProducts,
-              style: const TextStyle(fontSize: 13),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
-                hintStyle: const TextStyle(fontSize: 12),
+                hintStyle: TextStyle(fontSize: 12, color: ThemeHelper.getHintColor(context)),
                 prefixIcon: const Icon(Icons.search, size: 18),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -874,7 +885,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
               child: _showProductList || _searchCtrl.text.isNotEmpty
                   ? Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: ThemeHelper.getBorderColor(context)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: ListView.builder(
@@ -883,10 +894,13 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                           final p = _filteredProducts[i];
                           return ListTile(
                             dense: true,
-                            title: Text(p.name, style: const TextStyle(fontSize: 13)),
+                            title: Text(
+                              p.name,
+                              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                            ),
                             subtitle: Text(
                               '${_currency.format(p.salePrice)} - Stock: ${p.stock}',
-                              style: const TextStyle(fontSize: 11),
+                              style: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
                             ),
                             onTap: p.stock > 0 ? () => _addProduct(p) : null,
                           );
@@ -901,186 +915,39 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     );
   }
 
-  Widget _buildItemRow(int i) {
-    final item = _items[i];
-    final p = item['product'] as Product;
-    final qty = item['quantity'] as int;
-    final exceedsStock = qty > p.stock;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: exceedsStock ? const Color(0xFFFCEBEB) : const Color(0xFFF8F7F4),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: exceedsStock
-              ? const Color(0xFFE24B4A).withOpacity(0.5)
-              : Colors.black.withOpacity(0.06),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  p.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (exceedsStock)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE24B4A),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Stock: ${p.stock}',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              IconButton(
-                onPressed: () => _removeItem(i),
-                icon: const Icon(Icons.close_rounded, size: 14),
-                color: const Color(0xFFE24B4A),
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              _smallField(
-                label: 'Cantidad',
-                initial: '$qty',
-                onChanged: (v) => setState(() {
-                  _items[i]['quantity'] = int.tryParse(v) ?? 1;
-                }),
-                error: exceedsStock,
-              ),
-              const SizedBox(width: 8),
-              _smallField(
-                label: 'Precio unit.',
-                initial: '${item['unitPrice'].toStringAsFixed(0)}',
-                onChanged: (v) => setState(() {
-                  _items[i]['unitPrice'] = double.tryParse(v) ?? p.salePrice;
-                }),
-              ),
-              const SizedBox(width: 8),
-              _smallField(
-                label: 'Descuento',
-                initial: '0',
-                onChanged: (v) => setState(() {
-                  _items[i]['discount'] = double.tryParse(v) ?? 0.0;
-                }),
-              ),
-              const Spacer(),
-              Text(
-                _currency.format(
-                  ((item['unitPrice'] as double) *
-                          (1 - (item['discount'] as double) / 100)) *
-                      qty,
-                ),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF2C2C2A),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _smallField({
-    required String label,
-    required String initial,
-    required Function(String) onChanged,
-    bool error = false,
-  }) {
-    return SizedBox(
-      width: 80,
-      child: TextFormField(
-        initialValue: initial,
-        onChanged: onChanged,
-        keyboardType: TextInputType.number,
-        style: const TextStyle(fontSize: 12),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(fontSize: 10),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(
-              color: error ? const Color(0xFFE24B4A) : Colors.grey.shade300,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(
-              color: error ? const Color(0xFFE24B4A) : AppTheme.primaryBlue,
-            ),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 6,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildRightPanel() {
     return Expanded(
       flex: 2,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFFAFAF8),
-          border: Border(
-            left: BorderSide(color: Colors.grey.shade200),
-          ),
+          color: ThemeHelper.getAltRowColor(context),
+          border: Border(left: BorderSide(color: ThemeHelper.getBorderColor(context))),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Items de la factura',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF888780),
+                color: ThemeHelper.getTextLightColor(context),
               ),
             ),
             const SizedBox(height: 12),
             Expanded(
               child: _items.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'Agrega productos',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFFB4B2A9),
+                          color: ThemeHelper.getTextLightColor(context),
                         ),
                       ),
                     )
-                    : ListView.builder(
+                  : ListView.builder(
                       itemCount: _items.length,
                       itemBuilder: (_, i) {
                         final item = _items[i];
@@ -1094,9 +961,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: ThemeHelper.getCardColor(context),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.grey.shade200),
+                            border: Border.all(color: ThemeHelper.getBorderColor(context)),
                           ),
                           child: Row(
                             children: [
@@ -1117,9 +984,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                                     Text(
                                       '$qty x ${_currency.format(price)}'
                                       '${disc > 0 ? ' (-${disc.toStringAsFixed(0)}%)' : ''}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
-                                        color: Color(0xFF888780),
+                                        color: ThemeHelper.getTextLightColor(context),
                                       ),
                                     ),
                                   ],
@@ -1145,7 +1012,8 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                           ),
                         );
                       },
-                    )),
+                    ),
+            ),
             const Divider(),
             _buildSummaryRow('Subtotal', _subtotal),
             if (_globalDiscount > 0)
@@ -1173,8 +1041,12 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     );
   }
 
-  Widget _buildSummaryRow(String label, double amount,
-      {bool isDiscount = false, bool isTotal = false}) {
+  Widget _buildSummaryRow(
+    String label,
+    double amount, {
+    bool isDiscount = false,
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1187,7 +1059,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
               fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
               color: isDiscount
                   ? const Color(0xFFE24B4A)
-                  : const Color(0xFF444441),
+                  : ThemeHelper.getTextMediumColor(context),
             ),
           ),
           Text(
@@ -1199,40 +1071,11 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
               fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
               color: isDiscount
                   ? const Color(0xFFE24B4A)
-                  : const Color(0xFF444441),
+                  : ThemeHelper.getTextMediumColor(context),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _summaryRow(
-    String label,
-    String value, {
-    bool bold = false,
-    bool large = false,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: bold ? const Color(0xFF2C2C2A) : const Color(0xFF888780),
-            fontWeight: bold ? FontWeight.w500 : FontWeight.w400,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: large ? 16 : 13,
-            fontWeight: bold ? FontWeight.w500 : FontWeight.w400,
-            color: const Color(0xFF2C2C2A),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -1241,10 +1084,7 @@ class _ProductConfigDialog extends StatefulWidget {
   final Product product;
   final NumberFormat currency;
 
-  const _ProductConfigDialog({
-    required this.product,
-    required this.currency,
-  });
+  const _ProductConfigDialog({required this.product, required this.currency});
 
   @override
   State<_ProductConfigDialog> createState() => _ProductConfigDialogState();
@@ -1254,12 +1094,15 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
   late TextEditingController _quantityCtrl;
   late TextEditingController _priceCtrl;
   late TextEditingController _discountCtrl;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
     _quantityCtrl = TextEditingController(text: '1');
-    _priceCtrl = TextEditingController(text: widget.product.salePrice.toStringAsFixed(0));
+    _priceCtrl = TextEditingController(
+      text: widget.product.salePrice.toStringAsFixed(0),
+    );
     _discountCtrl = TextEditingController(text: '0');
   }
 
@@ -1285,120 +1128,156 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
       child: Container(
         width: 320,
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.product.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2C2C2A),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _quantityCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(fontSize: 13),
-                    onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: 'Cantidad',
-                      labelStyle: TextStyle(fontSize: 11),
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    ),
-                  ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.product.name,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: ThemeHelper.getTextColor(context),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _discountCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(fontSize: 13),
-                    onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: 'Desc. %',
-                      labelStyle: TextStyle(fontSize: 11),
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _priceCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 13),
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Precio unitario',
-                labelStyle: TextStyle(fontSize: 11),
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAFAF8),
-                borderRadius: BorderRadius.circular(8),
+              Text(
+                'Stock disponible: ${widget.product.stock}',
+                style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  const Text(
-                    'Subtotal:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF2C2C2A),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _quantityCtrl,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: 'Cantidad',
+                        labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                      ),
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null || n < 1) return 'Mín. 1';
+                        if (n > widget.product.stock) return 'Stock: ${widget.product.stock}';
+                        return null;
+                      },
                     ),
                   ),
-                  Text(
-                    widget.currency.format(_subtotal),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2C2C2A),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _discountCtrl,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: 'Desc. %',
+                        labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                      ),
+                      validator: (v) {
+                        final n = double.tryParse(v ?? '');
+                        if (n == null) return 'Inválido';
+                        if (n < 0 || n > 100) return '0 - 100';
+                        return null;
+                      },
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context, {
-                      'quantity': int.tryParse(_quantityCtrl.text) ?? 1,
-                      'unitPrice': double.tryParse(_priceCtrl.text) ?? widget.product.salePrice,
-                      'discount': double.tryParse(_discountCtrl.text) ?? 0,
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentMagenta,
-                    foregroundColor: Colors.white,
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _priceCtrl,
+                keyboardType: TextInputType.number,
+                style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Precio unitario',
+                  labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
                   ),
-                  child: const Text('Agregar'),
                 ),
-              ],
-            ),
-          ],
+                validator: (v) {
+                  final n = double.tryParse(v ?? '');
+                  if (n == null) return 'Ingresa un precio válido';
+                  if (n <= 0) return 'Debe ser mayor a 0';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getAltRowColor(context),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Subtotal:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: ThemeHelper.getTextColor(context),
+                      ),
+                    ),
+                    Text(
+                      widget.currency.format(_subtotal),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: ThemeHelper.getTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (!_formKey.currentState!.validate()) return;
+                      Navigator.pop(context, {
+                        'quantity': int.parse(_quantityCtrl.text),
+                        'unitPrice': double.parse(_priceCtrl.text),
+                        'discount': double.parse(_discountCtrl.text),
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentMagenta,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Agregar'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

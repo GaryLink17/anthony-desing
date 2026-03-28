@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/database.dart';
+import '../core/app_exception.dart';
 import '../models/product.dart';
 
 class AppProvider extends ChangeNotifier {
@@ -44,6 +45,7 @@ class AppProvider extends ChangeNotifier {
   // Carga todos los datos del dashboard de una vez
   Future<void> loadDashboard() async {
     final db = await _db.database;
+    try {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
 
@@ -123,5 +125,11 @@ class AppProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+    } catch (e) {
+      throw AppException(
+        'No se pudo cargar el dashboard.',
+        technical: e.toString(),
+      );
+    }
   }
 }

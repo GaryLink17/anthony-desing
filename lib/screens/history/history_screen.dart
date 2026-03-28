@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../app.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/theme_helper.dart';
 import '../../core/invoice_repository.dart';
 import '../../core/pdf_service.dart';
+import '../../core/app_exception.dart';
+import '../../services/notification_service.dart';
 import '../../models/invoice.dart';
 import '../invoices/invoice_preview_screen.dart';
+import '../../utils/responsive_helper.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -41,12 +45,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final result = await _repo.getAll();
-    setState(() {
-      _all = result;
-      _applyFilters();
-      _loading = false;
-    });
+    try {
+      final result = await _repo.getAll();
+      if (mounted) {
+        setState(() {
+          _all = result;
+          _applyFilters();
+          _loading = false;
+        });
+      }
+    } on AppException catch (e) {
+      if (mounted) setState(() => _loading = false);
+      NotificationService().error(e.message);
+    }
   }
 
   Future<void> _selectStartDate() async {
@@ -172,9 +183,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: context.responsivePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -201,18 +212,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Historial',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C2C2A),
+                color: ThemeHelper.getTextColor(context),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '$activeCount activas${cancelledCount > 0 ? ' • $cancelledCount anuladas' : ''} • ${_filtered.length} total',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
             ),
           ],
         ),
@@ -228,7 +239,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             label: 'Total facturado',
             value: _currency.format(_filteredTotal),
             icon: Icons.trending_up_rounded,
-            iconBg: const Color(0xFFE1F5EE),
+            iconBg: ThemeHelper.getSuccessLightBg(context),
             iconColor: const Color(0xFF0F6E56),
           ),
         ),
@@ -238,7 +249,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             label: 'Facturas activas',
             value: '$_activeCount',
             icon: Icons.receipt_long_rounded,
-            iconBg: const Color(0xFFE6F1FB),
+            iconBg: ThemeHelper.getInfoLightBg(context),
             iconColor: const Color(0xFF185FA5),
           ),
         ),
@@ -248,8 +259,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             label: 'Descuentos aplicados',
             value: _currency.format(_filteredDiscount),
             icon: Icons.discount_rounded,
-            iconBg: const Color(0xFFFCEBEB),
-            iconColor: const Color(0xFFA32D2D),
+            iconBg: ThemeHelper.getErrorLightBg(context),
+            iconColor: AppTheme.errorDark,
           ),
         ),
         const SizedBox(width: 12),
@@ -260,8 +271,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ? _currency.format(0)
                 : _currency.format(_filteredTotal / _activeCount),
             icon: Icons.point_of_sale_rounded,
-            iconBg: const Color(0xFFFAEEDA),
-            iconColor: const Color(0xFFBA7517),
+            iconBg: ThemeHelper.getWarningLightBg(context),
+            iconColor: AppTheme.warningDark,
           ),
         ),
       ],
@@ -287,29 +298,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onChanged: (_) => _applyFilters(),
             decoration: InputDecoration(
               hintText: 'Buscar por cliente o # factura...',
-              hintStyle: const TextStyle(
+              hintStyle: TextStyle(
                 fontSize: 12,
-                color: Color(0xFFB4B2A9),
+                color: ThemeHelper.getTextLightColor(context),
               ),
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.search_rounded,
                 size: 17,
-                color: Color(0xFFB4B2A9),
+                color: ThemeHelper.getTextLightColor(context),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: ThemeHelper.getCardColor(context),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: Colors.black.withOpacity(0.07),
+                  color: ThemeHelper.getBorderColor(context),
                   width: 0.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: Colors.black.withOpacity(0.07),
+                  color: ThemeHelper.getBorderColor(context),
                   width: 0.5,
                 ),
               ),
@@ -323,12 +334,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         const SizedBox(width: 12),
         Container(
           decoration: BoxDecoration(
-            color: isToday ? const Color(0xFFEAF3DE) : Colors.white,
+            color: isToday ? ThemeHelper.getSuccessLightBg(context) : ThemeHelper.getCardColor(context),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: isToday
-                  ? const Color(0xFF3B6D11)
-                  : Colors.black.withOpacity(0.07),
+                  ? ThemeHelper.getSuccessTextColor(context)
+                  : ThemeHelper.getBorderColor(context),
               width: 0.5,
             ),
           ),
@@ -348,8 +359,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: isToday
-                        ? const Color(0xFF27500A)
-                        : const Color(0xFF888780),
+                        ? ThemeHelper.getSuccessTextColor(context)
+                        : ThemeHelper.getTextLightColor(context),
                   ),
                 ),
               ),
@@ -365,9 +376,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildStatusFilter() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -398,7 +409,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: isActive ? Colors.white : const Color(0xFF888780),
+            color: isActive ? Colors.white : ThemeHelper.getTextLightColor(context),
           ),
         ),
       ),
@@ -411,10 +422,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeHelper.getCardColor(context),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: Colors.black.withOpacity(0.07),
+              color: ThemeHelper.getBorderColor(context),
               width: 0.5,
             ),
           ),
@@ -436,7 +447,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   decoration: BoxDecoration(
                     border: Border.symmetric(
                       vertical: BorderSide(
-                        color: Colors.black.withOpacity(0.07),
+                        color: ThemeHelper.getBorderColor(context),
                         width: 0.5,
                       ),
                     ),
@@ -454,17 +465,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         children: [
                           Text(
                             label,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9,
-                              color: Color(0xFF888780),
+                              color: ThemeHelper.getTextLightColor(context),
                             ),
                           ),
                           Text(
                             _dateFormat.format(date),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF2C2C2A),
+                              color: ThemeHelper.getTextColor(context),
                             ),
                           ),
                         ],
@@ -491,7 +502,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 16, color: const Color(0xFF888780)),
+        child: Icon(icon, size: 16, color: ThemeHelper.getTextLightColor(context)),
       ),
     );
   }
@@ -504,11 +515,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history_rounded, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.history_rounded, size: 48, color: ThemeHelper.getBorderColor(context)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No hay facturas en este período',
-              style: TextStyle(fontSize: 14, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 14, color: ThemeHelper.getTextLightColor(context)),
             ),
           ],
         ),
@@ -517,9 +528,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Column(
         children: [
@@ -536,17 +547,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildTableHeader() {
-    const style = TextStyle(
+    final style = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w500,
-      color: Color(0xFF888780),
+      color: ThemeHelper.getTextLightColor(context),
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0x12000000))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: ThemeHelper.getBorderColor(context))),
       ),
-      child: const Row(
+      child: Row(
         children: [
           SizedBox(width: 70, child: Text('#', style: style)),
           Expanded(flex: 3, child: Text('Cliente', style: style)),
@@ -570,10 +581,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: isCancelled
-          ? const Color(0xFFFCEBEB).withOpacity(0.3)
+          ? ThemeHelper.getErrorLightBg(context).withOpacity(0.3)
           : isEven
           ? Colors.transparent
-          : const Color(0xFFFAFAF8),
+          : ThemeHelper.getAltRowColor(context),
       child: Row(
         children: [
           SizedBox(
@@ -584,10 +595,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     children: [
                       Text(
                         '#${inv.id.toString().padLeft(4, '0')}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFFB4B2A9),
+                          color: ThemeHelper.getTextLightColor(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -613,10 +624,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   )
                 : Text(
                     '#${inv.id.toString().padLeft(4, '0')}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF888780),
+                      color: ThemeHelper.getTextLightColor(context),
                     ),
                   ),
           ),
@@ -627,8 +638,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(
                 fontSize: 13,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF2C2C2A),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextColor(context),
                 decoration: isCancelled
                     ? TextDecoration.lineThrough
                     : TextDecoration.none,
@@ -642,8 +653,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF888780),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextLightColor(context),
               ),
             ),
           ),
@@ -654,8 +665,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF444441),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextMediumColor(context),
               ),
             ),
           ),
@@ -668,8 +679,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(
                 fontSize: 12,
                 color: inv.discountGlobal > 0
-                    ? const Color(0xFFA32D2D)
-                    : const Color(0xFFB4B2A9),
+                    ? ThemeHelper.getErrorTextColor(context)
+                    : ThemeHelper.getTextLightColor(context),
               ),
             ),
           ),
@@ -681,8 +692,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: isCancelled
-                    ? const Color(0xFFB4B2A9)
-                    : const Color(0xFF2C2C2A),
+                    ? ThemeHelper.getTextLightColor(context)
+                    : ThemeHelper.getTextColor(context),
               ),
             ),
           ),
@@ -696,7 +707,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Icons.print_rounded,
                     size: 16,
                     color: isCancelled
-                        ? const Color(0xFFB4B2A9)
+                        ? ThemeHelper.getTextLightColor(context)
                         : AppTheme.primaryBlue,
                   ),
                   tooltip: isCancelled ? 'Factura anulada' : 'Ver e imprimir',
@@ -710,7 +721,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Icons.cancel_outlined,
                     size: 16,
                     color: isCancelled
-                        ? const Color(0xFFB4B2A9)
+                        ? ThemeHelper.getTextLightColor(context)
                         : const Color(0xFFE24B4A),
                   ),
                   tooltip: isCancelled ? 'Factura anulada' : 'Anular',
@@ -792,30 +803,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   children: [
                     Text(
                       '¿Anular la factura #${inv.id.toString().padLeft(4, '0')}?',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF2C2C2A),
+                        color: ThemeHelper.getTextColor(context),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       '¿Desea reponer el stock de los productos?',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF444441)),
+                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextMediumColor(context)),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Seleccione "Sí" si el cliente devolvió los productos.',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF888780)),
+                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
                     ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFAFAF8),
-                  borderRadius: BorderRadius.vertical(
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getAltRowColor(context),
+                  borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(8),
                   ),
                 ),
@@ -825,8 +836,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF888780),
-                          side: const BorderSide(color: Color(0xFFB4B2A9)),
+                          foregroundColor: ThemeHelper.getTextLightColor(context),
+                          side: BorderSide(color: ThemeHelper.getTextLightColor(context)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
@@ -839,10 +850,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () async {
-                          await _repo.cancel(inv.id!, restoreStock: false);
-                          if (mounted) {
-                            Navigator.pop(context);
-                            _load();
+                          try {
+                            await _repo.cancel(inv.id!, restoreStock: false);
+                            if (mounted) {
+                              Navigator.pop(context);
+                              NotificationService().success('Factura anulada');
+                              _load();
+                            }
+                          } on AppException catch (e) {
+                            if (mounted) Navigator.pop(context);
+                            NotificationService().error(e.message);
                           }
                         },
                         style: OutlinedButton.styleFrom(
@@ -860,10 +877,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
-                          await _repo.cancel(inv.id!, restoreStock: true);
-                          if (mounted) {
-                            Navigator.pop(context);
-                            _load();
+                          try {
+                            await _repo.cancel(inv.id!, restoreStock: true);
+                            if (mounted) {
+                              Navigator.pop(context);
+                              NotificationService().success('Factura anulada y stock repuesto');
+                              _load();
+                            }
+                          } on AppException catch (e) {
+                            if (mounted) Navigator.pop(context);
+                            NotificationService().error(e.message);
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -908,9 +931,9 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Row(
         children: [
@@ -929,15 +952,15 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF2C2C2A),
+                  color: ThemeHelper.getTextColor(context),
                 ),
               ),
               Text(
                 label,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF888780)),
+                style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
               ),
             ],
           ),

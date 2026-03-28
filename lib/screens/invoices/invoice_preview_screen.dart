@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
-import '../../app.dart';
+import '../../theme/app_theme.dart';
 import '../../models/invoice.dart';
 
 class InvoicePreviewScreen extends StatelessWidget {
@@ -17,7 +17,7 @@ class InvoicePreviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: Column(
         children: [
           _buildTopBar(context),

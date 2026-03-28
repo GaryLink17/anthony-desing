@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/product_repository.dart';
 import '../../models/product.dart';
-import '../../app.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/theme_helper.dart';
+import '../../widgets/state_builder.dart';
+import '../../utils/responsive_helper.dart';
+import '../../core/app_exception.dart';
+import '../../services/notification_service.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -31,21 +36,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   Future<void> _loadProducts([String query = '']) async {
     setState(() => _loading = true);
-    final result = query.isEmpty
-        ? await _repo.getAll()
-        : await _repo.search(query);
-    setState(() {
-      _products = result;
-      _loading = false;
-    });
+    try {
+      final result = query.isEmpty
+          ? await _repo.getAll()
+          : await _repo.search(query);
+      if (mounted) setState(() { _products = result; _loading = false; });
+    } on AppException catch (e) {
+      if (mounted) setState(() => _loading = false);
+      NotificationService().error(e.message);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: context.responsivePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -67,17 +74,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Inventario',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C2C2A),
+                color: ThemeHelper.getTextColor(context),
               ),
             ),
             Text(
               '${_products.length} productos registrados',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
             ),
           ],
         ),
@@ -86,7 +93,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Nuevo producto'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: AppTheme.accentMagenta,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             shape: RoundedRectangleBorder(
@@ -106,26 +113,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
         onChanged: _loadProducts,
         decoration: InputDecoration(
           hintText: 'Buscar producto...',
-          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFB4B2A9)),
-          prefixIcon: const Icon(
+          hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
+          prefixIcon: Icon(
             Icons.search_rounded,
             size: 18,
-            color: Color(0xFFB4B2A9),
+            color: ThemeHelper.getHintColor(context),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: ThemeHelper.getCardColor(context),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(
-              color: Colors.black.withOpacity(0.07),
+              color: ThemeHelper.getBorderColor(context),
               width: 0.5,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(
-              color: Colors.black.withOpacity(0.07),
+              color: ThemeHelper.getBorderColor(context),
               width: 0.5,
             ),
           ),
@@ -135,67 +142,45 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Widget _buildTable() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_products.isEmpty) {
-      return Center(
+    return StateBuilder(
+      isLoading: _loading,
+      isEmpty: _products.isEmpty,
+      icon: Icons.inventory_2_outlined,
+      emptyTitle: 'No hay productos aún',
+      emptyDescription: 'Presiona "Nuevo producto" para agregar el primero',
+      child: Container(
+        decoration: BoxDecoration(
+          color: ThemeHelper.getCardColor(context),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 48,
-              color: Colors.grey.shade300,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'No hay productos aún',
-              style: TextStyle(fontSize: 14, color: Color(0xFF888780)),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Presiona "Nuevo producto" para agregar el primero',
-              style: TextStyle(fontSize: 12, color: Color(0xFFB4B2A9)),
+            _buildTableHeader(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _products.length,
+                itemBuilder: (_, i) => _buildTableRow(_products[i], i),
+              ),
             ),
           ],
         ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
-      ),
-      child: Column(
-        children: [
-          _buildTableHeader(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _products.length,
-              itemBuilder: (_, i) => _buildTableRow(_products[i], i),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildTableHeader() {
-    const style = TextStyle(
+    final style = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w500,
-      color: Color(0xFF888780),
+      color: ThemeHelper.getTextLightColor(context),
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0x12000000))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: ThemeHelper.getBorderColor(context))),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Expanded(flex: 3, child: Text('Producto', style: style)),
           Expanded(flex: 2, child: Text('Categoría', style: style)),
@@ -216,7 +201,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: isEven ? Colors.transparent : const Color(0xFFFAFAF8),
+      color: isEven ? Colors.transparent : ThemeHelper.getAltRowColor(context),
       child: Row(
         children: [
           Expanded(
@@ -229,15 +214,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     child: Icon(
                       Icons.warning_amber_rounded,
                       size: 14,
-                      color: Color(0xFFE24B4A),
+                      color: AppTheme.errorMedium,
                     ),
                   ),
                 Expanded(
                   child: Text(
                     p.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF2C2C2A),
+                      color: ThemeHelper.getTextColor(context),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -249,21 +234,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
             flex: 2,
             child: Text(
               p.category ?? '—',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF888780)),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               _currency.format(p.purchasePrice),
-              style: const TextStyle(fontSize: 12, color: Color(0xFF444441)),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               _currency.format(p.salePrice),
-              style: const TextStyle(fontSize: 12, color: Color(0xFF444441)),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
             ),
           ),
           Expanded(
@@ -272,17 +257,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
               children: [
                 Text(
                   _currency.format(profit),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF3B6D11),
+                    color: ThemeHelper.getSuccessTextColor(context),
                   ),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '(${margin.toStringAsFixed(1)}%)',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: Color(0xFF888780),
+                    color: ThemeHelper.getTextLightColor(context),
                   ),
                 ),
               ],
@@ -294,8 +279,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: p.isLowStock
-                    ? const Color(0xFFFCEBEB)
-                    : const Color(0xFFEAF3DE),
+                    ? ThemeHelper.getErrorLightBg(context)
+                    : ThemeHelper.getSuccessLightBg(context),
                 borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
@@ -304,8 +289,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: p.isLowStock
-                      ? const Color(0xFFA32D2D)
-                      : const Color(0xFF27500A),
+                      ? ThemeHelper.getErrorTextColor(context)
+                      : ThemeHelper.getSuccessTextColor(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -318,7 +303,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 IconButton(
                   onPressed: () => _showProductDialog(product: p),
                   icon: const Icon(Icons.edit_rounded, size: 16),
-                  color: const Color(0xFF888780),
+                  color: ThemeHelper.getTextLightColor(context),
                   tooltip: 'Editar',
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(6),
@@ -349,14 +334,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () async {
-              await _repo.delete(p.id!);
-              if (mounted) {
-                Navigator.pop(context);
-                _loadProducts();
+              try {
+                await _repo.delete(p.id!);
+                NotificationService().success('Producto eliminado');
+                if (mounted) { Navigator.pop(context); _loadProducts(); }
+              } on AppException catch (e) {
+                if (mounted) Navigator.pop(context);
+                NotificationService().error(e.message);
               }
             },
             child: const Text(
@@ -375,12 +364,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
       builder: (_) => _ProductDialog(
         product: product,
         onSave: (p) async {
-          if (p.id == null) {
-            await _repo.insert(p);
-          } else {
-            await _repo.update(p);
+          try {
+            if (p.id == null) {
+              await _repo.insert(p);
+              NotificationService().success('Producto agregado');
+            } else {
+              await _repo.update(p);
+              NotificationService().success('Producto actualizado');
+            }
+            _loadProducts();
+          } on AppException catch (e) {
+            NotificationService().error(e.message);
           }
-          _loadProducts();
         },
       ),
     );
@@ -452,10 +447,10 @@ class _ProductDialogState extends State<_ProductDialog> {
             children: [
               Text(
                 isEdit ? 'Editar producto' : 'Nuevo producto',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF2C2C2A),
+                  color: ThemeHelper.getTextColor(context),
                 ),
               ),
               const SizedBox(height: 20),
@@ -515,18 +510,18 @@ class _ProductDialogState extends State<_ProductDialog> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _profit >= 0
-                            ? const Color(0xFFEAF3DE)
-                            : const Color(0xFFFCEBEB),
+                            ? ThemeHelper.getSuccessLightBg(context)
+                            : ThemeHelper.getErrorLightBg(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Ganancia por unidad:',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF444441),
+                              color: ThemeHelper.getTextMediumColor(context),
                             ),
                           ),
                           Text(
@@ -535,8 +530,8 @@ class _ProductDialogState extends State<_ProductDialog> {
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: _profit >= 0
-                                  ? const Color(0xFF27500A)
-                                  : const Color(0xFFA32D2D),
+                                  ? ThemeHelper.getSuccessTextColor(context)
+                                  : ThemeHelper.getErrorTextColor(context),
                             ),
                           ),
                         ],
@@ -551,6 +546,7 @@ class _ProductDialogState extends State<_ProductDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
                     child: const Text('Cancelar'),
                   ),
                   const SizedBox(width: 8),
@@ -583,19 +579,26 @@ class _ProductDialogState extends State<_ProductDialog> {
     return TextFormField(
       controller: ctrl,
       keyboardType: number ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(fontSize: 13),
+      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 10,
         ),
       ),
-      validator: required
-          ? (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null
-          : null,
+      validator: (v) {
+        final text = v?.trim() ?? '';
+        if (required && text.isEmpty) return 'Campo requerido';
+        if (number && text.isNotEmpty) {
+          final n = double.tryParse(text);
+          if (n == null) return 'Ingresa un número válido';
+          if (n < 0) return 'Debe ser 0 o mayor';
+        }
+        return null;
+      },
     );
   }
 

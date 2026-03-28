@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../app.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/theme_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../utils/responsive_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -76,15 +79,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
+      backgroundColor: context.bgColor,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
+        padding: context.responsivePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
             const SizedBox(height: 24),
             _buildCompanySection(),
+            const SizedBox(height: 20),
+            _buildAppearanceSection(),
             const SizedBox(height: 20),
             _buildFooterSection(),
             const SizedBox(height: 24),
@@ -96,21 +101,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeader() {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Configuración',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF2C2C2A),
-          ),
+          style: ThemeHelper.getTitleStyle(context),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
           'Datos del negocio y opciones de factura',
-          style: TextStyle(fontSize: 13, color: Color(0xFF888780)),
+          style: ThemeHelper.getSubtitleStyle(context),
         ),
       ],
     );
@@ -119,20 +120,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildCompanySection() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
-      ),
+      decoration: ThemeHelper.getCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Datos del negocio',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -148,10 +145,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0EEE8),
+                        color: ThemeHelper.getHoverColor(context),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.black.withOpacity(0.08),
+                          color: ThemeHelper.getBorderColor(context),
                           width: 0.5,
                         ),
                       ),
@@ -163,20 +160,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 fit: BoxFit.cover,
                               ),
                             )
-                          : const Column(
+                          : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
                                   Icons.add_photo_alternate_rounded,
                                   size: 24,
-                                  color: Color(0xFFB4B2A9),
+                                  color: ThemeHelper.getTextLightColor(context),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Logo',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Color(0xFFB4B2A9),
+                                    color: ThemeHelper.getTextLightColor(context),
                                   ),
                                 ),
                               ],
@@ -190,9 +187,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(90, 20),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Cambiar',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF185FA5)),
+                      style: TextStyle(fontSize: 11, color: ThemeHelper.getInteractiveColor(context)),
                     ),
                   ),
                 ],
@@ -215,29 +212,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildAppearanceSection() {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: ThemeHelper.getCardColor(context),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: ThemeHelper.getBorderColor(context),
+              width: 0.5,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Apariencia',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: ThemeHelper.getTextColor(context),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            themeProvider.isDarkMode
+                                ? Icons.dark_mode_rounded
+                                : Icons.light_mode_rounded,
+                            size: 16,
+                            color: ThemeHelper.getInteractiveColor(context),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            themeProvider.isDarkMode
+                                ? 'Modo oscuro'
+                                : 'Modo claro',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: ThemeHelper.getTextColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cambia entre tema claro y oscuro',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: ThemeHelper.getTextLightColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: themeProvider.isDarkMode,
+                    onChanged: (value) {
+                      themeProvider.setDarkMode(value);
+                    },
+                    activeColor: AppTheme.accentMagenta,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildFooterSection() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.07), width: 0.5),
+        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Pie de página de la factura',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Selecciona qué aparece al final de cada factura impresa',
-            style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+            style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
           ),
           const SizedBox(height: 16),
           // Opciones
@@ -255,12 +331,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: TextField(
               controller: _footerTermsCtrl,
               maxLines: 2,
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextColor(context)),
               decoration: InputDecoration(
                 hintText: 'Escribe los términos...',
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFFB4B2A9),
+                  color: ThemeHelper.getHintColor(context),
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -274,11 +350,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: 'invoice_number',
             label: 'Solo número de factura',
             icon: Icons.tag_rounded,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 4, top: 4),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4, top: 4),
               child: Text(
                 'Ejemplo: Factura #0047',
-                style: TextStyle(fontSize: 12, color: Color(0xFF888780)),
+                style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
               ),
             ),
           ),
@@ -299,12 +375,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE1F5EE) : const Color(0xFFF8F7F4),
+          color: isSelected ? ThemeHelper.getSelectedColor(context) : ThemeHelper.getUnselectedColor(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? AppTheme.primaryBlue
-                : Colors.black.withOpacity(0.06),
+                ? ThemeHelper.getInteractiveColor(context)
+                : ThemeHelper.getBorderColor(context),
             width: isSelected ? 1.5 : 0.5,
           ),
         ),
@@ -317,8 +393,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon,
                   size: 15,
                   color: isSelected
-                      ? AppTheme.primaryBlue
-                      : const Color(0xFF888780),
+                      ? ThemeHelper.getInteractiveColor(context)
+                      : ThemeHelper.getTextLightColor(context),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -327,8 +403,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: isSelected
-                        ? AppTheme.primaryBlue
-                        : const Color(0xFF444441),
+                        ? ThemeHelper.getInteractiveColor(context)
+                        : ThemeHelper.getTextMediumColor(context),
                   ),
                 ),
                 const Spacer(),
@@ -339,12 +415,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isSelected
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFFB4B2A9),
+                          ? ThemeHelper.getInteractiveColor(context)
+                          : ThemeHelper.getTextLightColor(context),
                       width: 1.5,
                     ),
                     color: isSelected
-                        ? AppTheme.primaryBlue
+                        ? ThemeHelper.getInteractiveColor(context)
                         : Colors.transparent,
                   ),
                   child: isSelected
@@ -381,15 +457,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         if (_saved) ...[
           const SizedBox(width: 12),
-          const Icon(
+          Icon(
             Icons.check_circle_rounded,
             size: 18,
-            color: Color(0xFF3B6D11),
+            color: ThemeHelper.getSuccessTextColor(context),
           ),
           const SizedBox(width: 6),
-          const Text(
+          Text(
             'Guardado correctamente',
-            style: TextStyle(fontSize: 13, color: Color(0xFF3B6D11)),
+            style: TextStyle(fontSize: 13, color: ThemeHelper.getSuccessTextColor(context)),
           ),
         ],
       ],
@@ -403,10 +479,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return TextFormField(
       controller: ctrl,
-      style: const TextStyle(fontSize: 13),
+      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,

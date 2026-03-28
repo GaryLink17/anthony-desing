@@ -1,91 +1,145 @@
 import 'database.dart';
+import 'app_exception.dart';
 import '../models/product.dart';
 
 class ProductRepository {
   final _db = DatabaseHelper.instance;
 
-  // Obtener todos los productos
   Future<List<Product>> getAll() async {
-    final db = await _db.database;
-    final result = await db.query('products', orderBy: 'name ASC');
-    return result.map(Product.fromMap).toList();
+    try {
+      final db = await _db.database;
+      final result = await db.query('products', orderBy: 'name ASC');
+      return result.map(Product.fromMap).toList();
+    } catch (e) {
+      throw AppException(
+        'No se pudo cargar el inventario.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Buscar productos por nombre
   Future<List<Product>> search(String query) async {
-    final db = await _db.database;
-    final result = await db.query(
-      'products',
-      where: 'name LIKE ?',
-      whereArgs: ['%$query%'],
-      orderBy: 'name ASC',
-    );
-    return result.map(Product.fromMap).toList();
+    try {
+      final db = await _db.database;
+      final result = await db.query(
+        'products',
+        where: 'name LIKE ?',
+        whereArgs: ['%$query%'],
+        orderBy: 'name ASC',
+      );
+      return result.map(Product.fromMap).toList();
+    } catch (e) {
+      throw AppException(
+        'Error al buscar productos.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Agregar producto
   Future<int> insert(Product product) async {
-    final db = await _db.database;
-    return await db.insert('products', product.toMap());
+    try {
+      final db = await _db.database;
+      return await db.insert('products', product.toMap());
+    } catch (e) {
+      throw AppException(
+        'No se pudo agregar el producto.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Editar producto
   Future<void> update(Product product) async {
-    final db = await _db.database;
-    await db.update(
-      'products',
-      product.toMap(),
-      where: 'id = ?',
-      whereArgs: [product.id],
-    );
+    try {
+      final db = await _db.database;
+      await db.update(
+        'products',
+        product.toMap(),
+        where: 'id = ?',
+        whereArgs: [product.id],
+      );
+    } catch (e) {
+      throw AppException(
+        'No se pudo actualizar el producto.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Eliminar producto
   Future<void> delete(int id) async {
-    final db = await _db.database;
-    await db.delete('products', where: 'id = ?', whereArgs: [id]);
+    try {
+      final db = await _db.database;
+      await db.delete('products', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      throw AppException(
+        'No se pudo eliminar el producto.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Descontar stock al confirmar una factura
   Future<void> decreaseStock(int productId, int quantity) async {
-    final db = await _db.database;
-    await db.rawUpdate(
-      '''
-      UPDATE products
-      SET stock = stock - ?
-      WHERE id = ?
-    ''',
-      [quantity, productId],
-    );
+    try {
+      final db = await _db.database;
+      await db.rawUpdate(
+        'UPDATE products SET stock = stock - ? WHERE id = ?',
+        [quantity, productId],
+      );
+    } catch (e) {
+      throw AppException(
+        'Error al actualizar el stock.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Productos con stock bajo
   Future<List<Product>> getLowStock() async {
-    final db = await _db.database;
-    final result = await db.query(
-      'products',
-      where: 'stock <= min_stock',
-      orderBy: 'stock ASC',
-    );
-    return result.map(Product.fromMap).toList();
+    try {
+      final db = await _db.database;
+      final result = await db.query(
+        'products',
+        where: 'stock <= min_stock',
+        orderBy: 'stock ASC',
+      );
+      return result.map(Product.fromMap).toList();
+    } catch (e) {
+      throw AppException(
+        'No se pudo verificar el stock.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Obtener producto por ID
   Future<Product?> getById(int id) async {
-    final db = await _db.database;
-    final result = await db.query('products', where: 'id = ?', whereArgs: [id]);
-    if (result.isEmpty) return null;
-    return Product.fromMap(result.first);
+    try {
+      final db = await _db.database;
+      final result = await db.query(
+        'products',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      if (result.isEmpty) return null;
+      return Product.fromMap(result.first);
+    } catch (e) {
+      throw AppException(
+        'No se pudo obtener el producto.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Validar si hay stock suficiente
   Future<bool> hasStock(int productId, int quantity) async {
-    final product = await getById(productId);
-    if (product == null) return false;
-    return product.stock >= quantity;
+    try {
+      final product = await getById(productId);
+      if (product == null) return false;
+      return product.stock >= quantity;
+    } catch (e) {
+      throw AppException(
+        'No se pudo verificar disponibilidad de stock.',
+        technical: e.toString(),
+      );
+    }
   }
 
-  // Insertar producto directo (para seed data)
   Future<int> insertRaw({
     required String name,
     required String category,
@@ -94,15 +148,22 @@ class ProductRepository {
     required int stock,
     required int minStock,
   }) async {
-    final db = await _db.database;
-    return await db.insert('products', {
-      'name': name,
-      'category': category,
-      'purchase_price': purchasePrice,
-      'sale_price': salePrice,
-      'stock': stock,
-      'min_stock': minStock,
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      final db = await _db.database;
+      return await db.insert('products', {
+        'name': name,
+        'category': category,
+        'purchase_price': purchasePrice,
+        'sale_price': salePrice,
+        'stock': stock,
+        'min_stock': minStock,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw AppException(
+        'No se pudo agregar el producto.',
+        technical: e.toString(),
+      );
+    }
   }
 }

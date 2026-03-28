@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'app.dart';
 import 'providers/app_provider.dart';
+import 'providers/theme_provider.dart';
 import 'core/database.dart';
 
 void main() async {
@@ -10,8 +11,19 @@ void main() async {
   await initializeDateFormatting('es', null);
   await DatabaseHelper.initialize();
 
-  final privider = AppProvider();
-  await privider.loadCompanyData();
+  final appProvider = AppProvider();
+  await appProvider.loadCompanyData();
 
-  runApp(ChangeNotifierProvider.value(value: privider, child: const MyApp()));
+  final themeProvider = ThemeProvider();
+  await themeProvider.initialize();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: appProvider),
+        ChangeNotifierProvider.value(value: themeProvider),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
