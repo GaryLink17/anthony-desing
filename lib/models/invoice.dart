@@ -3,6 +3,8 @@ class Invoice {
   final String? customerName;
   final double subtotal;
   final double discountGlobal;
+  final double itbis;
+  final double isr;
   final double total;
   final String status;
   final String paymentStatus;
@@ -13,6 +15,8 @@ class Invoice {
     this.customerName,
     required this.subtotal,
     this.discountGlobal = 0,
+    this.itbis = 0,
+    this.isr = 0,
     required this.total,
     this.status = 'active',
     this.paymentStatus = 'pending',
@@ -24,11 +28,16 @@ class Invoice {
   bool get isPaid => paymentStatus == 'paid';
   bool get isPending => paymentStatus == 'pending';
 
+  /// Base imponible: subtotal menos descuento global
+  double get taxableBase => subtotal - discountGlobal;
+
   Invoice copyWith({
     int? id,
     String? customerName,
     double? subtotal,
     double? discountGlobal,
+    double? itbis,
+    double? isr,
     double? total,
     String? status,
     String? paymentStatus,
@@ -39,6 +48,8 @@ class Invoice {
       customerName: customerName ?? this.customerName,
       subtotal: subtotal ?? this.subtotal,
       discountGlobal: discountGlobal ?? this.discountGlobal,
+      itbis: itbis ?? this.itbis,
+      isr: isr ?? this.isr,
       total: total ?? this.total,
       status: status ?? this.status,
       paymentStatus: paymentStatus ?? this.paymentStatus,
@@ -52,6 +63,8 @@ class Invoice {
       'customer_name': customerName,
       'subtotal': subtotal,
       'discount_global': discountGlobal,
+      'itbis': itbis,
+      'isr': isr,
       'total': total,
       'status': status,
       'payment_status': paymentStatus,
@@ -63,9 +76,11 @@ class Invoice {
     return Invoice(
       id: map['id'],
       customerName: map['customer_name'],
-      subtotal: map['subtotal'],
-      discountGlobal: map['discount_global'] ?? 0,
-      total: map['total'],
+      subtotal: (map['subtotal'] as num).toDouble(),
+      discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
+      itbis: (map['itbis'] as num? ?? 0).toDouble(),
+      isr: (map['isr'] as num? ?? 0).toDouble(),
+      total: (map['total'] as num).toDouble(),
       status: map['status'] ?? 'active',
       paymentStatus: map['payment_status'] ?? 'pending',
       createdAt: map['created_at'],

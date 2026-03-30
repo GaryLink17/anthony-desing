@@ -25,15 +25,16 @@ class Sidebar extends StatelessWidget {
   });
 
   static const _mainItems = [
-    SidebarItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-    SidebarItem(label: 'Facturas', icon: Icons.receipt_long_rounded),
-    SidebarItem(label: 'Cotizaciones', icon: Icons.description_rounded),
-    SidebarItem(label: 'Inventario', icon: Icons.inventory_2_rounded),
+    SidebarItem(label: 'Dashboard', icon: Icons.grid_view_rounded),      // 0
+    SidebarItem(label: 'Facturas', icon: Icons.receipt_long_rounded),    // 1
+    SidebarItem(label: 'Cotizaciones', icon: Icons.description_rounded), // 2
+    SidebarItem(label: 'Inventario', icon: Icons.inventory_2_rounded),   // 3
+    SidebarItem(label: 'Clientes', icon: Icons.people_alt_rounded),      // 4
   ];
 
   static const _analysisItems = [
-    SidebarItem(label: 'Reportes', icon: Icons.bar_chart_rounded),
-    SidebarItem(label: 'Historial', icon: Icons.history_rounded),
+    SidebarItem(label: 'Reportes', icon: Icons.bar_chart_rounded),  // 5
+    SidebarItem(label: 'Historial', icon: Icons.history_rounded),   // 6
   ];
 
   @override
@@ -57,7 +58,7 @@ class Sidebar extends StatelessWidget {
           _buildGroup(
             'Análisis',
             _analysisItems,
-            startIndex: 4,
+            startIndex: 5,
             isCollapsed: isCollapsed,
           ),
           const Spacer(),
@@ -66,7 +67,7 @@ class Sidebar extends StatelessWidget {
             const [
               SidebarItem(label: 'Configuración', icon: Icons.settings_rounded),
             ],
-            startIndex: 6,
+            startIndex: 7,
             isCollapsed: isCollapsed,
           ),
           const SizedBox(height: 16),
@@ -213,12 +214,10 @@ class Sidebar extends StatelessWidget {
             width: 60,
             height: 50,
             decoration: BoxDecoration(
-              color: isActive
-                  ? Colors.white.withOpacity(0.12)
-                  : Colors.transparent,
+              color: isActive ? Colors.white.withOpacity(0.10) : Colors.transparent,
               border: isActive
                   ? const Border(
-                      left: BorderSide(color: AppTheme.accentMagenta, width: 3),
+                      left: BorderSide(color: Colors.white, width: 3),
                     )
                   : null,
             ),
@@ -226,7 +225,9 @@ class Sidebar extends StatelessWidget {
               child: Icon(
                 item.icon,
                 size: 20,
-                color: isActive ? Colors.white : Colors.white.withOpacity(0.55),
+                color: isActive
+                    ? Colors.white
+                    : Colors.white.withOpacity(0.55),
               ),
             ),
           ),
@@ -239,19 +240,22 @@ class Sidebar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white.withOpacity(0.12) : Colors.transparent,
+          color: isActive ? Colors.white.withOpacity(0.10) : Colors.transparent,
           border: isActive
               ? const Border(
-                  left: BorderSide(color: AppTheme.accentMagenta, width: 3),
+                  left: BorderSide(color: Colors.white, width: 3),
                 )
               : null,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               item.icon,
               size: 17,
-              color: isActive ? Colors.white : Colors.white.withOpacity(0.55),
+              color: isActive
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.55),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -268,14 +272,20 @@ class Sidebar extends StatelessWidget {
             ),
             if (item.badgeCount != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.accentMagenta,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '${item.badgeCount}',
-                  style: const TextStyle(fontSize: 9, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: Colors.white,
+                  ),
                 ),
               ),
           ],

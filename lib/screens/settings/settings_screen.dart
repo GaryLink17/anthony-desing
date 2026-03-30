@@ -12,6 +12,7 @@ import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../core/backup_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/tax_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -28,10 +29,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final _formKey = GlobalKey<FormState>();
   String? _logoPath;
-  String _footerType = 'message'; // 'message', 'terms', 'invoice_number'
   bool _saved = false;
   bool _backupLoading = false;
   bool _restoreLoading = false;
+
+  TaxConfig _taxConfig = const TaxConfig(
+    applyItbis: false,
+    itbisRate: TaxService.defaultItbisRate,
+    applyIsr: false,
+    isrRate: TaxService.defaultIsrRate,
+  );
 
   @override
   void initState() {
@@ -41,16 +48,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    final taxConfig = await TaxService.getConfig();
     setState(() {
       _nameCtrl.text = prefs.getString('company_name') ?? '';
       _phoneCtrl.text = prefs.getString('company_phone') ?? '';
       _logoPath = prefs.getString('company_logo');
-      _footerType = prefs.getString('footer_type') ?? 'message';
       _footerMsgCtrl.text =
           prefs.getString('footer_message') ?? '¡Gracias por su compra!';
       _footerTermsCtrl.text =
           prefs.getString('footer_terms') ??
           'Mercancía no se acepta devolución después de 24 horas.';
+      _taxConfig = taxConfig;
     });
   }
 
@@ -59,12 +67,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('company_name', _nameCtrl.text.trim());
     await prefs.setString('company_phone', _phoneCtrl.text.trim());
-    await prefs.setString('footer_type', _footerType);
     await prefs.setString('footer_message', _footerMsgCtrl.text.trim());
     await prefs.setString('footer_terms', _footerTermsCtrl.text.trim());
     if (_logoPath != null) {
       await prefs.setString('company_logo', _logoPath!);
     }
+
+    await TaxService.saveConfig(_taxConfig);
 
     if (mounted) {
       await context.read<AppProvider>().loadCompanyData();
@@ -100,6 +109,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildCompanySection(),
             const SizedBox(height: 20),
             _buildAppearanceSection(),
+            const SizedBox(height: 20),
+            _buildTaxSection(),
             const SizedBox(height: 20),
             _buildBackupSection(),
             const SizedBox(height: 20),
@@ -325,50 +336,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Selecciona qué aparece al final de cada factura impresa',
+            'Ambos textos aparecen al final de cada factura impresa',
             style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
           ),
           const SizedBox(height: 16),
-          // Opciones
-          _footerOption(
-            value: 'message',
-            label: 'Mensaje de agradecimiento',
-            icon: Icons.favorite_border_rounded,
-            child: _field(_footerMsgCtrl, 'Mensaje'),
-          ),
-          const SizedBox(height: 10),
-          _footerOption(
-            value: 'terms',
-            label: 'Términos y condiciones',
-            icon: Icons.gavel_rounded,
-            child: TextField(
-              controller: _footerTermsCtrl,
-              maxLines: 2,
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextColor(context)),
-              decoration: InputDecoration(
-                hintText: 'Escribe los términos...',
-                hintStyle: TextStyle(
-                  fontSize: 12,
-                  color: ThemeHelper.getHintColor(context),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.all(10),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _footerOption(
-            value: 'invoice_number',
-            label: 'Solo número de factura',
-            icon: Icons.tag_rounded,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, top: 4),
-              child: Text(
-                'Ejemplo: Factura #0047',
-                style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
-              ),
+          _field(_footerMsgCtrl, 'Mensaje de agradecimiento'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _footerTermsCtrl,
+            maxLines: 3,
+            style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+            decoration: InputDecoration(
+              labelText: 'Términos y condiciones',
+              labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.all(12),
             ),
           ),
         ],
@@ -376,79 +359,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _footerOption({
-    required String value,
-    required String label,
-    required IconData icon,
-    required Widget child,
-  }) {
-    final isSelected = _footerType == value;
-    return GestureDetector(
-      onTap: () => setState(() => _footerType = value),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected ? ThemeHelper.getSelectedColor(context) : ThemeHelper.getUnselectedColor(context),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? ThemeHelper.getInteractiveColor(context)
-                : ThemeHelper.getBorderColor(context),
-            width: isSelected ? 1.5 : 0.5,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 15,
-                  color: isSelected
-                      ? ThemeHelper.getInteractiveColor(context)
-                      : ThemeHelper.getTextLightColor(context),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected
-                        ? ThemeHelper.getInteractiveColor(context)
-                        : ThemeHelper.getTextMediumColor(context),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? ThemeHelper.getInteractiveColor(context)
-                          : ThemeHelper.getTextLightColor(context),
-                      width: 1.5,
-                    ),
-                    color: isSelected
-                        ? ThemeHelper.getInteractiveColor(context)
-                        : Colors.transparent,
-                  ),
-                  child: isSelected
-                      ? const Icon(
-                          Icons.check_rounded,
-                          size: 10,
-                          color: Colors.white,
-                        )
-                      : null,
-                ),
-              ],
+
+  Widget _buildTaxSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: ThemeHelper.getCardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Impuestos (RD)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: ThemeHelper.getTextColor(context),
             ),
-            if (isSelected) ...[const SizedBox(height: 10), child],
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Activa los impuestos que se aplicarán por defecto al crear una factura',
+            style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+          ),
+          const SizedBox(height: 16),
+          // ITBIS
+          Row(
+            children: [
+              Switch(
+                value: _taxConfig.applyItbis,
+                onChanged: (v) =>
+                    setState(() => _taxConfig = _taxConfig.copyWith(applyItbis: v)),
+                activeColor: Colors.blue.shade700,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ITBIS',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: ThemeHelper.getTextColor(context),
+                      ),
+                    ),
+                    Text(
+                      'Impuesto sobre Transferencias de Bienes y Servicios',
+                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 80,
+                child: TextFormField(
+                  initialValue: _taxConfig.itbisRate.toStringAsFixed(0),
+                  enabled: _taxConfig.applyItbis,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                  decoration: InputDecoration(
+                    suffixText: '%',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  ),
+                  onChanged: (v) {
+                    final rate = double.tryParse(v);
+                    if (rate != null && rate >= 0 && rate <= 100) {
+                      setState(() => _taxConfig = _taxConfig.copyWith(itbisRate: rate));
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // ISR
+          Row(
+            children: [
+              Switch(
+                value: _taxConfig.applyIsr,
+                onChanged: (v) =>
+                    setState(() => _taxConfig = _taxConfig.copyWith(applyIsr: v)),
+                activeColor: Colors.orange.shade700,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Retención ISR',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: ThemeHelper.getTextColor(context),
+                      ),
+                    ),
+                    Text(
+                      'Retención sobre servicios (se descuenta del total)',
+                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 80,
+                child: TextFormField(
+                  initialValue: _taxConfig.isrRate.toStringAsFixed(0),
+                  enabled: _taxConfig.applyIsr,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                  decoration: InputDecoration(
+                    suffixText: '%',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  ),
+                  onChanged: (v) {
+                    final rate = double.tryParse(v);
+                    if (rate != null && rate >= 0 && rate <= 100) {
+                      setState(() => _taxConfig = _taxConfig.copyWith(isrRate: rate));
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -10,11 +10,14 @@ import '../../core/product_repository.dart';
 import '../../core/pdf_service.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
+import '../../services/tax_service.dart';
 import '../../models/quote.dart';
 import '../../models/quote_item.dart';
 import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../models/product.dart';
+import '../../models/customer.dart';
+import '../../core/customer_repository.dart';
 import '../../utils/responsive_helper.dart';
 
 class QuotesScreen extends StatefulWidget {
@@ -483,6 +486,8 @@ class _QuotesScreenState extends State<QuotesScreen> {
       customerName: quote.customerName,
       subtotal: quote.subtotal,
       discountGlobal: quote.discountGlobal,
+      itbis: quote.itbis,
+      isr: quote.isr,
       total: quote.total,
       createdAt: DateTime.now().toIso8601String(),
     );
@@ -663,7 +668,7 @@ class _NewQuoteDialog extends StatefulWidget {
 }
 
 class _NewQuoteDialogState extends State<_NewQuoteDialog> {
-  final _customerCtrl = TextEditingController();
+  String _customerName = '';
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -671,7 +676,15 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
 
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
+  List<Customer> _customers = [];
   bool _showProductList = true;
+
+  TaxConfig _taxConfig = const TaxConfig(
+    applyItbis: false,
+    itbisRate: TaxService.defaultItbisRate,
+    applyIsr: false,
+    isrRate: TaxService.defaultIsrRate,
+  );
 
   final _currency = NumberFormat.currency(
     locale: 'es_DO',
@@ -684,8 +697,11 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     super.initState();
     _filteredProducts = widget.products;
 
+    _loadTaxConfig();
+    _loadCustomers();
+
     if (widget.existingQuote != null) {
-      _customerCtrl.text = widget.existingQuote!.customerName ?? '';
+      _customerName = widget.existingQuote!.customerName ?? '';
       _discountCtrl.text = widget.existingQuote!.discountGlobal > 0
           ? widget.existingQuote!.discountGlobal.toStringAsFixed(0)
           : '';
@@ -714,6 +730,16 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }
   }
 
+  Future<void> _loadTaxConfig() async {
+    final config = await TaxService.getConfig();
+    if (mounted) setState(() => _taxConfig = config);
+  }
+
+  Future<void> _loadCustomers() async {
+    final customers = await CustomerRepository().getAll();
+    if (mounted) setState(() => _customers = customers);
+  }
+
   double get _subtotal => _items.fold(0, (sum, item) {
     final price = (item['unitPrice'] as double);
     final qty = (item['quantity'] as int);
@@ -727,7 +753,14 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     return _subtotal * (pct / 100);
   }
 
-  double get _total => _subtotal - _globalDiscount;
+  double get _taxableBase => _subtotal - _globalDiscount;
+
+  TaxResult get _taxResult => TaxService.calculate(_taxableBase, _taxConfig);
+
+  double get _itbis => _taxResult.itbis;
+  double get _isr => _taxResult.isr;
+
+  double get _total => _taxResult.total;
 
   void _filterProducts(String query) {
     setState(() {
@@ -776,11 +809,13 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final quote = Quote(
-      customerName: _customerCtrl.text.trim().isEmpty
+      customerName: _customerName.trim().isEmpty
           ? null
-          : _customerCtrl.text.trim(),
+          : _customerName.trim(),
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
+      itbis: _itbis,
+      isr: _isr,
       total: _total,
       createdAt: DateTime.now().toIso8601String(),
       expiresAt: _expiresAt.toIso8601String(),
@@ -872,20 +907,78 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _customerCtrl,
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-              decoration: InputDecoration(
-                labelText: 'Nombre del cliente (opcional)',
-                labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
+            Autocomplete<Customer>(
+              initialValue: TextEditingValue(text: _customerName),
+              optionsBuilder: (value) {
+                if (value.text.isEmpty || _customers.isEmpty) return const [];
+                return _customers.where(
+                  (c) => c.name.toLowerCase().contains(
+                    value.text.toLowerCase(),
+                  ),
+                );
+              },
+              displayStringForOption: (c) => c.name,
+              onSelected: (c) => setState(() => _customerName = c.name),
+              fieldViewBuilder: (ctx, ctrl, focus, onSubmit) {
+                return TextField(
+                  controller: ctrl,
+                  focusNode: focus,
+                  onChanged: (v) => _customerName = v,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: ThemeHelper.getTextColor(context),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre del cliente (opcional)',
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      color: ThemeHelper.getTextMediumColor(context),
+                    ),
+                    suffixIcon: _customers.isNotEmpty
+                        ? Icon(
+                            Icons.arrow_drop_down,
+                            size: 18,
+                            color: ThemeHelper.getHintColor(context),
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                );
+              },
+              optionsViewBuilder: (ctx, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(8),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 160),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (_, i) {
+                          final c = options.elementAt(i);
+                          return ListTile(
+                            dense: true,
+                            title: Text(c.name, style: const TextStyle(fontSize: 13)),
+                            subtitle: c.phone != null
+                                ? Text(c.phone!, style: const TextStyle(fontSize: 11))
+                                : null,
+                            onTap: () => onSelected(c),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
             Row(
@@ -1112,6 +1205,24 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
             _buildSummaryRow('Subtotal', _subtotal),
             if (_globalDiscount > 0)
               _buildSummaryRow('Descuento', -_globalDiscount, isDiscount: true),
+            _buildTaxToggleRow(
+              label: 'ITBIS ${_taxConfig.itbisRate.toStringAsFixed(0)}%',
+              value: _taxConfig.applyItbis,
+              amount: _itbis,
+              onChanged: (v) =>
+                  setState(() => _taxConfig = _taxConfig.copyWith(applyItbis: v)),
+              color: Colors.blue.shade700,
+            ),
+            _buildTaxToggleRow(
+              label: 'ISR ${_taxConfig.isrRate.toStringAsFixed(0)}% (ret.)',
+              value: _taxConfig.applyIsr,
+              amount: -_isr,
+              onChanged: (v) =>
+                  setState(() => _taxConfig = _taxConfig.copyWith(applyIsr: v)),
+              color: Colors.orange.shade700,
+              isDeduction: true,
+            ),
+            const Divider(height: 8),
             _buildSummaryRow('Total', _total, isTotal: true),
             const SizedBox(height: 16),
             SizedBox(
@@ -1168,6 +1279,43 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                   : ThemeHelper.getTextMediumColor(context),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaxToggleRow({
+    required String label,
+    required bool value,
+    required double amount,
+    required ValueChanged<bool> onChanged,
+    required Color color,
+    bool isDeduction = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 22,
+            height: 22,
+            child: Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              activeColor: color,
+              side: BorderSide(color: color, width: 1.5),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(label, style: TextStyle(fontSize: 11, color: color)),
+          ),
+          if (value)
+            Text(
+              '${isDeduction ? '-' : '+'} ${_currency.format(amount.abs())}',
+              style: TextStyle(fontSize: 11, color: color),
+            ),
         ],
       ),
     );

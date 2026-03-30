@@ -4,6 +4,8 @@ import '../../theme/app_theme.dart';
 import '../../theme/theme_helper.dart';
 import '../../core/invoice_repository.dart';
 import '../../core/product_repository.dart';
+import '../../core/customer_repository.dart';
+import '../../models/customer.dart';
 import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../models/product.dart';
@@ -11,6 +13,8 @@ import '../../core/pdf_service.dart';
 import '../../widgets/state_builder.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
+import '../../services/tax_service.dart';
+import '../../services/excel_service.dart';
 import '../../utils/responsive_helper.dart';
 import 'invoice_preview_screen.dart';
 
@@ -60,6 +64,22 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       );
     } on AppException catch (e) {
       NotificationService().error(e.message);
+    }
+  }
+
+  Future<void> _exportExcel() async {
+    try {
+      final invoicesWithItems = <MapEntry<Invoice, List<InvoiceItem>>>[];
+      for (final inv in _invoices) {
+        final items = await _invoiceRepo.getItems(inv.id!);
+        invoicesWithItems.add(MapEntry(inv, items));
+      }
+      final saved = await ExcelService.exportInvoices(invoicesWithItems);
+      if (saved && mounted) {
+        NotificationService().success('Archivo Excel exportado correctamente');
+      }
+    } on AppException catch (e) {
+      if (mounted) NotificationService().error(e.message);
     }
   }
 
@@ -120,18 +140,36 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             ),
           ],
         ),
-        ElevatedButton.icon(
-          onPressed: _openNewInvoice,
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Nueva factura'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accentMagenta,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: _invoices.isEmpty ? null : _exportExcel,
+              icon: const Icon(Icons.table_chart_rounded, size: 16),
+              label: const Text('Excel'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF217346),
+                side: const BorderSide(color: Color(0xFF217346)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 10),
+            ElevatedButton.icon(
+              onPressed: _openNewInvoice,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Nueva factura'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentMagenta,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -589,12 +627,30 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             await _invoiceRepo.save(invoice, items);
             NotificationService().success('Factura creada correctamente');
             _load();
+            _checkLowStock(items.map((i) => i.productId).toList());
           } on AppException catch (e) {
             NotificationService().error(e.message);
           }
         },
       ),
     );
+  }
+
+  Future<void> _checkLowStock(List<int> productIds) async {
+    try {
+      final lowStock =
+          await ProductRepository().getLowStockForProducts(productIds);
+      if (lowStock.isEmpty) return;
+
+      final names = lowStock.map((p) => p.name).take(3).join(', ');
+      final extra = lowStock.length > 3 ? ' y ${lowStock.length - 3} más' : '';
+      NotificationService().warning(
+        'Stock bajo: $names$extra',
+        duration: const Duration(seconds: 6),
+      );
+    } catch (_) {
+      // No interrumpir el flujo principal si falla la verificación
+    }
   }
 
   void _openEditInvoice(Invoice inv) async {
@@ -649,7 +705,7 @@ class _NewInvoiceDialog extends StatefulWidget {
 }
 
 class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
-  final _customerCtrl = TextEditingController();
+  String _customerName = '';
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -657,7 +713,15 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   // Cada item: {product, quantity, unitPrice, discount}
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
+  List<Customer> _customers = [];
   bool _showProductList = true;
+
+  TaxConfig _taxConfig = const TaxConfig(
+    applyItbis: false,
+    itbisRate: TaxService.defaultItbisRate,
+    applyIsr: false,
+    isrRate: TaxService.defaultIsrRate,
+  );
 
   final _currency = NumberFormat.currency(
     locale: 'es_DO',
@@ -669,10 +733,12 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   void initState() {
     super.initState();
     _filteredProducts = widget.products;
+    _loadTaxConfig();
+    _loadCustomers();
 
     // Si es edición cargamos los datos existentes
     if (widget.existingInvoice != null) {
-      _customerCtrl.text = widget.existingInvoice!.customerName ?? '';
+      _customerName = widget.existingInvoice!.customerName ?? '';
       _discountCtrl.text = widget.existingInvoice!.discountGlobal > 0
           ? widget.existingInvoice!.discountGlobal.toStringAsFixed(0)
           : '';
@@ -698,6 +764,16 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }
   }
 
+  Future<void> _loadTaxConfig() async {
+    final config = await TaxService.getConfig();
+    if (mounted) setState(() => _taxConfig = config);
+  }
+
+  Future<void> _loadCustomers() async {
+    final customers = await CustomerRepository().getAll();
+    if (mounted) setState(() => _customers = customers);
+  }
+
   // Cálculos de resumen
   double get _subtotal => _items.fold(0, (sum, item) {
     final price = (item['unitPrice'] as double);
@@ -713,8 +789,17 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     return _subtotal * (pct / 100);
   }
 
-  // Total a pagar después de descuentos
-  double get _total => _subtotal - _globalDiscount;
+  // Base imponible: subtotal menos descuento
+  double get _taxableBase => _subtotal - _globalDiscount;
+
+  TaxResult get _taxResult =>
+      TaxService.calculate(_taxableBase, _taxConfig);
+
+  double get _itbis => _taxResult.itbis;
+  double get _isr => _taxResult.isr;
+
+  // Total final (base + ITBIS - ISR)
+  double get _total => _taxResult.total;
 
   // Filtrar productos según búsqueda
   void _filterProducts(String query) {
@@ -771,11 +856,13 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }
 
     final invoice = Invoice(
-      customerName: _customerCtrl.text.trim().isEmpty
+      customerName: _customerName.trim().isEmpty
           ? null
-          : _customerCtrl.text.trim(),
+          : _customerName.trim(),
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
+      itbis: _itbis,
+      isr: _isr,
       total: _total,
       createdAt: DateTime.now().toIso8601String(),
     );
@@ -864,20 +951,84 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _customerCtrl,
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-              decoration: InputDecoration(
-                labelText: 'Nombre del cliente (opcional)',
-                labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
+            Autocomplete<Customer>(
+              initialValue: TextEditingValue(text: _customerName),
+              optionsBuilder: (value) {
+                if (value.text.isEmpty || _customers.isEmpty) return const [];
+                return _customers.where(
+                  (c) => c.name.toLowerCase().contains(
+                    value.text.toLowerCase(),
+                  ),
+                );
+              },
+              displayStringForOption: (c) => c.name,
+              onSelected: (c) => setState(() => _customerName = c.name),
+              fieldViewBuilder: (ctx, ctrl, focus, onSubmit) {
+                return TextField(
+                  controller: ctrl,
+                  focusNode: focus,
+                  onChanged: (v) => _customerName = v,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: ThemeHelper.getTextColor(context),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre del cliente (opcional)',
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      color: ThemeHelper.getTextMediumColor(context),
+                    ),
+                    suffixIcon: _customers.isNotEmpty
+                        ? Icon(
+                            Icons.arrow_drop_down,
+                            size: 18,
+                            color: ThemeHelper.getHintColor(context),
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                );
+              },
+              optionsViewBuilder: (ctx, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(8),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 160),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (_, i) {
+                          final c = options.elementAt(i);
+                          return ListTile(
+                            dense: true,
+                            title: Text(
+                              c.name,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            subtitle: c.phone != null
+                                ? Text(
+                                    c.phone!,
+                                    style: const TextStyle(fontSize: 11),
+                                  )
+                                : null,
+                            onTap: () => onSelected(c),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
             Row(
@@ -1076,6 +1227,26 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
             _buildSummaryRow('Subtotal', _subtotal),
             if (_globalDiscount > 0)
               _buildSummaryRow('Descuento', -_globalDiscount, isDiscount: true),
+            _buildTaxToggleRow(
+              label: 'ITBIS ${_taxConfig.itbisRate.toStringAsFixed(0)}%',
+              value: _taxConfig.applyItbis,
+              amount: _itbis,
+              onChanged: (v) => setState(
+                () => _taxConfig = _taxConfig.copyWith(applyItbis: v),
+              ),
+              color: Colors.blue.shade700,
+            ),
+            _buildTaxToggleRow(
+              label: 'ISR ${_taxConfig.isrRate.toStringAsFixed(0)}% (ret.)',
+              value: _taxConfig.applyIsr,
+              amount: -_isr,
+              onChanged: (v) => setState(
+                () => _taxConfig = _taxConfig.copyWith(applyIsr: v),
+              ),
+              color: Colors.orange.shade700,
+              isDeduction: true,
+            ),
+            const Divider(height: 8),
             _buildSummaryRow('Total', _total, isTotal: true),
             const SizedBox(height: 16),
             SizedBox(
@@ -1132,6 +1303,46 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                   : ThemeHelper.getTextMediumColor(context),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaxToggleRow({
+    required String label,
+    required bool value,
+    required double amount,
+    required ValueChanged<bool> onChanged,
+    required Color color,
+    bool isDeduction = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 22,
+            height: 22,
+            child: Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              activeColor: color,
+              side: BorderSide(color: color, width: 1.5),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 11, color: color),
+            ),
+          ),
+          if (value)
+            Text(
+              '${isDeduction ? '-' : '+'} ${_currency.format(amount.abs())}',
+              style: TextStyle(fontSize: 11, color: color),
+            ),
         ],
       ),
     );

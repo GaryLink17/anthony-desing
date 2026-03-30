@@ -29,11 +29,25 @@ class _HomeScreenState extends State<HomeScreen> {
     // Carga los datos al abrir la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        await context.read<AppProvider>().loadDashboard();
+        final provider = context.read<AppProvider>();
+        await provider.loadDashboard();
+        _notifyLowStock(provider);
       } on AppException catch (e) {
         NotificationService().error(e.message);
       }
     });
+  }
+
+  void _notifyLowStock(AppProvider provider) {
+    final lowStock = provider.lowStockProducts;
+    if (lowStock.isEmpty) return;
+
+    final names = lowStock.map((p) => p.name).take(3).join(', ');
+    final extra = lowStock.length > 3 ? ' y ${lowStock.length - 3} más' : '';
+    NotificationService().warning(
+      'Stock bajo: $names$extra',
+      duration: const Duration(seconds: 7),
+    );
   }
 
   @override

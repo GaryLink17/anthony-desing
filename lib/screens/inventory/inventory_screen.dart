@@ -8,6 +8,7 @@ import '../../widgets/state_builder.dart';
 import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
+import '../../services/excel_service.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -88,7 +89,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ],
         ),
-        ElevatedButton.icon(
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: _products.isEmpty ? null : _exportExcel,
+              icon: const Icon(Icons.table_chart_rounded, size: 16),
+              label: const Text('Excel'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF217346),
+                side: const BorderSide(color: Color(0xFF217346)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton.icon(
           onPressed: () => _showProductDialog(),
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Nuevo producto'),
@@ -100,9 +117,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
+            ),
+          ],
         ),
       ],
     );
+  }
+
+  Future<void> _exportExcel() async {
+    try {
+      final saved = await ExcelService.exportInventory(_products);
+      if (saved && mounted) {
+        NotificationService().success('Inventario exportado a Excel correctamente');
+      }
+    } on AppException catch (e) {
+      if (mounted) NotificationService().error(e.message);
+    }
   }
 
   Widget _buildToolbar() {
@@ -437,24 +467,43 @@ class _ProductDialogState extends State<_ProductDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SizedBox(
-          width: 460,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isEdit ? 'Editar producto' : 'Nuevo producto',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: ThemeHelper.getTextColor(context),
-                ),
+      child: SizedBox(
+        width: 460,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header azul
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryBlue,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               ),
-              const SizedBox(height: 20),
-              Form(
+              child: Row(
+                children: [
+                  Text(
+                    isEdit ? 'Editar producto' : 'Nuevo producto',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ),
+            // Contenido
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -537,34 +586,28 @@ class _ProductDialogState extends State<_ProductDialog> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _save,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(isEdit ? 'Guardar cambios' : 'Agregar'),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
-                    child: const Text('Cancelar'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentMagenta,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(isEdit ? 'Guardar cambios' : 'Agregar'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

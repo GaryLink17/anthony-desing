@@ -36,7 +36,7 @@ class ThemeHelper {
   static Color getBorderColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? AppTheme.darkBorderColor
-        : Colors.black.withOpacity(0.07);
+        : Colors.black.withOpacity(0.20);
   }
 
   static Color getHintColor(BuildContext context) {
@@ -222,15 +222,15 @@ class ThemeHelper {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: getBorderColor(context), width: 0.5),
+        borderSide: BorderSide(color: getBorderColor(context), width: 1),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: getBorderColor(context), width: 0.5),
+        borderSide: BorderSide(color: getBorderColor(context), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1),
+        borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
       ),
     );
   }

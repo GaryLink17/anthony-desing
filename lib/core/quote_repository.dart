@@ -80,6 +80,8 @@ class QuoteRepository {
           'customer_name': quote.customerName,
           'subtotal': quote.subtotal,
           'discount_global': quote.discountGlobal,
+          'itbis': quote.itbis,
+          'isr': quote.isr,
           'total': quote.total,
           'created_at': quote.createdAt,
           'expires_at': quote.expiresAt,

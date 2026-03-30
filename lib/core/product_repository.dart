@@ -109,6 +109,28 @@ class ProductRepository {
     }
   }
 
+  /// Verifica cuáles de los [productIds] dados quedaron con stock bajo
+  /// después de una venta. Útil para alertar inmediatamente post-factura.
+  Future<List<Product>> getLowStockForProducts(List<int> productIds) async {
+    if (productIds.isEmpty) return [];
+    try {
+      final db = await _db.database;
+      final placeholders = productIds.map((_) => '?').join(',');
+      final result = await db.rawQuery(
+        'SELECT * FROM products '
+        'WHERE id IN ($placeholders) AND stock <= min_stock '
+        'ORDER BY stock ASC',
+        productIds,
+      );
+      return result.map(Product.fromMap).toList();
+    } catch (e) {
+      throw AppException(
+        'No se pudo verificar el stock.',
+        technical: e.toString(),
+      );
+    }
+  }
+
   Future<Product?> getById(int id) async {
     try {
       final db = await _db.database;

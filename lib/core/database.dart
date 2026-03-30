@@ -30,7 +30,7 @@ class DatabaseHelper {
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 3,
+        version: 5,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
       ),
@@ -74,6 +74,35 @@ class DatabaseHelper {
         "ALTER TABLE invoices ADD COLUMN payment_status TEXT DEFAULT 'pending'",
       );
     }
+    if (oldVersion < 4) {
+      // ITBIS e ISR para facturas y cotizaciones
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN itbis REAL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN isr REAL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE quotes ADD COLUMN itbis REAL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE quotes ADD COLUMN isr REAL DEFAULT 0',
+      );
+    }
+    if (oldVersion < 5) {
+      // Tabla de clientes
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS customers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          phone TEXT,
+          email TEXT,
+          rnc TEXT,
+          address TEXT,
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -98,6 +127,8 @@ class DatabaseHelper {
         customer_name TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
+        itbis REAL DEFAULT 0,
+        isr REAL DEFAULT 0,
         total REAL NOT NULL,
         status TEXT DEFAULT 'active',
         payment_status TEXT DEFAULT 'pending',
@@ -128,6 +159,8 @@ class DatabaseHelper {
         customer_name TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
+        itbis REAL DEFAULT 0,
+        isr REAL DEFAULT 0,
         total REAL NOT NULL,
         created_at TEXT NOT NULL,
         expires_at TEXT,
@@ -148,6 +181,19 @@ class DatabaseHelper {
         subtotal REAL NOT NULL,
         FOREIGN KEY (quote_id) REFERENCES quotes(id),
         FOREIGN KEY (product_id) REFERENCES products(id)
+      )
+    ''');
+
+    // Tabla de clientes
+    await db.execute('''
+      CREATE TABLE customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT,
+        email TEXT,
+        rnc TEXT,
+        address TEXT,
+        created_at TEXT NOT NULL
       )
     ''');
   }

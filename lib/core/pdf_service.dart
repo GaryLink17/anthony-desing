@@ -21,7 +21,6 @@ class PdfService {
     final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
     final companyPhone = prefs.getString('company_phone') ?? '';
     final logoPath = prefs.getString('company_logo');
-    final footerType = prefs.getString('footer_type') ?? 'message';
     final footerMessage =
         prefs.getString('footer_message') ?? '¡Gracias por su compra!';
     final footerTerms = prefs.getString('footer_terms') ?? '';
@@ -64,7 +63,7 @@ class PdfService {
             _buildTotals(invoice, currency),
             pw.Spacer(),
             // Pie de página
-            _buildFooter(footerType, footerMessage, footerTerms, invoice),
+            _buildFooter(footerMessage, footerTerms),
           ],
         ),
       ),
@@ -228,7 +227,7 @@ class PdfService {
     return pw.Align(
       alignment: pw.Alignment.centerRight,
       child: pw.Container(
-        width: 220,
+        width: 240,
         child: pw.Column(
           children: [
             _totalRow('Subtotal', currency.format(invoice.subtotal)),
@@ -237,6 +236,18 @@ class PdfService {
                 'Descuento',
                 '- ${currency.format(invoice.discountGlobal)}',
                 color: PdfColors.red700,
+              ),
+            if (invoice.itbis > 0)
+              _totalRow(
+                'ITBIS (18%)',
+                '+ ${currency.format(invoice.itbis)}',
+                color: PdfColors.blue700,
+              ),
+            if (invoice.isr > 0)
+              _totalRow(
+                'Retención ISR (1%)',
+                '- ${currency.format(invoice.isr)}',
+                color: PdfColors.orange700,
               ),
             pw.Divider(color: PdfColors.grey400),
             _totalRow(
@@ -251,25 +262,7 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildFooter(
-    String footerType,
-    String message,
-    String terms,
-    Invoice invoice,
-  ) {
-    String footerText;
-
-    switch (footerType) {
-      case 'terms':
-        footerText = terms;
-        break;
-      case 'invoice_number':
-        footerText = 'Factura #${invoice.id.toString().padLeft(4, '0')}';
-        break;
-      default:
-        footerText = message;
-    }
-
+  static pw.Widget _buildFooter(String message, String terms) {
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.symmetric(vertical: 10),
@@ -278,10 +271,22 @@ class PdfService {
           top: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
         ),
       ),
-      child: pw.Text(
-        footerText,
-        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-        textAlign: pw.TextAlign.center,
+      child: pw.Column(
+        children: [
+          pw.Text(
+            message,
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            textAlign: pw.TextAlign.center,
+          ),
+          if (terms.isNotEmpty) ...[
+            pw.SizedBox(height: 4),
+            pw.Text(
+              terms,
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
+              textAlign: pw.TextAlign.center,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -339,7 +344,6 @@ class PdfService {
     final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
     final companyPhone = prefs.getString('company_phone') ?? '';
     final logoPath = prefs.getString('company_logo');
-    final footerType = prefs.getString('footer_type') ?? 'message';
     final footerMessage =
         prefs.getString('footer_message') ?? '¡Gracias por su compra!';
     final footerTerms = prefs.getString('footer_terms') ?? '';
@@ -377,7 +381,7 @@ class PdfService {
             pw.SizedBox(height: 16),
             _buildTotals(invoice, currency),
             pw.Spacer(),
-            _buildFooter(footerType, footerMessage, footerTerms, invoice),
+            _buildFooter(footerMessage, footerTerms),
           ],
         ),
       ),
@@ -589,7 +593,7 @@ class PdfService {
     return pw.Align(
       alignment: pw.Alignment.centerRight,
       child: pw.Container(
-        width: 220,
+        width: 240,
         child: pw.Column(
           children: [
             _totalRow('Subtotal', currency.format(quote.subtotal)),
@@ -598,6 +602,18 @@ class PdfService {
                 'Descuento',
                 '- ${currency.format(quote.discountGlobal)}',
                 color: PdfColors.red700,
+              ),
+            if (quote.itbis > 0)
+              _totalRow(
+                'ITBIS (18%)',
+                '+ ${currency.format(quote.itbis)}',
+                color: PdfColors.blue700,
+              ),
+            if (quote.isr > 0)
+              _totalRow(
+                'Retención ISR (1%)',
+                '- ${currency.format(quote.isr)}',
+                color: PdfColors.orange700,
               ),
             pw.Divider(color: PdfColors.grey400),
             _totalRow(

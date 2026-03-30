@@ -25,7 +25,7 @@ class AppTheme {
   static const Color textMedium = Color(0xFF444441);
   static const Color textLight = Color(0xFF888780);
   static const Color textLighter = Color(0xFFB4B2A9);
-  static const Color borderColor = Color(0x12000000);
+  static const Color borderColor = Color(0x33000000);
 
   // ---- COLORES ADICIONALES (LIGHT MODE) ----
   static const Color bgLight1 = Color(0xFFF0EEE8);
@@ -148,15 +148,15 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: borderColor, width: 0.5),
+          borderSide: const BorderSide(color: borderColor, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: borderColor, width: 0.5),
+          borderSide: const BorderSide(color: borderColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryBlue, width: 1),
+          borderSide: const BorderSide(color: primaryBlue, width: 1.5),
         ),
         hintStyle: const TextStyle(color: textLighter, fontSize: 13),
         labelStyle: const TextStyle(color: textMedium, fontSize: 13),
@@ -273,15 +273,15 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: darkBorderColor, width: 0.5),
+          borderSide: const BorderSide(color: darkBorderColor, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: darkBorderColor, width: 0.5),
+          borderSide: const BorderSide(color: darkBorderColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: accentMagenta, width: 1),
+          borderSide: const BorderSide(color: accentMagenta, width: 1.5),
         ),
         hintStyle: const TextStyle(color: darkTextMedium, fontSize: 13),
         labelStyle: const TextStyle(color: darkTextMedium, fontSize: 13),
