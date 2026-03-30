@@ -211,7 +211,7 @@ class PdfService {
               _cell(
                 item.discountItem > 0
                     ? '${item.discountItem.toStringAsFixed(0)}%'
-                    : '—',
+                    : '-',
                 cellStyle,
                 center: true,
               ),
@@ -233,7 +233,7 @@ class PdfService {
             _totalRow('Subtotal', currency.format(invoice.subtotal)),
             if (invoice.discountGlobal > 0)
               _totalRow(
-                'Descuento',
+                'Descuento (${(invoice.discountGlobal / invoice.subtotal * 100).toStringAsFixed(0)}%)',
                 '- ${currency.format(invoice.discountGlobal)}',
                 color: PdfColors.red700,
               ),
@@ -448,7 +448,7 @@ class PdfService {
     final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(quote.createdAt));
     final expiresDate = quote.expiresAt != null
         ? DateFormat('dd/MM/yyyy').format(DateTime.parse(quote.expiresAt!))
-        : '—';
+        : 'N/A';
 
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -577,7 +577,7 @@ class PdfService {
               _cell(
                 item.discountItem > 0
                     ? '${item.discountItem.toStringAsFixed(0)}%'
-                    : '—',
+                    : '-',
                 cellStyle,
                 center: true,
               ),
@@ -599,7 +599,7 @@ class PdfService {
             _totalRow('Subtotal', currency.format(quote.subtotal)),
             if (quote.discountGlobal > 0)
               _totalRow(
-                'Descuento',
+                'Descuento (${(quote.discountGlobal / quote.subtotal * 100).toStringAsFixed(0)}%)',
                 '- ${currency.format(quote.discountGlobal)}',
                 color: PdfColors.red700,
               ),
