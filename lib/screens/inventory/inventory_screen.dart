@@ -21,7 +21,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   final _repo = ProductRepository();
   final _searchController = TextEditingController();
   final _currency = NumberFormat.currency(
-    locale: 'es_DO',
+    locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );

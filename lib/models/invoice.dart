@@ -1,6 +1,7 @@
 class Invoice {
   final int? id;
   final String? customerName;
+  final String? customerRnc;
   final double subtotal;
   final double discountGlobal;
   final double itbis;
@@ -13,6 +14,7 @@ class Invoice {
   Invoice({
     this.id,
     this.customerName,
+    this.customerRnc,
     required this.subtotal,
     this.discountGlobal = 0,
     this.itbis = 0,
@@ -34,6 +36,7 @@ class Invoice {
   Invoice copyWith({
     int? id,
     String? customerName,
+    String? customerRnc,
     double? subtotal,
     double? discountGlobal,
     double? itbis,
@@ -46,6 +49,7 @@ class Invoice {
     return Invoice(
       id: id ?? this.id,
       customerName: customerName ?? this.customerName,
+      customerRnc: customerRnc ?? this.customerRnc,
       subtotal: subtotal ?? this.subtotal,
       discountGlobal: discountGlobal ?? this.discountGlobal,
       itbis: itbis ?? this.itbis,
@@ -61,6 +65,7 @@ class Invoice {
     return {
       'id': id,
       'customer_name': customerName,
+      'customer_rnc': customerRnc,
       'subtotal': subtotal,
       'discount_global': discountGlobal,
       'itbis': itbis,
@@ -76,6 +81,7 @@ class Invoice {
     return Invoice(
       id: map['id'],
       customerName: map['customer_name'],
+      customerRnc: map['customer_rnc'],
       subtotal: (map['subtotal'] as num).toDouble(),
       discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
       itbis: (map['itbis'] as num? ?? 0).toDouble(),

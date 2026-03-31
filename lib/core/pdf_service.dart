@@ -20,13 +20,16 @@ class PdfService {
     // Leer datos de configuración
     final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
     final companyPhone = prefs.getString('company_phone') ?? '';
+    final companyRnc = prefs.getString('company_rnc') ?? '';
+    final companyAddress = prefs.getString('company_address') ?? '';
+    final companyEmail = prefs.getString('company_email') ?? '';
     final logoPath = prefs.getString('company_logo');
     final footerMessage =
         prefs.getString('footer_message') ?? '¡Gracias por su compra!';
     final footerTerms = prefs.getString('footer_terms') ?? '';
 
     final currency = NumberFormat.currency(
-      locale: 'es_DO',
+      locale: 'en_US',
       symbol: 'RD\$ ',
       decimalDigits: 0,
     );
@@ -51,6 +54,9 @@ class PdfService {
             _buildHeader(
               companyName,
               companyPhone,
+              companyRnc,
+              companyAddress,
+              companyEmail,
               logoImage,
               invoice,
               currency,
@@ -75,6 +81,9 @@ class PdfService {
   static pw.Widget _buildHeader(
     String companyName,
     String companyPhone,
+    String companyRnc,
+    String companyAddress,
+    String companyEmail,
     pw.ImageProvider? logo,
     Invoice invoice,
     NumberFormat currency,
@@ -108,14 +117,32 @@ class PdfService {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
+                if (companyRnc.isNotEmpty) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    'RNC: $companyRnc',
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                  ),
+                ],
+                if (companyAddress.isNotEmpty) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    companyAddress,
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  ),
+                ],
+                if (companyEmail.isNotEmpty) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    companyEmail,
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  ),
+                ],
                 if (companyPhone.isNotEmpty) ...[
-                  pw.SizedBox(height: 4),
+                  pw.SizedBox(height: 3),
                   pw.Text(
                     'Tel: $companyPhone',
-                    style: const pw.TextStyle(
-                      fontSize: 11,
-                      color: PdfColors.grey600,
-                    ),
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                   ),
                 ],
               ],
@@ -148,10 +175,14 @@ class PdfService {
               pw.SizedBox(height: 8),
               pw.Text(
                 'Cliente: ${invoice.customerName}',
-                style: const pw.TextStyle(
-                  fontSize: 11,
-                  color: PdfColors.grey700,
-                ),
+                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+              ),
+            ],
+            if (invoice.customerRnc != null && invoice.customerRnc!.isNotEmpty) ...[
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'RNC: ${invoice.customerRnc}',
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
               ),
             ],
           ],
@@ -233,7 +264,7 @@ class PdfService {
             _totalRow('Subtotal', currency.format(invoice.subtotal)),
             if (invoice.discountGlobal > 0)
               _totalRow(
-                'Descuento (${(invoice.discountGlobal / invoice.subtotal * 100).toStringAsFixed(0)}%)',
+                'Descuento (${invoice.subtotal > 0 ? (invoice.discountGlobal / invoice.subtotal * 100).toStringAsFixed(0) : '0'}%)',
                 '- ${currency.format(invoice.discountGlobal)}',
                 color: PdfColors.red700,
               ),
@@ -343,13 +374,16 @@ class PdfService {
 
     final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
     final companyPhone = prefs.getString('company_phone') ?? '';
+    final companyRnc = prefs.getString('company_rnc') ?? '';
+    final companyAddress = prefs.getString('company_address') ?? '';
+    final companyEmail = prefs.getString('company_email') ?? '';
     final logoPath = prefs.getString('company_logo');
     final footerMessage =
         prefs.getString('footer_message') ?? '¡Gracias por su compra!';
     final footerTerms = prefs.getString('footer_terms') ?? '';
 
     final currency = NumberFormat.currency(
-      locale: 'es_DO',
+      locale: 'en_US',
       symbol: 'RD\$ ',
       decimalDigits: 0,
     );
@@ -372,6 +406,9 @@ class PdfService {
             _buildHeader(
               companyName,
               companyPhone,
+              companyRnc,
+              companyAddress,
+              companyEmail,
               logoImage,
               invoice,
               currency,
@@ -398,12 +435,15 @@ class PdfService {
 
     final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
     final companyPhone = prefs.getString('company_phone') ?? '';
+    final companyRnc = prefs.getString('company_rnc') ?? '';
+    final companyAddress = prefs.getString('company_address') ?? '';
+    final companyEmail = prefs.getString('company_email') ?? '';
     final logoPath = prefs.getString('company_logo');
     final footerMessage = prefs.getString('footer_message') ?? '¡Gracias por su preferencia!';
     final footerTerms = prefs.getString('footer_terms') ?? '';
 
     final currency = NumberFormat.currency(
-      locale: 'es_DO',
+      locale: 'en_US',
       symbol: 'RD\$ ',
       decimalDigits: 0,
     );
@@ -423,7 +463,7 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _buildQuoteHeader(companyName, companyPhone, logoImage, quote, currency),
+            _buildQuoteHeader(companyName, companyPhone, companyRnc, companyAddress, companyEmail, logoImage, quote, currency),
             pw.SizedBox(height: 24),
             _buildQuoteItemsTable(items, currency),
             pw.SizedBox(height: 16),
@@ -441,6 +481,9 @@ class PdfService {
   static pw.Widget _buildQuoteHeader(
     String companyName,
     String companyPhone,
+    String companyRnc,
+    String companyAddress,
+    String companyEmail,
     pw.ImageProvider? logo,
     Quote quote,
     NumberFormat currency,
@@ -474,14 +517,32 @@ class PdfService {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
+                if (companyRnc.isNotEmpty) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    'RNC: $companyRnc',
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                  ),
+                ],
+                if (companyAddress.isNotEmpty) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    companyAddress,
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  ),
+                ],
+                if (companyEmail.isNotEmpty) ...[
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    companyEmail,
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  ),
+                ],
                 if (companyPhone.isNotEmpty) ...[
-                  pw.SizedBox(height: 4),
+                  pw.SizedBox(height: 3),
                   pw.Text(
                     'Tel: $companyPhone',
-                    style: const pw.TextStyle(
-                      fontSize: 11,
-                      color: PdfColors.grey600,
-                    ),
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                   ),
                 ],
               ],
@@ -518,10 +579,14 @@ class PdfService {
               pw.SizedBox(height: 8),
               pw.Text(
                 'Cliente: ${quote.customerName}',
-                style: const pw.TextStyle(
-                  fontSize: 11,
-                  color: PdfColors.grey700,
-                ),
+                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+              ),
+            ],
+            if (quote.customerRnc != null && quote.customerRnc!.isNotEmpty) ...[
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'RNC: ${quote.customerRnc}',
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
               ),
             ],
           ],
@@ -599,7 +664,7 @@ class PdfService {
             _totalRow('Subtotal', currency.format(quote.subtotal)),
             if (quote.discountGlobal > 0)
               _totalRow(
-                'Descuento (${(quote.discountGlobal / quote.subtotal * 100).toStringAsFixed(0)}%)',
+                'Descuento (${quote.subtotal > 0 ? (quote.discountGlobal / quote.subtotal * 100).toStringAsFixed(0) : '0'}%)',
                 '- ${currency.format(quote.discountGlobal)}',
                 color: PdfColors.red700,
               ),

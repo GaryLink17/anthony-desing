@@ -1,4 +1,5 @@
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DatabaseHelper {
@@ -24,13 +25,13 @@ class DatabaseHelper {
   Future<Database> _initDB(String fileName) async {
     await initialize();
 
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, fileName);
+    final appDir = await getApplicationSupportDirectory();
+    final path = join(appDir.path, fileName);
 
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 5,
+        version: 6,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
       ),
@@ -103,6 +104,15 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 6) {
+      // RNC del cliente en facturas y cotizaciones
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN customer_rnc TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE quotes ADD COLUMN customer_rnc TEXT',
+      );
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -125,6 +135,7 @@ class DatabaseHelper {
       CREATE TABLE invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_name TEXT,
+        customer_rnc TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
         itbis REAL DEFAULT 0,
@@ -157,6 +168,7 @@ class DatabaseHelper {
       CREATE TABLE quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_name TEXT,
+        customer_rnc TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
         itbis REAL DEFAULT 0,

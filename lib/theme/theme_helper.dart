@@ -99,7 +99,7 @@ class ThemeHelper {
 
   static Color getAltRowColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2A2A2A)
+        ? const Color(0xFF172033)
         : AppTheme.altRowLight;
   }
 
@@ -111,25 +111,25 @@ class ThemeHelper {
 
   static Color getSelectedColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2D1828)
+        ? const Color(0xFF1E3A5A)
         : AppTheme.selectedLight;
   }
 
   static Color getUnselectedColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF333333)
+        ? const Color(0xFF1A2840)
         : AppTheme.bgLight2;
   }
 
   static Color getInputBgColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF333333)
+        ? AppTheme.darkCardColor
         : Colors.white;
   }
 
   static Color getHoverColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF3A3A3A)
+        ? const Color(0xFF253347)
         : AppTheme.bgLight1;
   }
 
@@ -186,7 +186,7 @@ class ThemeHelper {
 
   static Color getInfoLightBg(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF1E3E5A)
+        ? const Color(0xFF162540)
         : AppTheme.infoLight;
   }
 

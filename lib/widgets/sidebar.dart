@@ -40,22 +40,36 @@ class Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sidebarWidth = isCollapsed ? 60.0 : 210.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppTheme.darkSidebarColor : AppTheme.primaryBlue;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: sidebarWidth,
-      color: AppTheme.primaryBlue,
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: isDark
+            ? Border(
+                right: BorderSide(
+                  color: AppTheme.darkBorderColor.withOpacity(0.6),
+                  width: 1,
+                ),
+              )
+            : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isCollapsed) _buildHeader(context),
           _buildGroup(
+            context,
             'Principal',
             _mainItems,
             startIndex: 0,
             isCollapsed: isCollapsed,
           ),
           _buildGroup(
+            context,
             'Análisis',
             _analysisItems,
             startIndex: 5,
@@ -63,6 +77,7 @@ class Sidebar extends StatelessWidget {
           ),
           const Spacer(),
           _buildGroup(
+            context,
             'Sistema',
             const [
               SidebarItem(label: 'Configuración', icon: Icons.settings_rounded),
@@ -156,6 +171,7 @@ class Sidebar extends StatelessWidget {
   }
 
   Widget _buildGroup(
+    BuildContext context,
     String label,
     List<SidebarItem> items, {
     required int startIndex,
@@ -182,6 +198,7 @@ class Sidebar extends StatelessWidget {
           final item = entry.value;
           final isActive = selectedIndex == index;
           return _buildNavItem(
+            context,
             item,
             index,
             isActive,
@@ -194,15 +211,29 @@ class Sidebar extends StatelessWidget {
   }
 
   Widget _buildNavItem(
+    BuildContext context,
     SidebarItem item,
     int index,
     bool isActive, {
     bool isCollapsed = false,
     String? sectionName,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tooltipMessage = sectionName != null
         ? '$sectionName - ${item.label}'
         : item.label;
+
+    final activeBorderColor =
+        isDark ? AppTheme.accentMagenta : Colors.white;
+    final activeBgColor = isDark
+        ? AppTheme.accentMagenta.withOpacity(0.12)
+        : Colors.white.withOpacity(0.10);
+    final activeIconColor = Colors.white;
+    final inactiveIconColor =
+        isDark ? Colors.white.withOpacity(0.45) : Colors.white.withOpacity(0.55);
+    final activeTextColor = Colors.white;
+    final inactiveTextColor =
+        isDark ? Colors.white.withOpacity(0.55) : Colors.white.withOpacity(0.65);
 
     if (isCollapsed) {
       return Tooltip(
@@ -214,10 +245,10 @@ class Sidebar extends StatelessWidget {
             width: 60,
             height: 50,
             decoration: BoxDecoration(
-              color: isActive ? Colors.white.withOpacity(0.10) : Colors.transparent,
+              color: isActive ? activeBgColor : Colors.transparent,
               border: isActive
-                  ? const Border(
-                      left: BorderSide(color: Colors.white, width: 3),
+                  ? Border(
+                      left: BorderSide(color: activeBorderColor, width: 3),
                     )
                   : null,
             ),
@@ -225,9 +256,7 @@ class Sidebar extends StatelessWidget {
               child: Icon(
                 item.icon,
                 size: 20,
-                color: isActive
-                    ? Colors.white
-                    : Colors.white.withOpacity(0.55),
+                color: isActive ? activeIconColor : inactiveIconColor,
               ),
             ),
           ),
@@ -240,10 +269,10 @@ class Sidebar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white.withOpacity(0.10) : Colors.transparent,
+          color: isActive ? activeBgColor : Colors.transparent,
           border: isActive
-              ? const Border(
-                  left: BorderSide(color: Colors.white, width: 3),
+              ? Border(
+                  left: BorderSide(color: activeBorderColor, width: 3),
                 )
               : null,
         ),
@@ -253,9 +282,7 @@ class Sidebar extends StatelessWidget {
             Icon(
               item.icon,
               size: 17,
-              color: isActive
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.55),
+              color: isActive ? activeIconColor : inactiveIconColor,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -264,9 +291,7 @@ class Sidebar extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                  color: isActive
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.65),
+                  color: isActive ? activeTextColor : inactiveTextColor,
                 ),
               ),
             ),

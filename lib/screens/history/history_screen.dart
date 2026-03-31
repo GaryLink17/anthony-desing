@@ -21,7 +21,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final _repo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
   final _currency = NumberFormat.currency(
-    locale: 'es_DO',
+    locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:file_selector/file_selector.dart';
 import 'app_exception.dart';
 import 'database.dart';
@@ -12,8 +12,8 @@ class BackupService {
   /// Copia la BD a una carpeta elegida por el usuario.
   /// Retorna la ruta del archivo creado, o null si el usuario canceló.
   Future<String?> exportBackup() async {
-    final dbDir = await getDatabasesPath();
-    final sourcePath = p.join(dbDir, 'control_gastos.db');
+    final appDir = await getApplicationSupportDirectory();
+    final sourcePath = p.join(appDir.path, 'control_gastos.db');
     final sourceFile = File(sourcePath);
     if (!await sourceFile.exists()) {
       throw const AppException('No se encontró la base de datos para respaldar.');
@@ -57,12 +57,12 @@ class BackupService {
       throw const AppException('El archivo no parece ser una base de datos válida.');
     }
 
-    final dbDir = await getDatabasesPath();
-    final destPath = p.join(dbDir, 'control_gastos.db');
+    final appDir = await getApplicationSupportDirectory();
+    final destPath = p.join(appDir.path, 'control_gastos.db');
 
     // Copia de seguridad automática antes de sobreescribir
     final currentDb = File(destPath);
-    final safetyPath = p.join(dbDir, 'control_gastos_pre_restore.db');
+    final safetyPath = p.join(appDir.path, 'control_gastos_pre_restore.db');
     if (await currentDb.exists()) {
       await currentDb.copy(safetyPath);
     }

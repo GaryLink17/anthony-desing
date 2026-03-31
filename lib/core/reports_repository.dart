@@ -22,7 +22,8 @@ class ReportsRepository {
       final profitResult = await db.rawQuery(
         '''
         SELECT COALESCE(SUM(
-          (ii.unit_price * (1 - ii.discount_item / 100) - p.purchase_price) * ii.quantity
+          (ii.unit_price * (1 - ii.discount_item / 100.0) - p.purchase_price) * ii.quantity
+          * CASE WHEN i.subtotal > 0 THEN (i.subtotal - i.discount_global) / i.subtotal ELSE 1 END
         ), 0) as profit
         FROM invoice_items ii
         JOIN products p ON ii.product_id = p.id

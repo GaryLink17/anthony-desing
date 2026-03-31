@@ -35,7 +35,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
   bool _loading = true;
 
   final _currency = NumberFormat.currency(
-    locale: 'es_DO',
+    locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );
@@ -669,6 +669,7 @@ class _NewQuoteDialog extends StatefulWidget {
 
 class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   String _customerName = '';
+  String? _customerRnc;
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -687,7 +688,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   );
 
   final _currency = NumberFormat.currency(
-    locale: 'es_DO',
+    locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );
@@ -812,6 +813,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
       customerName: _customerName.trim().isEmpty
           ? null
           : _customerName.trim(),
+      customerRnc: _customerRnc,
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
       itbis: _itbis,
@@ -918,7 +920,10 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                 );
               },
               displayStringForOption: (c) => c.name,
-              onSelected: (c) => setState(() => _customerName = c.name),
+              onSelected: (c) => setState(() {
+                _customerName = c.name;
+                _customerRnc = c.rnc;
+              }),
               fieldViewBuilder: (ctx, ctrl, focus, onSubmit) {
                 return TextField(
                   controller: ctrl,

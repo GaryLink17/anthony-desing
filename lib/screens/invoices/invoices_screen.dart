@@ -32,7 +32,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   bool _loading = true;
 
   final _currency = NumberFormat.currency(
-    locale: 'es_DO',
+    locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );
@@ -706,6 +706,7 @@ class _NewInvoiceDialog extends StatefulWidget {
 
 class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   String _customerName = '';
+  String? _customerRnc;
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -724,7 +725,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   );
 
   final _currency = NumberFormat.currency(
-    locale: 'es_DO',
+    locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );
@@ -859,6 +860,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
       customerName: _customerName.trim().isEmpty
           ? null
           : _customerName.trim(),
+      customerRnc: _customerRnc,
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
       itbis: _itbis,
@@ -962,7 +964,10 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                 );
               },
               displayStringForOption: (c) => c.name,
-              onSelected: (c) => setState(() => _customerName = c.name),
+              onSelected: (c) => setState(() {
+                _customerName = c.name;
+                _customerRnc = c.rnc;
+              }),
               fieldViewBuilder: (ctx, ctrl, focus, onSubmit) {
                 return TextField(
                   controller: ctrl,

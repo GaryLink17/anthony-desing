@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   sqflite_common_ffi: ^2.3.3      # SQLite para Windows (desktop)
   path: ^1.9.0                     # Para rutas de archivos
+  path_provider: ^2.1.4            # Rutas del sistema (AppData) — necesario para MSIX
   provider: ^6.1.2                 # Manejo de estado
   intl: ^0.19.0                    # Formato de fechas y moneda
   shared_preferences: ^2.3.2       # Guardar config de empresa

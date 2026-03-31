@@ -165,11 +165,12 @@ class AppTheme {
   }
 
   // ---- COLORES OSCUROS ----
-  static const Color darkBgColor = Color(0xFF1A1A1A);
-  static const Color darkCardColor = Color(0xFF2A2A2A);
-  static const Color darkTextLight = Color(0xFFE0E0E0);
-  static const Color darkTextMedium = Color(0xFFC0C0C0);
-  static const Color darkBorderColor = Color(0xFF404040);
+  static const Color darkBgColor = Color(0xFF0F172A);
+  static const Color darkCardColor = Color(0xFF1E293B);
+  static const Color darkSidebarColor = Color(0xFF0A1628);
+  static const Color darkBorderColor = Color(0xFF334155);
+  static const Color darkTextLight = Color(0xFFF1F5F9);
+  static const Color darkTextMedium = Color(0xFF94A3B8);
 
   /// Genera el tema oscuro de la aplicación
   static ThemeData dark() {
@@ -266,7 +267,7 @@ class AppTheme {
       // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Color(0xFF333333),
+        fillColor: darkCardColor,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
