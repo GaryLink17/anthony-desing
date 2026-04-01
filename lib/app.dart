@@ -4,7 +4,6 @@ import 'screens/home/home_screen.dart';
 import 'screens/invoices/invoices_screen.dart';
 import 'screens/quotes/quotes_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
-import 'screens/customers/customers_screen.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/history/history_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -47,7 +46,7 @@ class _MainLayoutWrapperState extends State<MainLayoutWrapper> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Inicializar el NotificationService con la referencia a ScaffoldMessenger
-    NotificationService().setScaffoldMessenger(ScaffoldMessenger.of(context));
+    NotificationService().setOverlayState(Overlay.of(context));
   }
 
   @override
@@ -71,10 +70,9 @@ class _MainLayoutState extends State<MainLayout> {
     InvoicesScreen(),     // 1
     QuotesScreen(),       // 2
     InventoryScreen(),    // 3
-    CustomersScreen(),    // 4
-    ReportsScreen(),      // 5
-    HistoryScreen(),      // 6
-    SettingsScreen(),     // 7
+    ReportsScreen(),      // 4
+    HistoryScreen(),      // 5
+    SettingsScreen(),     // 6
   ];
 
   @override

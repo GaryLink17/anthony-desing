@@ -4,8 +4,6 @@ import '../../theme/app_theme.dart';
 import '../../theme/theme_helper.dart';
 import '../../core/invoice_repository.dart';
 import '../../core/product_repository.dart';
-import '../../core/customer_repository.dart';
-import '../../models/customer.dart';
 import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../models/product.dart';
@@ -714,7 +712,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   // Cada item: {product, quantity, unitPrice, discount}
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
-  List<Customer> _customers = [];
   bool _showProductList = true;
 
   TaxConfig _taxConfig = const TaxConfig(
@@ -735,7 +732,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     super.initState();
     _filteredProducts = widget.products;
     _loadTaxConfig();
-    _loadCustomers();
 
     // Si es edición cargamos los datos existentes
     if (widget.existingInvoice != null) {
@@ -768,11 +764,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   Future<void> _loadTaxConfig() async {
     final config = await TaxService.getConfig();
     if (mounted) setState(() => _taxConfig = config);
-  }
-
-  Future<void> _loadCustomers() async {
-    final customers = await CustomerRepository().getAll();
-    if (mounted) setState(() => _customers = customers);
   }
 
   // Cálculos de resumen
@@ -953,87 +944,27 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Autocomplete<Customer>(
-              initialValue: TextEditingValue(text: _customerName),
-              optionsBuilder: (value) {
-                if (value.text.isEmpty || _customers.isEmpty) return const [];
-                return _customers.where(
-                  (c) => c.name.toLowerCase().contains(
-                    value.text.toLowerCase(),
-                  ),
-                );
-              },
-              displayStringForOption: (c) => c.name,
-              onSelected: (c) => setState(() {
-                _customerName = c.name;
-                _customerRnc = c.rnc;
-              }),
-              fieldViewBuilder: (ctx, ctrl, focus, onSubmit) {
-                return TextField(
-                  controller: ctrl,
-                  focusNode: focus,
-                  onChanged: (v) => _customerName = v,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: ThemeHelper.getTextColor(context),
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Nombre del cliente (opcional)',
-                    labelStyle: TextStyle(
-                      fontSize: 12,
-                      color: ThemeHelper.getTextMediumColor(context),
-                    ),
-                    suffixIcon: _customers.isNotEmpty
-                        ? Icon(
-                            Icons.arrow_drop_down,
-                            size: 18,
-                            color: ThemeHelper.getHintColor(context),
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                );
-              },
-              optionsViewBuilder: (ctx, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 160),
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (_, i) {
-                          final c = options.elementAt(i);
-                          return ListTile(
-                            dense: true,
-                            title: Text(
-                              c.name,
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                            subtitle: c.phone != null
-                                ? Text(
-                                    c.phone!,
-                                    style: const TextStyle(fontSize: 11),
-                                  )
-                                : null,
-                            onTap: () => onSelected(c),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
+            TextField(
+              controller: TextEditingController(text: _customerName),
+              onChanged: (v) => _customerName = v,
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextColor(context),
+              ),
+              decoration: InputDecoration(
+                labelText: 'Nombre del cliente (opcional)',
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  color: ThemeHelper.getTextMediumColor(context),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             Row(

@@ -29,7 +29,6 @@ class Sidebar extends StatelessWidget {
     SidebarItem(label: 'Facturas', icon: Icons.receipt_long_rounded),    // 1
     SidebarItem(label: 'Cotizaciones', icon: Icons.description_rounded), // 2
     SidebarItem(label: 'Inventario', icon: Icons.inventory_2_rounded),   // 3
-    SidebarItem(label: 'Clientes', icon: Icons.people_alt_rounded),      // 4
   ];
 
   static const _analysisItems = [
@@ -72,7 +71,7 @@ class Sidebar extends StatelessWidget {
             context,
             'Análisis',
             _analysisItems,
-            startIndex: 5,
+            startIndex: 4,
             isCollapsed: isCollapsed,
           ),
           const Spacer(),
@@ -82,7 +81,7 @@ class Sidebar extends StatelessWidget {
             const [
               SidebarItem(label: 'Configuración', icon: Icons.settings_rounded),
             ],
-            startIndex: 7,
+            startIndex: 6,
             isCollapsed: isCollapsed,
           ),
           const SizedBox(height: 16),

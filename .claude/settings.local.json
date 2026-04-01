@@ -3,7 +3,11 @@
     "allow": [
       "Bash(flutter analyze:*)",
       "Bash(grep -E \"\\\\.dart$\")",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(xargs wc:*)",
+      "Bash(find C:UsersGaryDocumentsanthony-desing -type f \\\\\\(-name *.dart -o -name *.java -o -name *.swift -o -name *.kt \\\\\\))",
+      "Bash(rm \"C:/Users/Gary/Documents/anthony-desing/lib/screens/customers/customers_screen.dart\" \"C:/Users/Gary/Documents/anthony-desing/lib/core/customer_repository.dart\" \"C:/Users/Gary/Documents/anthony-desing/lib/models/customer.dart\")",
+      "Bash(rmdir \"C:/Users/Gary/Documents/anthony-desing/lib/screens/customers\")"
     ]
   }
 }
