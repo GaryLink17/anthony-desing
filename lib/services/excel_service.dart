@@ -62,7 +62,7 @@ class ExcelService {
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) {
     final headers = [
-      '#', 'Cliente', 'Fecha', 'Subtotal', 'Descuento',
+      '#', 'Cliente', 'RNC', 'Fecha', 'Subtotal', 'Descuento',
       'ITBIS', 'ISR', 'Total', 'Estado Pago', 'Estado',
     ];
     _writeHeaders(sheet, headers);
@@ -77,22 +77,24 @@ class ExcelService {
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
           .value = TextCellValue(inv.customerName ?? 'Cliente general');
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
-          .value = TextCellValue(date);
+          .value = TextCellValue(inv.customerRnc ?? '');
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
-          .value = DoubleCellValue(inv.subtotal);
+          .value = TextCellValue(date);
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
-          .value = DoubleCellValue(inv.discountGlobal);
+          .value = DoubleCellValue(inv.subtotal);
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
-          .value = DoubleCellValue(inv.itbis);
+          .value = DoubleCellValue(inv.discountGlobal);
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
-          .value = DoubleCellValue(inv.isr);
+          .value = DoubleCellValue(inv.itbis);
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
-          .value = DoubleCellValue(inv.total);
+          .value = DoubleCellValue(inv.isr);
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row))
+          .value = DoubleCellValue(inv.total);
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row))
           .value = TextCellValue(
             inv.isCancelled ? 'ANULADA' : inv.isPaid ? 'PAGADA' : 'PENDIENTE',
           );
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 10, rowIndex: row))
           .value = TextCellValue(inv.isCancelled ? 'Anulada' : 'Activa');
 
       if (!inv.isCancelled) totalSum += inv.total;

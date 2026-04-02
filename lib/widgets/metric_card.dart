@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 import '../theme/theme_helper.dart';
 
 /// Widget reutilizable para mostrar métricas en el dashboard
@@ -26,46 +25,63 @@ class MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ThemeHelper.getCardColor(context),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: ThemeHelper.getCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 17, color: iconColor),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: deltaPositive
+                      ? ThemeHelper.getSuccessLightBg(context)
+                      : ThemeHelper.getWarningLightBg(context),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  delta,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: deltaPositive
+                        ? ThemeHelper.getSuccessTextColor(context)
+                        : ThemeHelper.getWarningTextColor(context),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             value,
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
               color: ThemeHelper.getTextColor(context),
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            delta,
             style: TextStyle(
-              fontSize: 10,
-              color: deltaPositive
-                  ? ThemeHelper.getSuccessTextColor(context)
-                  : ThemeHelper.getWarningTextColor(context),
+              fontSize: 12,
+              color: ThemeHelper.getTextLightColor(context),
             ),
           ),
         ],

@@ -10,36 +10,64 @@ import '../models/quote.dart';
 import '../models/quote_item.dart';
 import 'dart:typed_data';
 
+class _PdfCompanyConfig {
+  final String companyName;
+  final String companyPhone;
+  final String companyRnc;
+  final String companyAddress;
+  final String companyEmail;
+  final String? logoPath;
+  final String footerMessage;
+  final String footerTerms;
+
+  const _PdfCompanyConfig({
+    required this.companyName,
+    required this.companyPhone,
+    required this.companyRnc,
+    required this.companyAddress,
+    required this.companyEmail,
+    required this.logoPath,
+    required this.footerMessage,
+    required this.footerTerms,
+  });
+}
+
 class PdfService {
+  static NumberFormat _currencyFormatter() => NumberFormat.currency(
+    locale: 'en_US',
+    symbol: 'RD\$ ',
+    decimalDigits: 0,
+  );
+
+  static Future<_PdfCompanyConfig> _loadCompanyConfig({
+    String defaultFooter = '¡Gracias por su compra!',
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    return _PdfCompanyConfig(
+      companyName: prefs.getString('company_name') ?? 'Mi Negocio',
+      companyPhone: prefs.getString('company_phone') ?? '',
+      companyRnc: prefs.getString('company_rnc') ?? '',
+      companyAddress: prefs.getString('company_address') ?? '',
+      companyEmail: prefs.getString('company_email') ?? '',
+      logoPath: prefs.getString('company_logo'),
+      footerMessage: prefs.getString('footer_message') ?? defaultFooter,
+      footerTerms: prefs.getString('footer_terms') ?? '',
+    );
+  }
+
+  static Future<pw.ImageProvider?> _loadLogo(String? logoPath) async {
+    if (logoPath == null || !File(logoPath).existsSync()) return null;
+    final bytes = await File(logoPath).readAsBytes();
+    return pw.MemoryImage(bytes);
+  }
+
   static Future<void> generateAndPrint(
     Invoice invoice,
     List<InvoiceItem> items,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Leer datos de configuración
-    final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
-    final companyPhone = prefs.getString('company_phone') ?? '';
-    final companyRnc = prefs.getString('company_rnc') ?? '';
-    final companyAddress = prefs.getString('company_address') ?? '';
-    final companyEmail = prefs.getString('company_email') ?? '';
-    final logoPath = prefs.getString('company_logo');
-    final footerMessage =
-        prefs.getString('footer_message') ?? '¡Gracias por su compra!';
-    final footerTerms = prefs.getString('footer_terms') ?? '';
-
-    final currency = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: 'RD\$ ',
-      decimalDigits: 0,
-    );
-
-    // Cargar logo si existe
-    pw.ImageProvider? logoImage;
-    if (logoPath != null && File(logoPath).existsSync()) {
-      final bytes = await File(logoPath).readAsBytes();
-      logoImage = pw.MemoryImage(bytes);
-    }
+    final config = await _loadCompanyConfig();
+    final currency = _currencyFormatter();
+    final logoImage = await _loadLogo(config.logoPath);
 
     final pdf = pw.Document();
 
@@ -52,11 +80,11 @@ class PdfService {
           children: [
             // Cabecera
             _buildHeader(
-              companyName,
-              companyPhone,
-              companyRnc,
-              companyAddress,
-              companyEmail,
+              config.companyName,
+              config.companyPhone,
+              config.companyRnc,
+              config.companyAddress,
+              config.companyEmail,
               logoImage,
               invoice,
               currency,
@@ -69,7 +97,7 @@ class PdfService {
             _buildTotals(invoice, currency),
             pw.Spacer(),
             // Pie de página
-            _buildFooter(footerMessage, footerTerms),
+            _buildFooter(config.footerMessage, config.footerTerms),
           ],
         ),
       ),
@@ -370,29 +398,9 @@ class PdfService {
     Invoice invoice,
     List<InvoiceItem> items,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
-    final companyPhone = prefs.getString('company_phone') ?? '';
-    final companyRnc = prefs.getString('company_rnc') ?? '';
-    final companyAddress = prefs.getString('company_address') ?? '';
-    final companyEmail = prefs.getString('company_email') ?? '';
-    final logoPath = prefs.getString('company_logo');
-    final footerMessage =
-        prefs.getString('footer_message') ?? '¡Gracias por su compra!';
-    final footerTerms = prefs.getString('footer_terms') ?? '';
-
-    final currency = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: 'RD\$ ',
-      decimalDigits: 0,
-    );
-
-    pw.ImageProvider? logoImage;
-    if (logoPath != null && File(logoPath).existsSync()) {
-      final bytes = await File(logoPath).readAsBytes();
-      logoImage = pw.MemoryImage(bytes);
-    }
+    final config = await _loadCompanyConfig();
+    final currency = _currencyFormatter();
+    final logoImage = await _loadLogo(config.logoPath);
 
     final pdf = pw.Document();
 
@@ -404,11 +412,11 @@ class PdfService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _buildHeader(
-              companyName,
-              companyPhone,
-              companyRnc,
-              companyAddress,
-              companyEmail,
+              config.companyName,
+              config.companyPhone,
+              config.companyRnc,
+              config.companyAddress,
+              config.companyEmail,
               logoImage,
               invoice,
               currency,
@@ -418,7 +426,7 @@ class PdfService {
             pw.SizedBox(height: 16),
             _buildTotals(invoice, currency),
             pw.Spacer(),
-            _buildFooter(footerMessage, footerTerms),
+            _buildFooter(config.footerMessage, config.footerTerms),
           ],
         ),
       ),
@@ -431,28 +439,11 @@ class PdfService {
     Quote quote,
     List<QuoteItem> items,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final companyName = prefs.getString('company_name') ?? 'Mi Negocio';
-    final companyPhone = prefs.getString('company_phone') ?? '';
-    final companyRnc = prefs.getString('company_rnc') ?? '';
-    final companyAddress = prefs.getString('company_address') ?? '';
-    final companyEmail = prefs.getString('company_email') ?? '';
-    final logoPath = prefs.getString('company_logo');
-    final footerMessage = prefs.getString('footer_message') ?? '¡Gracias por su preferencia!';
-    final footerTerms = prefs.getString('footer_terms') ?? '';
-
-    final currency = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: 'RD\$ ',
-      decimalDigits: 0,
+    final config = await _loadCompanyConfig(
+      defaultFooter: '¡Gracias por su preferencia!',
     );
-
-    pw.ImageProvider? logoImage;
-    if (logoPath != null && File(logoPath).existsSync()) {
-      final bytes = await File(logoPath).readAsBytes();
-      logoImage = pw.MemoryImage(bytes);
-    }
+    final currency = _currencyFormatter();
+    final logoImage = await _loadLogo(config.logoPath);
 
     final pdf = pw.Document();
 
@@ -463,13 +454,22 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _buildQuoteHeader(companyName, companyPhone, companyRnc, companyAddress, companyEmail, logoImage, quote, currency),
+            _buildQuoteHeader(
+              config.companyName,
+              config.companyPhone,
+              config.companyRnc,
+              config.companyAddress,
+              config.companyEmail,
+              logoImage,
+              quote,
+              currency,
+            ),
             pw.SizedBox(height: 24),
             _buildQuoteItemsTable(items, currency),
             pw.SizedBox(height: 16),
             _buildQuoteTotals(quote, currency),
             pw.Spacer(),
-            _buildQuoteFooter(footerMessage, footerTerms, quote),
+            _buildQuoteFooter(config.footerMessage, config.footerTerms, quote),
           ],
         ),
       ),

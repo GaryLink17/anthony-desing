@@ -5,11 +5,13 @@ import 'app.dart';
 import 'providers/app_provider.dart';
 import 'providers/theme_provider.dart';
 import 'core/database.dart';
+import 'utils/state_persistence.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es', null);
   await DatabaseHelper.initialize();
+  await StatePersistence().initialize();
 
   final appProvider = AppProvider();
   await appProvider.loadCompanyData();

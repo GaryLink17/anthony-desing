@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/database.dart';
 import '../core/app_exception.dart';
 import '../models/product.dart';
+import '../utils/performance_helpers.dart';
 
 class AppProvider extends ChangeNotifier {
   final _db = DatabaseHelper.instance;
@@ -24,6 +25,7 @@ class AppProvider extends ChangeNotifier {
   List<Product> _lowStockProducts = [];
   List<Map<String, dynamic>> _recentInvoices = [];
   List<double> _weeklySales = List.filled(7, 0);
+  int? _lastDashboardLoadMs;
 
   double get monthlySales => _monthlySales;
   int get invoiceCount => _invoiceCount;
@@ -32,6 +34,7 @@ class AppProvider extends ChangeNotifier {
   List<Product> get lowStockProducts => _lowStockProducts;
   List<Map<String, dynamic>> get recentInvoices => _recentInvoices;
   List<double> get weeklySales => _weeklySales;
+  int? get lastDashboardLoadMs => _lastDashboardLoadMs;
 
   // Carga los datos de la empresa desde SharedPreferences
   Future<void> loadCompanyData() async {
@@ -44,6 +47,8 @@ class AppProvider extends ChangeNotifier {
 
   // Carga todos los datos del dashboard de una vez
   Future<void> loadDashboard() async {
+    final perf = PerformanceMonitor();
+    perf.startMeasure('loadDashboard');
     final db = await _db.database;
     try {
     final now = DateTime.now();
@@ -126,7 +131,9 @@ class AppProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+    _lastDashboardLoadMs = perf.endMeasure('loadDashboard');
     } catch (e) {
+      perf.endMeasure('loadDashboard');
       throw AppException(
         'No se pudo cargar el dashboard.',
         technical: e.toString(),

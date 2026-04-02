@@ -95,6 +95,7 @@ class InvoiceRepository {
       return await db.transaction((txn) async {
         final invoiceId = await txn.insert('invoices', {
           'customer_name': invoice.customerName,
+          'customer_rnc': invoice.customerRnc,
           'subtotal': invoice.subtotal,
           'discount_global': invoice.discountGlobal,
           'itbis': invoice.itbis,
@@ -222,11 +223,14 @@ class InvoiceRepository {
           'invoices',
           {
             'customer_name': invoice.customerName,
+            'customer_rnc': invoice.customerRnc,
             'subtotal': invoice.subtotal,
             'discount_global': invoice.discountGlobal,
             'itbis': invoice.itbis,
             'isr': invoice.isr,
             'total': invoice.total,
+            'status': invoice.status,
+            'payment_status': invoice.paymentStatus,
           },
           where: 'id = ?',
           whereArgs: [invoice.id],

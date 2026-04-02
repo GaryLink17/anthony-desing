@@ -25,78 +25,87 @@ class Sidebar extends StatelessWidget {
   });
 
   static const _mainItems = [
-    SidebarItem(label: 'Dashboard', icon: Icons.grid_view_rounded),      // 0
-    SidebarItem(label: 'Facturas', icon: Icons.receipt_long_rounded),    // 1
-    SidebarItem(label: 'Cotizaciones', icon: Icons.description_rounded), // 2
-    SidebarItem(label: 'Inventario', icon: Icons.inventory_2_rounded),   // 3
+    SidebarItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
+    SidebarItem(label: 'Facturas', icon: Icons.receipt_long_rounded),
+    SidebarItem(label: 'Cotizaciones', icon: Icons.description_rounded),
+    SidebarItem(label: 'Inventario', icon: Icons.inventory_2_rounded),
   ];
 
   static const _analysisItems = [
-    SidebarItem(label: 'Reportes', icon: Icons.bar_chart_rounded),  // 5
-    SidebarItem(label: 'Historial', icon: Icons.history_rounded),   // 6
+    SidebarItem(label: 'Reportes', icon: Icons.bar_chart_rounded),
+    SidebarItem(label: 'Historial', icon: Icons.history_rounded),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final sidebarWidth = isCollapsed ? 60.0 : 210.0;
+    final sidebarWidth = isCollapsed ? 60.0 : 216.0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppTheme.darkSidebarColor : AppTheme.primaryBlue;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: sidebarWidth,
       decoration: BoxDecoration(
-        color: bgColor,
-        border: isDark
-            ? Border(
-                right: BorderSide(
-                  color: AppTheme.darkBorderColor.withOpacity(0.6),
-                  width: 1,
-                ),
-              )
-            : null,
+        color: isDark ? AppTheme.darkSidebarColor : AppTheme.sidebarLight,
+        border: Border(
+          right: BorderSide(
+            color: isDark
+                ? AppTheme.darkBorderColor
+                : AppTheme.sidebarBorderLight,
+            width: 1,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isCollapsed) _buildHeader(context),
-          _buildGroup(
-            context,
-            'Principal',
-            _mainItems,
-            startIndex: 0,
-            isCollapsed: isCollapsed,
+          if (!isCollapsed) _buildHeader(context, isDark),
+          if (isCollapsed) const SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildGroup(
+                    context,
+                    isDark,
+                    'Principal',
+                    _mainItems,
+                    startIndex: 0,
+                  ),
+                  _buildGroup(
+                    context,
+                    isDark,
+                    'Análisis',
+                    _analysisItems,
+                    startIndex: 4,
+                  ),
+                ],
+              ),
+            ),
           ),
           _buildGroup(
             context,
-            'Análisis',
-            _analysisItems,
-            startIndex: 4,
-            isCollapsed: isCollapsed,
-          ),
-          const Spacer(),
-          _buildGroup(
-            context,
+            isDark,
             'Sistema',
             const [
-              SidebarItem(label: 'Configuración', icon: Icons.settings_rounded),
+              SidebarItem(
+                label: 'Configuración',
+                icon: Icons.settings_rounded,
+              ),
             ],
             startIndex: 6,
-            isCollapsed: isCollapsed,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, bool isDark) {
     final provider = context.watch<AppProvider>();
     final logoPath = provider.companyLogo;
     final name = provider.companyName;
     final phone = provider.companyPhone;
 
-    // Iniciales del negocio para mostrar si no hay logo
     final initials = name
         .trim()
         .split(' ')
@@ -104,91 +113,100 @@ class Sidebar extends StatelessWidget {
         .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
         .join();
 
-    return AnimatedOpacity(
-      opacity: 1.0,
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: isDark
+                ? AppTheme.darkBorderColor
+                : AppTheme.sidebarBorderLight,
           ),
         ),
-        child: Row(
-          children: [
-            // Logo o iniciales
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: logoPath != null && File(logoPath).existsSync()
-                  ? Image.file(File(logoPath), fit: BoxFit.cover)
-                  : Center(
-                      child: Text(
-                        initials.isEmpty ? 'NB' : initials,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.primaryBlue,
-                        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppTheme.accentMagenta.withValues(alpha: 0.15)
+                  : AppTheme.lightBlue,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: logoPath != null && File(logoPath).existsSync()
+                ? Image.file(File(logoPath), fit: BoxFit.cover)
+                : Center(
+                    child: Text(
+                      initials.isEmpty ? 'NB' : initials,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppTheme.accentMagenta
+                            : AppTheme.primaryBlue,
                       ),
                     ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  if (phone.isNotEmpty)
-                    Text(
-                      phone,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppTheme.lightBlue,
-                      ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppTheme.darkTextLight
+                        : AppTheme.textDark,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (phone.isNotEmpty)
+                  Text(
+                    phone,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isDark
+                          ? AppTheme.darkTextMedium
+                          : AppTheme.textLight,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildGroup(
     BuildContext context,
+    bool isDark,
     String label,
     List<SidebarItem> items, {
     required int startIndex,
-    bool isCollapsed = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!isCollapsed)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
             child: Text(
               label.toUpperCase(),
               style: TextStyle(
                 fontSize: 9,
-                fontWeight: FontWeight.w500,
-                color: Colors.white.withOpacity(0.35),
-                letterSpacing: 0.8,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppTheme.darkTextMedium.withValues(alpha: 0.5)
+                    : AppTheme.textLighter,
+                letterSpacing: 1.0,
               ),
             ),
           ),
@@ -198,11 +216,10 @@ class Sidebar extends StatelessWidget {
           final isActive = selectedIndex == index;
           return _buildNavItem(
             context,
+            isDark,
             item,
             index,
             isActive,
-            isCollapsed: isCollapsed,
-            sectionName: isCollapsed ? label : null,
           );
         }),
       ],
@@ -211,50 +228,45 @@ class Sidebar extends StatelessWidget {
 
   Widget _buildNavItem(
     BuildContext context,
+    bool isDark,
     SidebarItem item,
     int index,
-    bool isActive, {
-    bool isCollapsed = false,
-    String? sectionName,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tooltipMessage = sectionName != null
-        ? '$sectionName - ${item.label}'
-        : item.label;
-
-    final activeBorderColor =
-        isDark ? AppTheme.accentMagenta : Colors.white;
-    final activeBgColor = isDark
-        ? AppTheme.accentMagenta.withOpacity(0.12)
-        : Colors.white.withOpacity(0.10);
-    final activeIconColor = Colors.white;
-    final inactiveIconColor =
-        isDark ? Colors.white.withOpacity(0.45) : Colors.white.withOpacity(0.55);
-    final activeTextColor = Colors.white;
-    final inactiveTextColor =
-        isDark ? Colors.white.withOpacity(0.55) : Colors.white.withOpacity(0.65);
+    bool isActive,
+  ) {
+    // Colores según tema
+    final activeIconColor =
+        isDark ? AppTheme.accentMagenta : AppTheme.primaryBlue;
+    final inactiveIconColor = isDark
+        ? AppTheme.darkTextMedium
+        : AppTheme.textLight;
+    final activeTextColor = isDark ? AppTheme.darkTextLight : AppTheme.textDark;
+    final inactiveTextColor = isDark
+        ? AppTheme.darkTextMedium
+        : AppTheme.textMedium;
+    final activeBg = isDark
+        ? AppTheme.accentMagenta.withValues(alpha: 0.10)
+        : AppTheme.primaryBlue.withValues(alpha: 0.07);
 
     if (isCollapsed) {
       return Tooltip(
-        message: tooltipMessage,
-        showDuration: const Duration(seconds: 2),
+        message: item.label,
+        preferBelow: false,
         child: InkWell(
           onTap: () => onItemSelected(index),
           child: Container(
             width: 60,
-            height: 50,
-            decoration: BoxDecoration(
-              color: isActive ? activeBgColor : Colors.transparent,
-              border: isActive
-                  ? Border(
-                      left: BorderSide(color: activeBorderColor, width: 3),
-                    )
-                  : null,
-            ),
-            child: Center(
+            height: 46,
+            alignment: Alignment.center,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isActive ? activeBg : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Icon(
                 item.icon,
-                size: 20,
+                size: 18,
                 color: isActive ? activeIconColor : inactiveIconColor,
               ),
             ),
@@ -266,17 +278,13 @@ class Sidebar extends StatelessWidget {
     return InkWell(
       onTap: () => onItemSelected(index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? activeBgColor : Colors.transparent,
-          border: isActive
-              ? Border(
-                  left: BorderSide(color: activeBorderColor, width: 3),
-                )
-              : null,
+          color: isActive ? activeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               item.icon,
@@ -288,7 +296,7 @@ class Sidebar extends StatelessWidget {
               child: Text(
                 item.label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
                   color: isActive ? activeTextColor : inactiveTextColor,
                 ),
@@ -301,14 +309,15 @@ class Sidebar extends StatelessWidget {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentMagenta,
+                  color: AppTheme.accentMagenta.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '${item.badgeCount}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accentMagenta,
                   ),
                 ),
               ),
