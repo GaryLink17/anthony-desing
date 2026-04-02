@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
 /// Clase centralizada para manejo de temas de la aplicación
-/// Facilita cambios de tema y reutilización de estilos
 class AppTheme {
   // ---- COLORES PRINCIPALES ----
   static const Color primaryBlue = Color(0xFF1B3A6B);
-  static const Color accentMagenta = Color(0xFFE8147A);
-  static const Color accentOrange = Color(0xFFF5A623);
-  static const Color bgColor = Color(0xFFF5F4F0);
+  static const Color accentMagenta = Color(0xFFB83268);
+  static const Color accentOrange = Color(0xFFD4881A);
+  static const Color bgColor = Color(0xFFF5F7FA);
 
   // ---- COLORES SECUNDARIOS (fondos claros) ----
   static const Color lightBlue = Color(0xFFE6EEF8);
-  static const Color lightMagenta = Color(0xFFFDE8F2);
-  static const Color lightOrange = Color(0xFFFEF3E2);
+  static const Color lightMagenta = Color(0xFFF5E0EA);
+  static const Color lightOrange = Color(0xFFF5E8D0);
 
   // ---- COLORES ESTADOS ----
   static const Color successColor = Color(0xFF0F6E56);
@@ -21,19 +20,23 @@ class AppTheme {
   static const Color infoColor = Color(0xFF1B3A6B);
 
   // ---- COLORES GRISES ----
-  static const Color textDark = Color(0xFF2C2C2A);
-  static const Color textMedium = Color(0xFF444441);
-  static const Color textLight = Color(0xFF888780);
-  static const Color textLighter = Color(0xFFB4B2A9);
-  static const Color borderColor = Color(0x33000000);
+  static const Color textDark = Color(0xFF111827);
+  static const Color textMedium = Color(0xFF374151);
+  static const Color textLight = Color(0xFF6B7280);
+  static const Color textLighter = Color(0xFF9CA3AF);
+  static const Color borderColor = Color(0xFFE5E7EB);
+
+  // ---- SIDEBAR CLARO ----
+  static const Color sidebarLight = Color(0xFFFFFFFF);
+  static const Color sidebarBorderLight = Color(0xFFE5E7EB);
 
   // ---- COLORES ADICIONALES (LIGHT MODE) ----
-  static const Color bgLight1 = Color(0xFFF0EEE8);
-  static const Color bgLight2 = Color(0xFFF8F7F4);
-  static const Color bgLight3 = Color(0xFFFAFAF8);
-  static const Color bgLight4 = Color(0xFFF1EFE8);
-  static const Color selectedLight = Color(0xFFE1F5EE);
-  static const Color altRowLight = Color(0xFFFAFAF8);
+  static const Color bgLight1 = Color(0xFFEEF2F7);
+  static const Color bgLight2 = Color(0xFFF9FAFB);
+  static const Color bgLight3 = Color(0xFFFAFAFB);
+  static const Color bgLight4 = Color(0xFFEEF2F7);
+  static const Color selectedLight = Color(0xFFEBF5FF);
+  static const Color altRowLight = Color(0xFFF9FAFB);
 
   // ---- COLORES ESTADOS (VARIANTES) ----
   static const Color successDark = Color(0xFF27500A);
@@ -59,13 +62,13 @@ class AppTheme {
         surface: Colors.white,
         error: errorColor,
       ),
-      // Tema de cards
+      // Tema de cards — sin borde, sombra sutil
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: borderColor, width: 0.5),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
       // Tema de botones elevados
@@ -73,21 +76,26 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: accentMagenta,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       ),
       // Tema de botones outline
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: textMedium,
-          side: const BorderSide(color: textLighter),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side: const BorderSide(color: borderColor),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       ),
       // Tema de date picker
       datePickerTheme: DatePickerThemeData(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         headerBackgroundColor: primaryBlue,
         headerForegroundColor: Colors.white,
         dayStyle: const TextStyle(fontSize: 13),
@@ -103,14 +111,16 @@ class AppTheme {
       // Tema de textos
       textTheme: const TextTheme(
         titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
           color: textDark,
+          letterSpacing: -0.3,
         ),
         titleMedium: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: textDark,
+          letterSpacing: -0.2,
         ),
         titleSmall: TextStyle(
           fontSize: 14,
@@ -141,36 +151,36 @@ class AppTheme {
       // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: const Color(0xFFF9FAFB),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+          horizontal: 14,
+          vertical: 11,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: borderColor, width: 1),
+          borderSide: const BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: borderColor, width: 1),
+          borderSide: const BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: primaryBlue, width: 1.5),
         ),
         hintStyle: const TextStyle(color: textLighter, fontSize: 13),
-        labelStyle: const TextStyle(color: textMedium, fontSize: 13),
+        labelStyle: const TextStyle(color: textLight, fontSize: 13),
       ),
     );
   }
 
-  // ---- COLORES OSCUROS ----
-  static const Color darkBgColor = Color(0xFF0F172A);
-  static const Color darkCardColor = Color(0xFF1E293B);
-  static const Color darkSidebarColor = Color(0xFF0A1628);
-  static const Color darkBorderColor = Color(0xFF334155);
-  static const Color darkTextLight = Color(0xFFF1F5F9);
-  static const Color darkTextMedium = Color(0xFF94A3B8);
+  // ---- COLORES OSCUROS (estilo VS Code) ----
+  static const Color darkBgColor = Color(0xFF1E1E1E);
+  static const Color darkCardColor = Color(0xFF252526);
+  static const Color darkSidebarColor = Color(0xFF252526);
+  static const Color darkBorderColor = Color(0xFF3E3E42);
+  static const Color darkTextLight = Color(0xFFD4D4D4);
+  static const Color darkTextMedium = Color(0xFF9D9D9D);
 
   /// Genera el tema oscuro de la aplicación
   static ThemeData dark() {
@@ -179,19 +189,19 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkBgColor,
       colorScheme: const ColorScheme.dark(
-        primary: primaryBlue,
+        primary: accentMagenta,
         secondary: accentMagenta,
         tertiary: accentOrange,
         surface: darkCardColor,
         error: errorColor,
       ),
-      // Tema de cards
+      // Tema de cards — sin borde, sombra sutil
       cardTheme: CardThemeData(
         color: darkCardColor,
         elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: darkBorderColor, width: 0.5),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
       // Tema de botones elevados
@@ -199,7 +209,10 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: accentMagenta,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       ),
       // Tema de botones outline
@@ -207,13 +220,15 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: darkTextMedium,
           side: const BorderSide(color: darkBorderColor),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       ),
       // Tema de date picker
       datePickerTheme: DatePickerThemeData(
         backgroundColor: darkCardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         headerBackgroundColor: primaryBlue,
         headerForegroundColor: Colors.white,
         dayStyle: const TextStyle(fontSize: 13, color: darkTextLight),
@@ -229,14 +244,16 @@ class AppTheme {
       // Tema de textos
       textTheme: const TextTheme(
         titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
           color: darkTextLight,
+          letterSpacing: -0.3,
         ),
         titleMedium: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: darkTextLight,
+          letterSpacing: -0.2,
         ),
         titleSmall: TextStyle(
           fontSize: 14,
@@ -267,18 +284,18 @@ class AppTheme {
       // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: darkCardColor,
+        fillColor: const Color(0xFF2D2D2D),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+          horizontal: 14,
+          vertical: 11,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: darkBorderColor, width: 1),
+          borderSide: const BorderSide(color: darkBorderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: darkBorderColor, width: 1),
+          borderSide: const BorderSide(color: darkBorderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -293,16 +310,10 @@ class AppTheme {
 
 /// Extensión para acceso fácil a los colores del tema desde BuildContext
 extension ThemeColors on BuildContext {
-  /// Obtiene el color primario
   Color get primaryBlue => AppTheme.primaryBlue;
-
-  /// Obtiene el color de acento magenta
   Color get accentMagenta => AppTheme.accentMagenta;
-
-  /// Obtiene el color de acento naranja
   Color get accentOrange => AppTheme.accentOrange;
 
-  /// Obtiene el color de fondo dinámico según el tema
   Color get bgColor {
     final brightness = Theme.of(this).brightness;
     return brightness == Brightness.dark
@@ -310,7 +321,6 @@ extension ThemeColors on BuildContext {
         : AppTheme.bgColor;
   }
 
-  /// Obtiene el color de tarjeta dinámico según el tema
   Color get cardColor {
     final brightness = Theme.of(this).brightness;
     return brightness == Brightness.dark
@@ -318,7 +328,6 @@ extension ThemeColors on BuildContext {
         : Colors.white;
   }
 
-  /// Obtiene el color de texto dinámico según el tema
   Color get textDark {
     final brightness = Theme.of(this).brightness;
     return brightness == Brightness.dark
@@ -326,7 +335,6 @@ extension ThemeColors on BuildContext {
         : AppTheme.textDark;
   }
 
-  /// Obtiene el color de texto medio dinámico según el tema
   Color get textMedium {
     final brightness = Theme.of(this).brightness;
     return brightness == Brightness.dark
@@ -334,7 +342,6 @@ extension ThemeColors on BuildContext {
         : AppTheme.textMedium;
   }
 
-  /// Obtiene el color de texto claro dinámico según el tema
   Color get textLight {
     final brightness = Theme.of(this).brightness;
     return brightness == Brightness.dark
@@ -342,7 +349,6 @@ extension ThemeColors on BuildContext {
         : AppTheme.textLight;
   }
 
-  /// Obtiene el color de borde dinámico según el tema
   Color get borderColor {
     final brightness = Theme.of(this).brightness;
     return brightness == Brightness.dark

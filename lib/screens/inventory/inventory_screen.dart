@@ -11,7 +11,10 @@ import '../../services/notification_service.dart';
 import '../../services/excel_service.dart';
 
 class InventoryScreen extends StatefulWidget {
-  const InventoryScreen({super.key});
+  /// Si se indica, tras cargar la lista se abre el diálogo de edición de ese producto.
+  final int? focusProductId;
+
+  const InventoryScreen({super.key, this.focusProductId});
 
   @override
   State<InventoryScreen> createState() => _InventoryScreenState();
@@ -41,11 +44,34 @@ class _InventoryScreenState extends State<InventoryScreen> {
       final result = query.isEmpty
           ? await _repo.getAll()
           : await _repo.search(query);
-      if (mounted) setState(() { _products = result; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _products = result;
+          _loading = false;
+        });
+        _tryOpenFocusProduct();
+      }
     } on AppException catch (e) {
       if (mounted) setState(() => _loading = false);
       NotificationService().error(e.message);
     }
+  }
+
+  void _tryOpenFocusProduct() {
+    final id = widget.focusProductId;
+    if (id == null) return;
+    Product? found;
+    for (final p in _products) {
+      if (p.id == id) {
+        found = p;
+        break;
+      }
+    }
+    if (found == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showProductDialog(product: found);
+    });
   }
 
   @override
@@ -465,6 +491,7 @@ class _ProductDialogState extends State<_ProductDialog> {
     final isEdit = widget.product != null;
 
     return Dialog(
+      backgroundColor: ThemeHelper.getCardColor(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
@@ -473,27 +500,29 @@ class _ProductDialogState extends State<_ProductDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header azul
+            // Header claro
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryBlue,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getCardColor(context),
+                border: Border(
+                  bottom: BorderSide(color: ThemeHelper.getBorderColor(context)),
+                ),
               ),
               child: Row(
                 children: [
                   Text(
                     isEdit ? 'Editar producto' : 'Nuevo producto',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      color: ThemeHelper.getTextColor(context),
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                    icon: Icon(Icons.close_rounded, color: ThemeHelper.getTextLightColor(context), size: 18),
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
                   ),
@@ -590,11 +619,24 @@ class _ProductDialogState extends State<_ProductDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ThemeHelper.getTextMediumColor(context),
+                            side: BorderSide(color: ThemeHelper.getBorderColor(context)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 10),
                         ElevatedButton(
                           onPressed: _save,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryBlue,
+                            backgroundColor: AppTheme.accentMagenta,
                             foregroundColor: Colors.white,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),

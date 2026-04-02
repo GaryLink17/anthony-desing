@@ -11,9 +11,11 @@ import '../../core/pdf_service.dart';
 import '../../widgets/state_builder.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
+import '../../services/document_totals_service.dart';
 import '../../services/tax_service.dart';
 import '../../services/excel_service.dart';
 import '../../utils/responsive_helper.dart';
+import '../../widgets/documents/document_summary_rows.dart';
 import 'invoice_preview_screen.dart';
 
 class InvoicesScreen extends StatefulWidget {
@@ -663,13 +665,14 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         products: products,
         onSave: (updatedInvoice, items) async {
           try {
-            final invoiceWithId = Invoice(
-              id: inv.id,
+            final invoiceWithId = inv.copyWith(
               customerName: updatedInvoice.customerName,
+              customerRnc: updatedInvoice.customerRnc,
               subtotal: updatedInvoice.subtotal,
               discountGlobal: updatedInvoice.discountGlobal,
+              itbis: updatedInvoice.itbis,
+              isr: updatedInvoice.isr,
               total: updatedInvoice.total,
-              createdAt: inv.createdAt,
             );
             await _invoiceRepo.update(invoiceWithId, items);
             NotificationService().success('Factura actualizada correctamente');
@@ -766,26 +769,15 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     if (mounted) setState(() => _taxConfig = config);
   }
 
-  // Cálculos de resumen
-  double get _subtotal => _items.fold(0, (sum, item) {
-    final price = (item['unitPrice'] as double);
-    final qty = (item['quantity'] as int);
-    final discPct = (item['discount'] as double);
-    final discAmount = price * (discPct / 100);
-    return sum + ((price - discAmount) * qty);
-  });
+  DocumentTotals get _totals => DocumentTotalsService.calculateFromItems(
+    items: _items,
+    discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
+    taxConfig: _taxConfig,
+  );
 
-  // Descuento global en RD$
-  double get _globalDiscount {
-    final pct = double.tryParse(_discountCtrl.text) ?? 0;
-    return _subtotal * (pct / 100);
-  }
-
-  // Base imponible: subtotal menos descuento
-  double get _taxableBase => _subtotal - _globalDiscount;
-
-  TaxResult get _taxResult =>
-      TaxService.calculate(_taxableBase, _taxConfig);
+  double get _subtotal => _totals.subtotal;
+  double get _globalDiscount => _totals.discountAmount;
+  TaxResult get _taxResult => _totals.taxResult;
 
   double get _itbis => _taxResult.itbis;
   double get _isr => _taxResult.isr;
@@ -883,6 +875,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: ThemeHelper.getCardColor(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: Form(
@@ -906,26 +899,28 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   Widget _buildDialogHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: const BoxDecoration(
-        color: AppTheme.primaryBlue,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      decoration: BoxDecoration(
+        color: ThemeHelper.getCardColor(context),
+        border: Border(
+          bottom: BorderSide(color: ThemeHelper.getBorderColor(context)),
+        ),
       ),
       child: Row(
         children: [
           Text(
             widget.existingInvoice != null ? 'Editar factura' : 'Nueva factura',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              color: ThemeHelper.getTextColor(context),
             ),
           ),
           const Spacer(),
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(
+            icon: Icon(
               Icons.close_rounded,
-              color: Colors.white,
+              color: ThemeHelper.getTextLightColor(context),
               size: 18,
             ),
             constraints: const BoxConstraints(),
@@ -1163,24 +1158,23 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
             _buildSummaryRow('Subtotal', _subtotal),
             if (_globalDiscount > 0)
               _buildSummaryRow('Descuento', -_globalDiscount, isDiscount: true),
-            _buildTaxToggleRow(
+            TaxToggleRow(
               label: 'ITBIS ${_taxConfig.itbisRate.toStringAsFixed(0)}%',
               value: _taxConfig.applyItbis,
-              amount: _itbis,
               onChanged: (v) => setState(
                 () => _taxConfig = _taxConfig.copyWith(applyItbis: v),
               ),
               color: Colors.blue.shade700,
+              formattedAmount: '+ ${_currency.format(_itbis.abs())}',
             ),
-            _buildTaxToggleRow(
+            TaxToggleRow(
               label: 'ISR ${_taxConfig.isrRate.toStringAsFixed(0)}% (ret.)',
               value: _taxConfig.applyIsr,
-              amount: -_isr,
               onChanged: (v) => setState(
                 () => _taxConfig = _taxConfig.copyWith(applyIsr: v),
               ),
               color: Colors.orange.shade700,
-              isDeduction: true,
+              formattedAmount: '- ${_currency.format(_isr.abs())}',
             ),
             const Divider(height: 8),
             _buildSummaryRow('Total', _total, isTotal: true),
@@ -1212,75 +1206,14 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     bool isDiscount = false,
     bool isTotal = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 13 : 12,
-              fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
-              color: isDiscount
-                  ? const Color(0xFFE24B4A)
-                  : ThemeHelper.getTextMediumColor(context),
-            ),
-          ),
-          Text(
-            isDiscount
-                ? '- ${_currency.format(amount.abs())}'
-                : _currency.format(amount),
-            style: TextStyle(
-              fontSize: isTotal ? 14 : 12,
-              fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
-              color: isDiscount
-                  ? const Color(0xFFE24B4A)
-                  : ThemeHelper.getTextMediumColor(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaxToggleRow({
-    required String label,
-    required bool value,
-    required double amount,
-    required ValueChanged<bool> onChanged,
-    required Color color,
-    bool isDeduction = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 22,
-            height: 22,
-            child: Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              activeColor: color,
-              side: BorderSide(color: color, width: 1.5),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 11, color: color),
-            ),
-          ),
-          if (value)
-            Text(
-              '${isDeduction ? '-' : '+'} ${_currency.format(amount.abs())}',
-              style: TextStyle(fontSize: 11, color: color),
-            ),
-        ],
-      ),
+    return DocumentSummaryRow(
+      label: label,
+      formattedAmount: isDiscount
+          ? '- ${_currency.format(amount.abs())}'
+          : _currency.format(amount),
+      isDiscount: isDiscount,
+      isTotal: isTotal,
+      textColor: ThemeHelper.getTextMediumColor(context),
     );
   }
 }
