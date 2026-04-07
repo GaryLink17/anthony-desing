@@ -9,7 +9,8 @@
       "Bash(rm \"C:/Users/Gary/Documents/anthony-desing/lib/screens/customers/customers_screen.dart\" \"C:/Users/Gary/Documents/anthony-desing/lib/core/customer_repository.dart\" \"C:/Users/Gary/Documents/anthony-desing/lib/models/customer.dart\")",
       "Bash(rmdir \"C:/Users/Gary/Documents/anthony-desing/lib/screens/customers\")",
       "Bash(flutter run:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(dart fix:*)"
     ]
   }
 }

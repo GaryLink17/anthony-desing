@@ -56,7 +56,7 @@ class StateBuilder extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline_rounded,
               size: 48,
               color: AppTheme.errorColor,
@@ -84,7 +84,7 @@ class StateBuilder extends StatelessWidget {
                 label: const Text('Reintentar'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.errorColor,
-                  side: BorderSide(color: AppTheme.errorColor),
+                  side: const BorderSide(color: AppTheme.errorColor),
                 ),
               ),
           ],

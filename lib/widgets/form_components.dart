@@ -77,7 +77,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 ),
               ),
               if (widget.required)
-                TextSpan(
+                const TextSpan(
                   text: ' *',
                   style: TextStyle(
                     fontSize: 12,
@@ -175,7 +175,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                 ),
               ),
               if (widget.required)
-                TextSpan(
+                const TextSpan(
                   text: ' *',
                   style: TextStyle(
                     fontSize: 12,
@@ -188,13 +188,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
-          value: widget.value,
+          initialValue: widget.value,
           items: widget.items,
           onChanged: widget.enabled ? widget.onChanged : null,
           validator: widget.validator,
           hint: widget.hint != null ? Text(widget.hint!) : null,
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(
+          decoration: const InputDecoration(
+            contentPadding: EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,
             ),
@@ -286,7 +286,7 @@ class _CustomDateFieldState extends State<CustomDateField> {
                 ),
               ),
               if (widget.required)
-                TextSpan(
+                const TextSpan(
                   text: ' *',
                   style: TextStyle(
                     fontSize: 12,
@@ -370,7 +370,7 @@ class FormCard extends StatelessWidget {
                   child: child,
                 ),
               )
-              .toList(),
+              ,
         ],
       ),
     );

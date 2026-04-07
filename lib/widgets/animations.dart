@@ -225,8 +225,7 @@ class _ScaleInWidgetState extends State<ScaleInWidget>
 class FadePageRoute<T> extends PageRoute<T> {
   final WidgetBuilder builder;
 
-  FadePageRoute({required this.builder, RouteSettings? settings})
-    : super(settings: settings);
+  FadePageRoute({required this.builder, super.settings});
 
   @override
   Color? get barrierColor => null;
@@ -264,8 +263,7 @@ class FadePageRoute<T> extends PageRoute<T> {
 class SlidePageRoute<T> extends PageRoute<T> {
   final WidgetBuilder builder;
 
-  SlidePageRoute({required this.builder, RouteSettings? settings})
-    : super(settings: settings);
+  SlidePageRoute({required this.builder, super.settings});
 
   @override
   Color? get barrierColor => null;

@@ -288,7 +288,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.calendar_today_rounded,
                         size: 13,
                         color: AppTheme.primaryBlue,
@@ -455,9 +455,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: FractionallySizedBox(
                         heightFactor: ratio < 0.04 ? 0.04 : ratio,
                         child: Container(
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppTheme.primaryBlue,
-                            borderRadius: const BorderRadius.vertical(
+                            borderRadius: BorderRadius.vertical(
                               top: Radius.circular(3),
                             ),
                           ),

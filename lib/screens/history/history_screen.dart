@@ -454,7 +454,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.calendar_today_rounded,
                         size: 13,
                         color: AppTheme.primaryBlue,
@@ -581,7 +581,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: isCancelled
-          ? ThemeHelper.getErrorLightBg(context).withOpacity(0.3)
+          ? ThemeHelper.getErrorLightBg(context).withValues(alpha: 0.3)
           : isEven
           ? Colors.transparent
           : ThemeHelper.getAltRowColor(context),
@@ -737,15 +737,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _previewInvoice(Invoice inv) async {
-    final items = await _repo.getItems(inv.id!);
-    final pdfBytes = await PdfService.generate(inv, items);
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv),
-      ),
-    );
+    try {
+      final items = await _repo.getItems(inv.id!);
+      final pdfBytes = await PdfService.generate(inv, items);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv),
+        ),
+      );
+    } on AppException catch (e) {
+      NotificationService().error(e.message);
+    }
   }
 
   void _confirmCancel(Invoice inv) {

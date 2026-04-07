@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) {
         return MaterialApp(
-          title: 'ControlGastos',
+          title: 'Inventario & Facturación',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
               ? ThemeMode.dark
               : ThemeMode.light,
           initialRoute:
-              StatePersistence().getString('last_route', defaultValue: AppRoutes.home),
+              StatePersistence().getString(StorageKeys.lastRoute, defaultValue: AppRoutes.home),
           onGenerateRoute: (settings) {
             final routeName = settings.name ?? AppRoutes.home;
             final args = settings.arguments;
@@ -152,7 +152,7 @@ class _MainLayoutState extends State<MainLayout> {
             onItemSelected: (index) {
               final targetRoute = AppRoutes.routeFromIndex(index);
               if (targetRoute == widget.initialRoute) return;
-              StatePersistence().setString('last_route', targetRoute);
+              StatePersistence().setString(StorageKeys.lastRoute, targetRoute);
               Navigator.of(context).pushReplacementNamed(targetRoute);
             },
             isCollapsed: isSmallScreen,

@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Claves usadas en SharedPreferences
+class StorageKeys {
+  static const lastRoute = 'last_route';
+}
+
 /// Utilidad para persistir y restaurar estado de la aplicación
 class StatePersistence {
   static final StatePersistence _instance = StatePersistence._internal();

@@ -15,6 +15,7 @@ import '../../services/document_totals_service.dart';
 import '../../services/tax_service.dart';
 import '../../services/excel_service.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 import 'invoice_preview_screen.dart';
 
@@ -28,10 +29,11 @@ class InvoicesScreen extends StatefulWidget {
 class _InvoicesScreenState extends State<InvoicesScreen> {
   final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
+  final _debouncer = Debouncer();
   List<Invoice> _invoices = [];
   bool _loading = true;
 
-  final _currency = NumberFormat.currency(
+  static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
@@ -46,6 +48,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -89,10 +92,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       final result = query.isEmpty
           ? await _invoiceRepo.getAll()
           : await _invoiceRepo.search(query);
-      setState(() {
-        _invoices = result;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _invoices = result;
+          _loading = false;
+        });
+      }
     } on AppException catch (e) {
       if (mounted) setState(() => _loading = false);
       NotificationService().error(e.message);
@@ -180,7 +185,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       width: 320,
       child: TextField(
         controller: _searchCtrl,
-        onChanged: _load,
+        onChanged: (q) => _debouncer(() => _load(q)),
         decoration: InputDecoration(
           hintText: 'Buscar por cliente...',
           hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
@@ -264,7 +269,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: isCancelled
-          ? ThemeHelper.getErrorLightBg(context).withOpacity(0.3)
+          ? ThemeHelper.getErrorLightBg(context).withValues(alpha: 0.3)
           : isEven
           ? Colors.transparent
           : ThemeHelper.getAltRowColor(context),
@@ -648,8 +653,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         'Stock bajo: $names$extra',
         duration: const Duration(seconds: 6),
       );
-    } catch (_) {
-      // No interrumpir el flujo principal si falla la verificación
+    } catch (e) {
+      // No interrumpir el flujo principal si falla la verificación de stock
+      debugPrint('[InvoicesScreen] _checkLowStock falló: $e');
     }
   }
 
@@ -715,7 +721,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   // Cada item: {product, quantity, unitPrice, discount}
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
-  bool _showProductList = true;
+  final bool _showProductList = true;
 
   TaxConfig _taxConfig = const TaxConfig(
     applyItbis: false,
@@ -724,7 +730,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     isrRate: TaxService.defaultIsrRate,
   );
 
-  final _currency = NumberFormat.currency(
+  static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
@@ -1327,8 +1333,10 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                         ),
                       ),
                       validator: (v) {
-                        final n = double.tryParse(v ?? '');
-                        if (n == null) return 'Inválido';
+                        final text = v?.trim() ?? '';
+                        if (text.isEmpty) return null;
+                        final n = double.tryParse(text);
+                        if (n == null) return 'Número inválido';
                         if (n < 0 || n > 100) return '0 - 100';
                         return null;
                       },
@@ -1403,7 +1411,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                       Navigator.pop(context, {
                         'quantity': int.parse(_quantityCtrl.text),
                         'unitPrice': double.parse(_priceCtrl.text),
-                        'discount': double.parse(_discountCtrl.text),
+                        'discount': double.tryParse(_discountCtrl.text) ?? 0,
                       });
                     },
                     style: ElevatedButton.styleFrom(

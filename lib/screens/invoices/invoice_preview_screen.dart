@@ -44,7 +44,7 @@ class InvoicePreviewScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          bottom: BorderSide(color: Colors.black.withOpacity(0.07), width: 0.5),
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.07), width: 0.5),
         ),
       ),
       child: Row(

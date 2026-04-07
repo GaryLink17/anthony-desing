@@ -18,6 +18,7 @@ import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../models/product.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 
 class QuotesScreen extends StatefulWidget {
@@ -31,10 +32,11 @@ class _QuotesScreenState extends State<QuotesScreen> {
   final _quoteRepo = QuoteRepository();
   final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
+  final _debouncer = Debouncer();
   List<Quote> _quotes = [];
   bool _loading = true;
 
-  final _currency = NumberFormat.currency(
+  static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
@@ -49,6 +51,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -58,10 +61,12 @@ class _QuotesScreenState extends State<QuotesScreen> {
       final result = query.isEmpty
           ? await _quoteRepo.getAll()
           : await _quoteRepo.search(query);
-      setState(() {
-        _quotes = result;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _quotes = result;
+          _loading = false;
+        });
+      }
     } on AppException catch (e) {
       if (mounted) setState(() => _loading = false);
       NotificationService().error(e.message);
@@ -131,7 +136,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
       width: 320,
       child: TextField(
         controller: _searchCtrl,
-        onChanged: _load,
+        onChanged: (q) => _debouncer(() => _load(q)),
         decoration: InputDecoration(
           hintText: 'Buscar por cliente...',
           hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
@@ -305,7 +310,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -453,6 +458,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
   }
 
   void _convertToInvoice(Quote quote) async {
+    try {
     final items = await _quoteRepo.getItems(quote.id!);
 
     if (!mounted) return;
@@ -461,7 +467,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Convertir a factura'),
-        content: Text(
+        content: const Text(
           '¿Deseas convertir esta cotización en una factura?\n\n'
           'Se creará una factura y se descontará el stock de los productos.',
         ),
@@ -507,7 +513,6 @@ class _QuotesScreenState extends State<QuotesScreen> {
       );
     }).toList();
 
-    try {
       await _invoiceRepo.save(invoice, invoiceItems);
       await _quoteRepo.markAsConverted(quote.id!);
       NotificationService().success('Cotización convertida a factura');
@@ -680,7 +685,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
 
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
-  bool _showProductList = true;
+  final bool _showProductList = true;
 
   TaxConfig _taxConfig = const TaxConfig(
     applyItbis: false,
@@ -689,7 +694,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     isrRate: TaxService.defaultIsrRate,
   );
 
-  final _currency = NumberFormat.currency(
+  static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
@@ -1315,8 +1320,10 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                         ),
                       ),
                       validator: (v) {
-                        final n = double.tryParse(v ?? '');
-                        if (n == null) return 'Inválido';
+                        final text = v?.trim() ?? '';
+                        if (text.isEmpty) return null;
+                        final n = double.tryParse(text);
+                        if (n == null) return 'Número inválido';
                         if (n < 0 || n > 100) return '0 - 100';
                         return null;
                       },
@@ -1391,7 +1398,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                       Navigator.pop(context, {
                         'quantity': int.parse(_quantityCtrl.text),
                         'unitPrice': double.parse(_priceCtrl.text),
-                        'discount': double.parse(_discountCtrl.text),
+                        'discount': double.tryParse(_discountCtrl.text) ?? 0,
                       });
                     },
                     style: ElevatedButton.styleFrom(

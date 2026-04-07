@@ -28,7 +28,7 @@ class ExcelService {
   // ─── Exportar Facturas ──────────────────────────────────────────────────────
 
   /// Exporta la lista de facturas con sus items a un archivo Excel.
-  /// [invoicesWithItems] lista de pares (Invoice, List<InvoiceItem>).
+  /// Parámetro [invoicesWithItems]: lista de pares Invoice + List de InvoiceItem.
   static Future<bool> exportInvoices(
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) async {

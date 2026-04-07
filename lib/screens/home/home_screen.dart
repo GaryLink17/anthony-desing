@@ -19,9 +19,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   /// Evita repetir la notificación al volver al Dashboard en la misma sesión.
-  static bool _lowStockWarningShownThisSession = false;
+  bool _lowStockWarningShownThisSession = false;
 
-  final _currency = NumberFormat.currency(
+  static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
@@ -223,11 +223,11 @@ class _HeroSalesCard extends StatelessWidget {
     final maxVal = weeklySales.isNotEmpty
         ? weeklySales.reduce((a, b) => a > b ? a : b)
         : 0.0;
-    final dayLabels = List.generate(7, (i) {
-      final day = now.subtract(Duration(days: 6 - i));
-      const names = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-      return names[day.weekday - 1];
-    });
+    const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    final dayLabels = List.generate(
+      7,
+      (i) => dayNames[now.subtract(Duration(days: 6 - i)).weekday - 1],
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -527,7 +527,7 @@ class _StockCard extends StatelessWidget {
   void _goToProduct(BuildContext context, Product p) {
     final id = p.id;
     if (id == null) return;
-    StatePersistence().setString('last_route', AppRoutes.inventory);
+    StatePersistence().setString(StorageKeys.lastRoute, AppRoutes.inventory);
     Navigator.of(context).pushReplacementNamed(
       AppRoutes.inventory,
       arguments: id,

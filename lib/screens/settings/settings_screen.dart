@@ -319,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (value) {
                       themeProvider.setDarkMode(value);
                     },
-                    activeColor: AppTheme.accentMagenta,
+                    activeThumbColor: AppTheme.accentMagenta,
                   ),
                 ],
               ),
@@ -403,7 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _taxConfig.applyItbis,
                 onChanged: (v) =>
                     setState(() => _taxConfig = _taxConfig.copyWith(applyItbis: v)),
-                activeColor: Colors.blue.shade700,
+                activeThumbColor: Colors.blue.shade700,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -444,6 +444,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() => _taxConfig = _taxConfig.copyWith(itbisRate: rate));
                     }
                   },
+                  validator: _taxConfig.applyItbis
+                      ? (v) {
+                          final n = double.tryParse(v?.trim() ?? '');
+                          if (n == null) return 'Inválido';
+                          if (n < 0 || n > 100) return '0-100';
+                          return null;
+                        }
+                      : null,
                 ),
               ),
             ],
@@ -456,7 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _taxConfig.applyIsr,
                 onChanged: (v) =>
                     setState(() => _taxConfig = _taxConfig.copyWith(applyIsr: v)),
-                activeColor: Colors.orange.shade700,
+                activeThumbColor: Colors.orange.shade700,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -497,6 +505,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() => _taxConfig = _taxConfig.copyWith(isrRate: rate));
                     }
                   },
+                  validator: _taxConfig.applyIsr
+                      ? (v) {
+                          final n = double.tryParse(v?.trim() ?? '');
+                          if (n == null) return 'Inválido';
+                          if (n < 0 || n > 100) return '0-100';
+                          return null;
+                        }
+                      : null,
                 ),
               ),
             ],

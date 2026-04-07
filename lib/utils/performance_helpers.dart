@@ -106,6 +106,8 @@ class PerformanceMonitor {
 
   PerformanceMonitor._internal();
 
+  static const _maxMeasurementsPerLabel = 100;
+
   final Map<String, DateTime> _startTimes = {};
   final Map<String, List<int>> _measurements = {};
 
@@ -122,7 +124,9 @@ class PerformanceMonitor {
     final duration = DateTime.now().difference(startTime).inMilliseconds;
 
     _measurements.putIfAbsent(label, () => []);
-    _measurements[label]!.add(duration);
+    final list = _measurements[label]!;
+    if (list.length >= _maxMeasurementsPerLabel) list.removeAt(0);
+    list.add(duration);
 
     if (verbose) {
       debugPrint('[Performance] $label: ${duration}ms');

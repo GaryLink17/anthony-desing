@@ -314,7 +314,7 @@ class Sidebar extends StatelessWidget {
                 ),
                 child: Text(
                   '${item.badgeCount}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.accentMagenta,
