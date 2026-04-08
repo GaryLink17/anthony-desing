@@ -745,8 +745,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     // Si es edición cargamos los datos existentes
     if (widget.existingInvoice != null) {
       _customerName = widget.existingInvoice!.customerName ?? '';
-      _discountCtrl.text = widget.existingInvoice!.discountGlobal > 0
-          ? widget.existingInvoice!.discountGlobal.toStringAsFixed(0)
+      final inv = widget.existingInvoice!;
+      _discountCtrl.text = (inv.discountGlobal > 0 && inv.subtotal > 0)
+          ? (inv.discountGlobal / inv.subtotal * 100).toStringAsFixed(0)
           : '';
 
       for (final item in widget.existingItems) {

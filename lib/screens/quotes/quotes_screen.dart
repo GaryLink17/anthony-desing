@@ -709,8 +709,9 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
 
     if (widget.existingQuote != null) {
       _customerName = widget.existingQuote!.customerName ?? '';
-      _discountCtrl.text = widget.existingQuote!.discountGlobal > 0
-          ? widget.existingQuote!.discountGlobal.toStringAsFixed(0)
+      final q = widget.existingQuote!;
+      _discountCtrl.text = (q.discountGlobal > 0 && q.subtotal > 0)
+          ? (q.discountGlobal / q.subtotal * 100).toStringAsFixed(0)
           : '';
       if (widget.existingQuote!.expiresAt != null) {
         _expiresAt = DateTime.parse(widget.existingQuote!.expiresAt!);
