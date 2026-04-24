@@ -9,6 +9,7 @@ import '../models/invoice_item.dart';
 import '../models/quote.dart';
 import '../models/quote_item.dart';
 import 'dart:typed_data';
+import 'trial_config.dart';
 
 class _PdfCompanyConfig {
   final String companyName;
@@ -78,7 +79,8 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            // Cabecera
+            if (TrialConfig.isTrialVersion && TrialConfig.pdfWatermarkEnabled)
+              _buildTrialBanner(),
             _buildHeader(
               config.companyName,
               config.companyPhone,
@@ -90,13 +92,10 @@ class PdfService {
               currency,
             ),
             pw.SizedBox(height: 24),
-            // Tabla de productos
             _buildItemsTable(items, currency),
             pw.SizedBox(height: 16),
-            // Totales
             _buildTotals(invoice, currency),
             pw.Spacer(),
-            // Pie de página
             _buildFooter(config.footerMessage, config.footerTerms),
           ],
         ),
@@ -350,6 +349,28 @@ class PdfService {
     );
   }
 
+  static pw.Widget _buildTrialBanner() {
+    return pw.Container(
+      width: double.infinity,
+      margin: const pw.EdgeInsets.only(bottom: 14),
+      padding: const pw.EdgeInsets.symmetric(vertical: 7, horizontal: 14),
+      decoration: pw.BoxDecoration(
+        color: const PdfColor(1.0, 0.93, 0.93),
+        border: pw.Border.all(color: const PdfColor(0.75, 0.2, 0.2), width: 0.6),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Text(
+        '⚠  VERSIÓN DE PRUEBA — DOCUMENTO NO VÁLIDO PARA FINES COMERCIALES',
+        style: pw.TextStyle(
+          fontSize: 9,
+          fontWeight: pw.FontWeight.bold,
+          color: const PdfColor(0.65, 0.1, 0.1),
+        ),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
+  }
+
   static pw.Widget _cell(
     String text,
     pw.TextStyle style, {
@@ -411,6 +432,8 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
+            if (TrialConfig.isTrialVersion && TrialConfig.pdfWatermarkEnabled)
+              _buildTrialBanner(),
             _buildHeader(
               config.companyName,
               config.companyPhone,
@@ -454,6 +477,8 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
+            if (TrialConfig.isTrialVersion && TrialConfig.pdfWatermarkEnabled)
+              _buildTrialBanner(),
             _buildQuoteHeader(
               config.companyName,
               config.companyPhone,

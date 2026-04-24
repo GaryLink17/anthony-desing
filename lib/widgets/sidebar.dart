@@ -3,6 +3,7 @@ import '../theme/app_theme.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../core/trial_config.dart';
 
 class SidebarItem {
   final String label;
@@ -94,7 +95,45 @@ class Sidebar extends StatelessWidget {
             ],
             startIndex: 6,
           ),
+          if (TrialConfig.isTrialVersion && !isCollapsed) _buildTrialBadge(isDark),
           const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrialBadge(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppTheme.accentMagenta.withValues(alpha: 0.10)
+            : AppTheme.accentMagenta.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppTheme.accentMagenta.withValues(alpha: 0.25),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 13,
+            color: AppTheme.accentMagenta.withValues(alpha: 0.8),
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              'Versión de prueba',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.accentMagenta.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
         ],
       ),
     );
