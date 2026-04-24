@@ -6,6 +6,7 @@ import '../../core/reports_repository.dart';
 import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
+import '../../core/trial_config.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -41,8 +42,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _startDate = DateTime(now.year, now.month, now.day);
-    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    if (TrialConfig.isTrialVersion && !TrialConfig.reportDateRangeEnabled) {
+      // En versión de prueba: mostrar el mes actual completo (fijo)
+      _startDate = DateTime(now.year, now.month, 1);
+      _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    } else {
+      _startDate = DateTime(now.year, now.month, now.day);
+      _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    }
     _load();
   }
 
@@ -203,49 +210,73 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ],
         ),
-        Row(
-          children: [
-            _buildDateField('Desde', _startDate, _selectStartDate),
-            const SizedBox(width: 8),
-            _buildDateField('Hasta', _endDate, _selectEndDate),
-            const SizedBox(width: 12),
-            Container(
+        if (TrialConfig.isTrialVersion && !TrialConfig.reportDateRangeEnabled)
+          Tooltip(
+            message: TrialConfig.upgradeMessage,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isToday ? ThemeHelper.getSuccessLightBg(context) : ThemeHelper.getCardColor(context),
+                color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isToday
-                      ? ThemeHelper.getSuccessTextColor(context)
-                      : ThemeHelper.getBorderColor(context),
-                  width: 0.5,
-                ),
+                border: Border.all(color: Colors.grey.shade300, width: 0.6),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _setToday,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 13, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Rango de fecha — mes actual',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Row(
+            children: [
+              _buildDateField('Desde', _startDate, _selectStartDate),
+              const SizedBox(width: 8),
+              _buildDateField('Hasta', _endDate, _selectEndDate),
+              const SizedBox(width: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: isToday ? ThemeHelper.getSuccessLightBg(context) : ThemeHelper.getCardColor(context),
                   borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      'Hoy',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isToday
-                            ? ThemeHelper.getSuccessTextColor(context)
-                            : ThemeHelper.getTextLightColor(context),
+                  border: Border.all(
+                    color: isToday
+                        ? ThemeHelper.getSuccessTextColor(context)
+                        : ThemeHelper.getBorderColor(context),
+                    width: 0.5,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _setToday,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        'Hoy',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isToday
+                              ? ThemeHelper.getSuccessTextColor(context)
+                              : ThemeHelper.getTextLightColor(context),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }

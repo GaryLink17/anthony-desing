@@ -18,6 +18,7 @@ import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 import 'invoice_preview_screen.dart';
+import '../../core/trial_config.dart';
 
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
@@ -147,22 +148,47 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         ),
         Row(
           children: [
-            OutlinedButton.icon(
-              onPressed: _invoices.isEmpty ? null : _exportExcel,
-              icon: const Icon(Icons.table_chart_rounded, size: 16),
-              label: const Text('Excel'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF217346),
-                side: const BorderSide(color: Color(0xFF217346)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            Tooltip(
+              message: TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled
+                  ? TrialConfig.upgradeMessage
+                  : '',
+              child: OutlinedButton.icon(
+                onPressed: (TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled)
+                    ? () => NotificationService().warning(TrialConfig.upgradeMessage)
+                    : (_invoices.isEmpty ? null : _exportExcel),
+                icon: const Icon(
+                  Icons.table_chart_rounded,
+                  size: 16,
+                ),
+                label: const Text('Excel'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled
+                      ? Colors.grey
+                      : const Color(0xFF217346),
+                  side: BorderSide(
+                    color: TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled
+                        ? Colors.grey.shade400
+                        : const Color(0xFF217346),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             ElevatedButton.icon(
-              onPressed: _openNewInvoice,
+              onPressed: () {
+                if (TrialConfig.isTrialVersion &&
+                    _invoices.length >= TrialConfig.maxInvoices) {
+                  NotificationService().warning(
+                    'Límite alcanzado (${TrialConfig.maxInvoices} facturas). ${TrialConfig.upgradeMessage}',
+                  );
+                  return;
+                }
+                _openNewInvoice();
+              },
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Nueva factura'),
               style: ElevatedButton.styleFrom(

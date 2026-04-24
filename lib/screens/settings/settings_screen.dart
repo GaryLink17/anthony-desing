@@ -13,6 +13,7 @@ import '../../core/app_exception.dart';
 import '../../core/backup_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/tax_service.dart';
+import '../../core/trial_config.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -173,7 +174,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 children: [
                   GestureDetector(
-                    onTap: _pickLogo,
+                    onTap: TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
+                        ? () => NotificationService().warning(TrialConfig.upgradeMessage)
+                        : _pickLogo,
                     child: Container(
                       width: 90,
                       height: 90,
@@ -215,14 +218,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   TextButton(
-                    onPressed: _pickLogo,
+                    onPressed: TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
+                        ? () => NotificationService().warning(TrialConfig.upgradeMessage)
+                        : _pickLogo,
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(90, 20),
                     ),
                     child: Text(
-                      'Cambiar',
-                      style: TextStyle(fontSize: 11, color: ThemeHelper.getInteractiveColor(context)),
+                      TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
+                          ? 'Bloqueado'
+                          : 'Cambiar',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
+                            ? Colors.grey
+                            : ThemeHelper.getInteractiveColor(context),
+                      ),
                     ),
                   ),
                 ],
@@ -578,45 +590,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: _backupLoading ? null : _exportBackup,
-                icon: _backupLoading
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.upload_rounded, size: 16),
-                label: const Text('Exportar respaldo'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ThemeHelper.getInteractiveColor(context),
-                  side: BorderSide(color: ThemeHelper.getInteractiveColor(context)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
+          if (TrialConfig.isTrialVersion && !TrialConfig.backupEnabled)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300, width: 0.8),
               ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: _restoreLoading ? null : _restoreBackup,
-                icon: _restoreLoading
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_rounded, size: 16),
-                label: const Text('Restaurar respaldo'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ThemeHelper.getWarningTextColor(context),
-                  side: BorderSide(color: ThemeHelper.getWarningTextColor(context)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 15, color: Colors.grey.shade500),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Exportar/restaurar respaldo — ${TrialConfig.upgradeMessage}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
               ),
-            ],
-          ),
+            )
+          else
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _backupLoading ? null : _exportBackup,
+                  icon: _backupLoading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.upload_rounded, size: 16),
+                  label: const Text('Exportar respaldo'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ThemeHelper.getInteractiveColor(context),
+                    side: BorderSide(color: ThemeHelper.getInteractiveColor(context)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: _restoreLoading ? null : _restoreBackup,
+                  icon: _restoreLoading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.download_rounded, size: 16),
+                  label: const Text('Restaurar respaldo'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ThemeHelper.getWarningTextColor(context),
+                    side: BorderSide(color: ThemeHelper.getWarningTextColor(context)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

@@ -11,6 +11,7 @@ import 'widgets/product_dialog.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../services/excel_service.dart';
+import '../../core/trial_config.dart';
 
 class InventoryScreen extends StatefulWidget {
   /// Si se indica, tras cargar la lista se abre el diálogo de edición de ese producto.
@@ -130,25 +131,50 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ),
         Row(
           children: [
-            OutlinedButton.icon(
-              onPressed: _products.isEmpty ? null : _exportExcel,
-              icon: const Icon(Icons.table_chart_rounded, size: 16),
-              label: const Text('Excel'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF217346),
-                side: const BorderSide(color: Color(0xFF217346)),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+            Tooltip(
+              message: TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled
+                  ? TrialConfig.upgradeMessage
+                  : '',
+              child: OutlinedButton.icon(
+                onPressed: (TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled)
+                    ? () => NotificationService().warning(TrialConfig.upgradeMessage)
+                    : (_products.isEmpty ? null : _exportExcel),
+                icon: const Icon(
+                  Icons.table_chart_rounded,
+                  size: 16,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                label: const Text('Excel'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled
+                      ? Colors.grey
+                      : const Color(0xFF217346),
+                  side: BorderSide(
+                    color: TrialConfig.isTrialVersion && !TrialConfig.excelExportEnabled
+                        ? Colors.grey.shade400
+                        : const Color(0xFF217346),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             ElevatedButton.icon(
-              onPressed: () => _showProductDialog(),
+              onPressed: () {
+                if (TrialConfig.isTrialVersion &&
+                    _products.length >= TrialConfig.maxProducts) {
+                  NotificationService().warning(
+                    'Límite alcanzado (${TrialConfig.maxProducts} productos). ${TrialConfig.upgradeMessage}',
+                  );
+                  return;
+                }
+                _showProductDialog();
+              },
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Nuevo producto'),
               style: ElevatedButton.styleFrom(
