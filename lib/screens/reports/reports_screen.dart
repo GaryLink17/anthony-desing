@@ -6,7 +6,7 @@ import '../../core/reports_repository.dart';
 import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
-import '../../core/trial_config.dart';
+
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -42,14 +42,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    if (TrialConfig.isTrialVersion && !TrialConfig.reportDateRangeEnabled) {
-      // En versión de prueba: mostrar el mes actual completo (fijo)
-      _startDate = DateTime(now.year, now.month, 1);
-      _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    } else {
-      _startDate = DateTime(now.year, now.month, now.day);
-      _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    }
+    _startDate = DateTime(now.year, now.month, now.day);
+    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
     _load();
   }
 
@@ -210,30 +204,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ],
         ),
-        if (TrialConfig.isTrialVersion && !TrialConfig.reportDateRangeEnabled)
-          Tooltip(
-            message: TrialConfig.upgradeMessage,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.shade300, width: 0.6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock_outline_rounded, size: 13, color: Colors.grey.shade500),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Rango de fecha — mes actual',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
           Row(
             children: [
               _buildDateField('Desde', _startDate, _selectStartDate),

@@ -20,7 +20,7 @@ import '../../models/product.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
-import '../../core/trial_config.dart';
+
 
 class QuotesScreen extends StatefulWidget {
   const QuotesScreen({super.key});
@@ -116,16 +116,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
           ],
         ),
         ElevatedButton.icon(
-          onPressed: () {
-            if (TrialConfig.isTrialVersion &&
-                _quotes.length >= TrialConfig.maxQuotes) {
-              NotificationService().warning(
-                'Límite alcanzado (${TrialConfig.maxQuotes} cotizaciones). ${TrialConfig.upgradeMessage}',
-              );
-              return;
-            }
-            _openNewQuote();
-          },
+          onPressed: _openNewQuote,
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Nueva cotización'),
           style: ElevatedButton.styleFrom(

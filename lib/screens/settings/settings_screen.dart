@@ -13,7 +13,7 @@ import '../../core/app_exception.dart';
 import '../../core/backup_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/tax_service.dart';
-import '../../core/trial_config.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -174,9 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 children: [
                   GestureDetector(
-                    onTap: TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
-                        ? () => NotificationService().warning(TrialConfig.upgradeMessage)
-                        : _pickLogo,
+                    onTap: _pickLogo,
                     child: Container(
                       width: 90,
                       height: 90,
@@ -218,22 +216,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   TextButton(
-                    onPressed: TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
-                        ? () => NotificationService().warning(TrialConfig.upgradeMessage)
-                        : _pickLogo,
+                    onPressed: _pickLogo,
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(90, 20),
                     ),
                     child: Text(
-                      TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
-                          ? 'Bloqueado'
-                          : 'Cambiar',
+                      'Cambiar',
                       style: TextStyle(
                         fontSize: 11,
-                        color: TrialConfig.isTrialVersion && !TrialConfig.logoUploadEnabled
-                            ? Colors.grey
-                            : ThemeHelper.getInteractiveColor(context),
+                        color: ThemeHelper.getInteractiveColor(context),
                       ),
                     ),
                   ),
@@ -590,26 +582,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (TrialConfig.isTrialVersion && !TrialConfig.backupEnabled)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300, width: 0.8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.lock_outline_rounded, size: 15, color: Colors.grey.shade500),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Exportar/restaurar respaldo — ${TrialConfig.upgradeMessage}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            )
-          else
             Row(
               children: [
                 OutlinedButton.icon(
