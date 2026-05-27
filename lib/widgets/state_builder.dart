@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_helper.dart';
 
-/// Widget que maneja los diferentes estados: loading, error, empty y content
+/// Widget que maneja los 4 estados posibles de una vista:
+/// loading, error, empty y content. Muestra el UI adecuado según el estado.
 class StateBuilder extends StatelessWidget {
   /// Si true, muestra loading indicator
   final bool isLoading;

@@ -10,6 +10,10 @@ import '../../models/product.dart';
 import '../../app_routes.dart';
 import '../../utils/state_persistence.dart';
 
+/// Pantalla principal (Dashboard) con resumen mensual del negocio.
+///
+/// Muestra tarjetas con ventas del mes, gráfico semanal, conteo de
+/// facturas, ganancia neta, stock bajo y últimas facturas registradas.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -41,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// Muestra notificación si hay productos con stock por debajo del mínimo.
   void _notifyLowStock(AppProvider provider) {
     if (_lowStockWarningShownThisSession) return;
     final lowStock = provider.lowStockProducts;
@@ -136,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Encabezado con saludo, subtítulo y fecha actual.
   Widget _buildHeader() {
     final now = DateTime.now();
     final dateStr = DateFormat("d 'de' MMMM, yyyy", 'es').format(now);
@@ -195,6 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Retorna "Buenos días / Buenas tardes / Buenas noches" según la hora.
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Buenos días';
@@ -205,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // ─── Card héroe: ventas + gráfico ────────────────────────────────────────────
 
+/// Tarjeta principal que muestra ventas del mes y gráfico de barras semanal.
 class _HeroSalesCard extends StatelessWidget {
   final double sales;
   final List<double> weeklySales;
@@ -373,6 +381,7 @@ class _HeroSalesCard extends StatelessWidget {
 
 // ─── Card facturas ────────────────────────────────────────────────────────────
 
+/// Tarjeta con el conteo de facturas generadas en el mes.
 class _InvoiceStatCard extends StatelessWidget {
   final int count;
 
@@ -447,6 +456,7 @@ class _InvoiceStatCard extends StatelessWidget {
 
 // ─── Cards pequeños (fila 2) ──────────────────────────────────────────────────
 
+/// Tarjeta pequeña reutilizable con ícono, valor y etiqueta.
 class _SmallStatCard extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
@@ -519,11 +529,13 @@ class _SmallStatCard extends StatelessWidget {
 
 // ─── Card stock bajo ──────────────────────────────────────────────────────────
 
+/// Tarjeta de alerta de stock bajo con lista de productos críticos y acceso directo.
 class _StockCard extends StatelessWidget {
   final List<Product> products;
 
   const _StockCard({required this.products});
 
+  /// Navega a la pantalla de inventario y abre la edición del producto indicado.
   void _goToProduct(BuildContext context, Product p) {
     final id = p.id;
     if (id == null) return;
@@ -697,6 +709,7 @@ class _StockCard extends StatelessWidget {
 
 // ─── Card últimas facturas (full-width) ───────────────────────────────────────
 
+/// Tarjeta que lista las últimas facturas registradas en formato tabla.
 class _RecentInvoicesCard extends StatelessWidget {
   final List<Map<String, dynamic>> invoices;
   final NumberFormat currency;

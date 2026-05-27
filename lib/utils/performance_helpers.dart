@@ -3,20 +3,19 @@ import 'package:flutter/material.dart';
 
 // ---- DEBOUNCER ----
 
-/// Utilidad para debounce que previene ejecuciones excesivas
+/// Retrasa la ejecución de un callback hasta que pasa un tiempo
+/// sin nuevas invocaciones. Útil para búsquedas en tiempo real.
 class Debouncer {
   final Duration delay;
   Timer? _timer;
 
   Debouncer({this.delay = const Duration(milliseconds: 500)});
 
-  /// Ejecuta la función con debounce
   void call(VoidCallback callback) {
     _timer?.cancel();
     _timer = Timer(delay, callback);
   }
 
-  /// Cancela cualquier ejecución pendiente
   void cancel() {
     _timer?.cancel();
   }
@@ -28,7 +27,9 @@ class Debouncer {
 
 // ---- THROTTLER ----
 
-/// Utilidad para throttle que limita la frecuencia de ejecución
+/// Limita la frecuencia de ejecución de un callback.
+/// Ejecuta inmediatamente si ha pasado suficiente tiempo,
+/// de lo contrario programa la ejecución para el próximo slot disponible.
 class Throttler {
   final Duration minDelay;
   DateTime? _lastExecutionTime;
@@ -37,7 +38,6 @@ class Throttler {
 
   Throttler({this.minDelay = const Duration(milliseconds: 500)});
 
-  /// Ejecuta la función con throttle
   void call(VoidCallback callback) {
     final now = DateTime.now();
 
@@ -49,7 +49,6 @@ class Throttler {
       _timer?.cancel();
       callback();
     } else {
-      // Programar la ejecución para más tarde
       _pendingCallback = callback;
       _timer?.cancel();
       _timer = Timer(
@@ -72,7 +71,7 @@ class Throttler {
 
 // ---- IMAGE CACHE ----
 
-/// Helper para gestionar caché de imágenes
+/// Helper para gestionar la caché de imágenes de Flutter.
 class ImageCacheHelper {
   static void clearImageCache() {
     imageCache.clearLiveImages();
@@ -96,7 +95,8 @@ class ImageCacheHelper {
 
 // ---- PERFORMANCE MONITORING ----
 
-/// Monitor de rendimiento básico
+/// Monitor singleton para medir tiempos de ejecución de operaciones.
+/// Almacea hasta [_maxMeasurementsPerLabel] muestras por etiqueta.
 class PerformanceMonitor {
   static final PerformanceMonitor _instance = PerformanceMonitor._internal();
 
@@ -111,12 +111,10 @@ class PerformanceMonitor {
   final Map<String, DateTime> _startTimes = {};
   final Map<String, List<int>> _measurements = {};
 
-  /// Inicia la medición de un evento
   void startMeasure(String label) {
     _startTimes[label] = DateTime.now();
   }
 
-  /// Finaliza la medición y registra el pTiempo
   int? endMeasure(String label, {bool verbose = false}) {
     final startTime = _startTimes.remove(label);
     if (startTime == null) return null;
@@ -135,7 +133,6 @@ class PerformanceMonitor {
     return duration;
   }
 
-  /// Obtiene el promedio de una medición
   double? getAverage(String label) {
     final measurements = _measurements[label];
     if (measurements == null || measurements.isEmpty) return null;
@@ -144,21 +141,18 @@ class PerformanceMonitor {
     return sum / measurements.length;
   }
 
-  /// Obtiene el máximo de una medición
   int? getMax(String label) {
     final measurements = _measurements[label];
     if (measurements == null || measurements.isEmpty) return null;
     return measurements.reduce((a, b) => a > b ? a : b);
   }
 
-  /// Obtiene el mínimo de una medición
   int? getMin(String label) {
     final measurements = _measurements[label];
     if (measurements == null || measurements.isEmpty) return null;
     return measurements.reduce((a, b) => a < b ? a : b);
   }
 
-  /// Imprime reporte de todas las mediciones
   void printReport() {
     debugPrint('=== Performance Report ===');
     for (final entry in _measurements.entries) {
@@ -173,7 +167,6 @@ class PerformanceMonitor {
     debugPrint('========================');
   }
 
-  /// Limpia todas las mediciones
   void clear() {
     _startTimes.clear();
     _measurements.clear();
@@ -182,7 +175,7 @@ class PerformanceMonitor {
 
 // ---- CONST OPTIMIZER ----
 
-/// Widget que no se reconstruye a menos que sus props cambien
+/// Widget que envuelve un child y nunca se reconstruye.
 class ConstWidget extends StatelessWidget {
   final Widget child;
 
@@ -194,7 +187,7 @@ class ConstWidget extends StatelessWidget {
 
 // ---- LIST BUILDER OPTIMIZADO ----
 
-/// Builder optimizado para listas grandes usando AutomaticKeepAliveClientMixin
+/// Wrapper de ListView.builder con opciones de optimización.
 class OptimizedListView extends StatefulWidget {
   final IndexedWidgetBuilder itemBuilder;
   final int itemCount;
@@ -230,7 +223,7 @@ class _OptimizedListViewState extends State<OptimizedListView> {
 
 // ---- LAZY IMAGE LOADER ----
 
-/// Widget de imagen con lazy loading
+/// Widget de imagen con carga diferida y soporte de placeholder/error.
 class LazyImage extends StatefulWidget {
   final String imagePath;
   final double? width;

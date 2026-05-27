@@ -1,3 +1,4 @@
+/// Modelo que representa una línea de detalle de una cotización.
 class QuoteItem {
   final int? id;
   final int quoteId;
@@ -19,6 +20,7 @@ class QuoteItem {
     required this.subtotal,
   });
 
+  /// Convierte el item a Map para SQLite.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -32,6 +34,7 @@ class QuoteItem {
     };
   }
 
+  /// Crea un QuoteItem desde un Map de SQLite.
   factory QuoteItem.fromMap(Map<String, dynamic> map) {
     return QuoteItem(
       id: map['id'],

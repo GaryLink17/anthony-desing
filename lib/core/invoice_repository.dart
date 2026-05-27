@@ -3,9 +3,11 @@ import 'app_exception.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 
+/// Repositorio para operaciones CRUD de facturas y sus líneas de detalle.
 class InvoiceRepository {
   final _db = DatabaseHelper.instance;
 
+  /// Obtiene todas las facturas ordenadas por fecha descendente.
   Future<List<Invoice>> getAll() async {
     try {
       final db = await _db.database;
@@ -19,6 +21,7 @@ class InvoiceRepository {
     }
   }
 
+  /// Actualiza solo el estado de pago de una factura.
   Future<void> updatePaymentStatus(int invoiceId, String paymentStatus) async {
     try {
       final db = await _db.database;
@@ -36,6 +39,7 @@ class InvoiceRepository {
     }
   }
 
+  /// Busca facturas por nombre de cliente.
   Future<List<Invoice>> search(String query) async {
     try {
       final db = await _db.database;
@@ -54,6 +58,7 @@ class InvoiceRepository {
     }
   }
 
+  /// Obtiene las líneas de detalle (items) de una factura.
   Future<List<InvoiceItem>> getItems(int invoiceId) async {
     try {
       final db = await _db.database;
@@ -71,6 +76,7 @@ class InvoiceRepository {
     }
   }
 
+  /// Obtiene una factura por su ID, o null si no existe.
   Future<Invoice?> getById(int invoiceId) async {
     try {
       final db = await _db.database;
@@ -89,6 +95,8 @@ class InvoiceRepository {
     }
   }
 
+  /// Guarda una nueva factura junto con sus items en una transacción.
+  /// Descuenta automáticamente el stock de los productos vendidos.
   Future<int> save(Invoice invoice, List<InvoiceItem> items) async {
     try {
       final db = await _db.database;
@@ -98,8 +106,6 @@ class InvoiceRepository {
           'customer_rnc': invoice.customerRnc,
           'subtotal': invoice.subtotal,
           'discount_global': invoice.discountGlobal,
-          'itbis': invoice.itbis,
-          'isr': invoice.isr,
           'total': invoice.total,
           'status': invoice.status,
           'payment_status': invoice.paymentStatus,
@@ -133,6 +139,7 @@ class InvoiceRepository {
     }
   }
 
+  /// Anula una factura (status = 'cancelled') y opcionalmente restaura el stock.
   Future<void> cancel(int invoiceId, {bool restoreStock = true}) async {
     try {
       final db = await _db.database;
@@ -165,6 +172,7 @@ class InvoiceRepository {
     }
   }
 
+  /// Elimina permanentemente una factura y sus items, con opción a restaurar stock.
   Future<void> delete(int invoiceId, {bool restoreStock = true}) async {
     try {
       final db = await _db.database;
@@ -197,6 +205,8 @@ class InvoiceRepository {
     }
   }
 
+  /// Actualiza una factura existente: restaura stock anterior,
+  /// reemplaza items y descuenta el nuevo stock, todo en una transacción.
   Future<void> update(Invoice invoice, List<InvoiceItem> items) async {
     try {
       final db = await _db.database;
@@ -226,8 +236,6 @@ class InvoiceRepository {
             'customer_rnc': invoice.customerRnc,
             'subtotal': invoice.subtotal,
             'discount_global': invoice.discountGlobal,
-            'itbis': invoice.itbis,
-            'isr': invoice.isr,
             'total': invoice.total,
             'status': invoice.status,
             'payment_status': invoice.paymentStatus,

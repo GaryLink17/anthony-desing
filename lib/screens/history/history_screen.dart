@@ -10,6 +10,11 @@ import '../../models/invoice.dart';
 import '../invoices/invoice_preview_screen.dart';
 import '../../utils/responsive_helper.dart';
 
+/// Pantalla de historial de facturas con filtros por fecha, texto y estado.
+///
+/// Muestra un resumen de métricas del período filtrado (total facturado,
+/// facturas activas, descuentos, promedio) y una tabla paginada con
+/// opciones de vista previa y anulación.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -43,6 +48,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _load();
   }
 
+  /// Carga todas las facturas y aplica los filtros actuales.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -60,6 +66,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  /// Abre selector de fecha de inicio.
   Future<void> _selectStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -83,6 +90,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  /// Abre selector de fecha de fin.
   Future<void> _selectEndDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -98,6 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  /// Navega un día hacia atrás en la fecha indicada.
   void _prevDay(bool isStart) {
     setState(() {
       if (isStart) {
@@ -109,6 +118,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _applyFilters();
   }
 
+  /// Navega un día hacia adelante en la fecha indicada.
   void _nextDay(bool isStart) {
     final now = DateTime.now();
     setState(() {
@@ -136,6 +146,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _applyFilters();
   }
 
+  /// Restablece ambas fechas al día de hoy.
   void _setToday() {
     final now = DateTime.now();
     setState(() {
@@ -145,6 +156,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _applyFilters();
   }
 
+  /// Filtra la lista completa por texto, rango de fechas y estado.
   void _applyFilters() {
     final query = _searchCtrl.text.trim().toLowerCase();
 
@@ -202,6 +214,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Encabezado con título y conteo de facturas activas/anuladas.
   Widget _buildHeader() {
     final activeCount = _filtered.where((inv) => inv.isActive).length;
     final cancelledCount = _filtered.where((inv) => inv.isCancelled).length;
@@ -231,6 +244,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Barra de métricas del período filtrado.
   Widget _buildSummaryBar() {
     return Row(
       children: [
@@ -279,6 +293,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Barra de herramientas con búsqueda, selector de fechas y filtro de estado.
   Widget _buildToolbar() {
     final now = DateTime.now();
     final isToday =
@@ -373,6 +388,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Filtro de estado con tres opciones: Todas, Activas, Anuladas.
   Widget _buildStatusFilter() {
     return Container(
       decoration: BoxDecoration(
@@ -391,6 +407,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Botón individual del filtro de estado (Todas / Activas / Anuladas).
   Widget _statusBtn(String label, String value) {
     final isActive = _statusFilter == value;
     return GestureDetector(
@@ -416,6 +433,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Control de fecha con flechas de navegación y botón calendario.
   Widget _buildDateField(String label, DateTime date, VoidCallback onTap) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -496,6 +514,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Botón de flecha para navegación de fechas.
   Widget _dateArrow(IconData icon, bool isStart, bool isPrev) {
     return InkWell(
       onTap: () => isPrev ? _prevDay(isStart) : _nextDay(isStart),
@@ -507,6 +526,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Tabla de facturas filtradas con cabecera y filas.
   Widget _buildTable() {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
@@ -546,6 +566,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Cabecera de la tabla con nombres de columnas.
   Widget _buildTableHeader() {
     final style = TextStyle(
       fontSize: 11,
@@ -571,6 +592,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Fila individual de la tabla con datos de la factura y acciones.
   Widget _buildRow(Invoice inv, int index) {
     final date = DateFormat(
       'dd/MM/yyyy HH:mm',
@@ -736,6 +758,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Genera el PDF y navega a la vista previa de la factura.
   Future<void> _previewInvoice(Invoice inv) async {
     try {
       final items = await _repo.getItems(inv.id!);
@@ -752,6 +775,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  /// Muestra diálogo de confirmación para anular una factura con opción de reponer stock.
   void _confirmCancel(Invoice inv) {
     showDialog(
       context: context,
@@ -915,6 +939,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
+/// Tarjeta de métrica con ícono, valor numérico y etiqueta descriptiva.
 class _SummaryCard extends StatelessWidget {
   final String label;
   final String value;

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Helper para cálculos y valores responsive
+/// Helper para diseño responsive con breakpoints mobile/tablet/desktop.
 class ResponsiveHelper {
-  // Breakpoints
   static const double mobileBreakpoint = 600;
   static const double tabletBreakpoint = 1024;
 
-  /// Obtiene el tipo de pantalla basado en el ancho
+  /// Determina el tipo de pantalla según el ancho del viewport.
   static ScreenType getScreenType(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     if (width < mobileBreakpoint) {
@@ -18,7 +17,6 @@ class ResponsiveHelper {
     }
   }
 
-  /// Obtiene el padding responsive basado en el tamaño de pantalla
   static EdgeInsets getResponsivePadding(BuildContext context) {
     final screenType = getScreenType(context);
     switch (screenType) {
@@ -31,7 +29,6 @@ class ResponsiveHelper {
     }
   }
 
-  /// Obtiene el padding horizontal responsive
   static double getResponsivePaddingHorizontal(BuildContext context) {
     final screenType = getScreenType(context);
     switch (screenType) {
@@ -44,7 +41,6 @@ class ResponsiveHelper {
     }
   }
 
-  /// Obtiene el padding vertical responsive
   static double getResponsivePaddingVertical(BuildContext context) {
     final screenType = getScreenType(context);
     switch (screenType) {
@@ -57,7 +53,6 @@ class ResponsiveHelper {
     }
   }
 
-  /// Obtiene el tamaño de fuente responsive
   static double getResponsiveFontSize(
     BuildContext context, {
     double mobile = 14,
@@ -75,7 +70,6 @@ class ResponsiveHelper {
     }
   }
 
-  /// Calcula cuantas columnas debería tener un layout responsive
   static int getResponsiveColumns(
     BuildContext context, {
     int mobileColumns = 1,
@@ -93,12 +87,11 @@ class ResponsiveHelper {
     }
   }
 
-  /// Obtiene el ancho máximo para contenido en una pantalla
   static double getMaxContentWidth(BuildContext context) {
     final screenType = getScreenType(context);
     switch (screenType) {
       case ScreenType.mobile:
-        return double.infinity; // Sin límite en móvil
+        return double.infinity;
       case ScreenType.tablet:
         return 800;
       case ScreenType.desktop:
@@ -107,10 +100,10 @@ class ResponsiveHelper {
   }
 }
 
-/// Tipos de pantalla para design responsivo
+/// Tipos de pantalla para diseño responsive.
 enum ScreenType { mobile, tablet, desktop }
 
-/// Extensión para acceso fácil a ResponsiveHelper
+/// Extensiones de BuildContext para acceso directo a helpers responsive.
 extension ResponsiveContext on BuildContext {
   ScreenType get screenType => ResponsiveHelper.getScreenType(this);
   EdgeInsets get responsivePadding =>

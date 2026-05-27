@@ -1,11 +1,10 @@
+/// Modelo que representa una cotización (cabecera).
 class Quote {
   final int? id;
   final String? customerName;
   final String? customerRnc;
   final double subtotal;
   final double discountGlobal;
-  final double itbis;
-  final double isr;
   final double total;
   final String createdAt;
   final String? expiresAt;
@@ -17,32 +16,28 @@ class Quote {
     this.customerRnc,
     required this.subtotal,
     this.discountGlobal = 0,
-    this.itbis = 0,
-    this.isr = 0,
     required this.total,
     required this.createdAt,
     this.expiresAt,
     this.isConverted = false,
   });
 
+  /// Indica si la cotización ha expirado según su fecha de expiración.
   bool get isExpired {
     if (expiresAt == null) return false;
     return DateTime.parse(expiresAt!).isBefore(DateTime.now());
   }
 
+  /// Indica si la cotización sigue válida (no expirada y no convertida).
   bool get isValid => !isExpired && !isConverted;
 
-  /// Base imponible: subtotal menos descuento global
-  double get taxableBase => subtotal - discountGlobal;
-
+  /// Crea una copia con algunos campos modificados.
   Quote copyWith({
     int? id,
     String? customerName,
     String? customerRnc,
     double? subtotal,
     double? discountGlobal,
-    double? itbis,
-    double? isr,
     double? total,
     String? createdAt,
     String? expiresAt,
@@ -54,8 +49,6 @@ class Quote {
       customerRnc: customerRnc ?? this.customerRnc,
       subtotal: subtotal ?? this.subtotal,
       discountGlobal: discountGlobal ?? this.discountGlobal,
-      itbis: itbis ?? this.itbis,
-      isr: isr ?? this.isr,
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,
       expiresAt: expiresAt ?? this.expiresAt,
@@ -63,6 +56,7 @@ class Quote {
     );
   }
 
+  /// Convierte la cotización a Map para SQLite.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -70,8 +64,6 @@ class Quote {
       'customer_rnc': customerRnc,
       'subtotal': subtotal,
       'discount_global': discountGlobal,
-      'itbis': itbis,
-      'isr': isr,
       'total': total,
       'created_at': createdAt,
       'expires_at': expiresAt,
@@ -79,6 +71,7 @@ class Quote {
     };
   }
 
+  /// Crea una Quote desde un Map de SQLite.
   factory Quote.fromMap(Map<String, dynamic> map) {
     return Quote(
       id: map['id'],
@@ -86,8 +79,6 @@ class Quote {
       customerRnc: map['customer_rnc'],
       subtotal: (map['subtotal'] as num).toDouble(),
       discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
-      itbis: (map['itbis'] as num? ?? 0).toDouble(),
-      isr: (map['isr'] as num? ?? 0).toDouble(),
       total: (map['total'] as num).toDouble(),
       createdAt: map['created_at'],
       expiresAt: map['expires_at'],

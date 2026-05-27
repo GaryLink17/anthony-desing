@@ -8,11 +8,11 @@ import '../models/product.dart';
 import '../core/app_exception.dart';
 
 /// Servicio para exportar datos a Excel (.xlsx).
+/// Ofrece exportación de facturas (resumen + detalle) e inventario.
 class ExcelService {
   static final _date = DateFormat('dd/MM/yyyy HH:mm');
 
-  // ─── Estilos compartidos ────────────────────────────────────────────────────
-
+  /// Estilo para celdas de encabezado (fondo verde, texto blanco, negrita).
   static CellStyle _headerStyle() => CellStyle(
         bold: true,
         backgroundColorHex: ExcelColor.fromHexString('#1A3A2A'),
@@ -20,30 +20,26 @@ class ExcelService {
         horizontalAlign: HorizontalAlign.Center,
       );
 
+  /// Estilo para fila de totales (fondo gris claro, negrita).
   static CellStyle _totalStyle() => CellStyle(
         bold: true,
         backgroundColorHex: ExcelColor.fromHexString('#F0F0F0'),
       );
 
-  // ─── Exportar Facturas ──────────────────────────────────────────────────────
-
   /// Exporta la lista de facturas con sus items a un archivo Excel.
-  /// Parámetro [invoicesWithItems]: lista de pares Invoice + List de InvoiceItem.
+  /// Crea dos hojas: "Facturas" (resumen) y "Detalle Items".
   static Future<bool> exportInvoices(
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) async {
     try {
       final excel = Excel.createExcel();
 
-      // Hoja resumen de facturas
       final summarySheet = excel['Facturas'];
       _writeInvoiceSummary(summarySheet, invoicesWithItems);
 
-      // Hoja detalle de items
       final detailSheet = excel['Detalle Items'];
       _writeInvoiceDetail(detailSheet, invoicesWithItems);
 
-      // Eliminar la hoja por defecto
       if (excel.sheets.containsKey('Sheet1')) {
         excel.delete('Sheet1');
       }
@@ -57,13 +53,14 @@ class ExcelService {
     }
   }
 
+  /// Escribe la hoja de resumen de facturas.
   static void _writeInvoiceSummary(
     Sheet sheet,
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) {
     final headers = [
       '#', 'Cliente', 'RNC', 'Fecha', 'Subtotal', 'Descuento',
-      'ITBIS', 'ISR', 'Total', 'Estado Pago', 'Estado',
+      'Total', 'Estado Pago', 'Estado',
     ];
     _writeHeaders(sheet, headers);
 
@@ -85,37 +82,34 @@ class ExcelService {
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
           .value = DoubleCellValue(inv.discountGlobal);
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
-          .value = DoubleCellValue(inv.itbis);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
-          .value = DoubleCellValue(inv.isr);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row))
           .value = DoubleCellValue(inv.total);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
           .value = TextCellValue(
             inv.isCancelled ? 'ANULADA' : inv.isPaid ? 'PAGADA' : 'PENDIENTE',
           );
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 10, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row))
           .value = TextCellValue(inv.isCancelled ? 'Anulada' : 'Activa');
 
       if (!inv.isCancelled) totalSum += inv.total;
       row++;
     }
 
-    // Fila de totales
+    // Fila de totales al final
     row++;
     final totalCell = sheet.cell(
-      CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row),
+      CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row),
     );
     totalCell.value = TextCellValue('TOTAL ACTIVAS:');
     totalCell.cellStyle = _totalStyle();
 
     final totalAmountCell = sheet.cell(
-      CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row),
+      CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row),
     );
     totalAmountCell.value = DoubleCellValue(totalSum);
     totalAmountCell.cellStyle = _totalStyle();
   }
 
+  /// Escribe la hoja de detalle de items (una fila por producto vendido).
   static void _writeInvoiceDetail(
     Sheet sheet,
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
@@ -149,8 +143,7 @@ class ExcelService {
     }
   }
 
-  // ─── Exportar Inventario ────────────────────────────────────────────────────
-
+  /// Exporta la lista de productos del inventario a un archivo Excel.
   static Future<bool> exportInventory(List<Product> products) async {
     try {
       final excel = Excel.createExcel();
@@ -205,8 +198,7 @@ class ExcelService {
     }
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
-
+  /// Escribe la fila de encabezados en una hoja.
   static void _writeHeaders(Sheet sheet, List<String> headers) {
     for (int i = 0; i < headers.length; i++) {
       final cell = sheet.cell(
@@ -217,6 +209,7 @@ class ExcelService {
     }
   }
 
+  /// Abre el diálogo de guardado y escribe el archivo Excel en disco.
   static Future<bool> _saveFile(Excel excel, String baseName) async {
     final timestamp = DateFormat('yyyy-MM-dd_HH-mm').format(DateTime.now());
     final fileName = '${baseName}_$timestamp.xlsx';

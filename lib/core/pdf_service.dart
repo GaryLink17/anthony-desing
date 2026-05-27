@@ -11,6 +11,7 @@ import '../models/quote_item.dart';
 import 'dart:typed_data';
 
 
+/// Configuración de empresa cargada desde SharedPreferences para el PDF.
 class _PdfCompanyConfig {
   final String companyName;
   final String companyPhone;
@@ -33,13 +34,17 @@ class _PdfCompanyConfig {
   });
 }
 
+/// Servicio para generar e imprimir PDFs de facturas y cotizaciones.
+/// Usa las librerías `pdf` (generación) y `printing` (vista previa/impresión).
 class PdfService {
+  /// Formatea montos en RD$ sin decimales.
   static NumberFormat _currencyFormatter() => NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
     decimalDigits: 0,
   );
 
+  /// Carga la configuración de la empresa desde SharedPreferences.
   static Future<_PdfCompanyConfig> _loadCompanyConfig({
     String defaultFooter = '¡Gracias por su compra!',
   }) async {
@@ -56,12 +61,14 @@ class PdfService {
     );
   }
 
+  /// Carga la imagen del logo desde la ruta guardada, o null si no existe.
   static Future<pw.ImageProvider?> _loadLogo(String? logoPath) async {
     if (logoPath == null || !File(logoPath).existsSync()) return null;
     final bytes = await File(logoPath).readAsBytes();
     return pw.MemoryImage(bytes);
   }
 
+  /// Genera y abre el diálogo de impresión/vista previa del PDF de factura.
   static Future<void> generateAndPrint(
     Invoice invoice,
     List<InvoiceItem> items,
@@ -292,18 +299,6 @@ class PdfService {
                 'Descuento (${invoice.subtotal > 0 ? (invoice.discountGlobal / invoice.subtotal * 100).toStringAsFixed(0) : '0'}%)',
                 '- ${currency.format(invoice.discountGlobal)}',
                 color: PdfColors.red700,
-              ),
-            if (invoice.itbis > 0)
-              _totalRow(
-                'ITBIS (18%)',
-                '+ ${currency.format(invoice.itbis)}',
-                color: PdfColors.blue700,
-              ),
-            if (invoice.isr > 0)
-              _totalRow(
-                'Retención ISR (1%)',
-                '- ${currency.format(invoice.isr)}',
-                color: PdfColors.orange700,
               ),
             pw.Divider(color: PdfColors.grey400),
             _totalRow(
@@ -664,18 +659,6 @@ class PdfService {
                 'Descuento (${quote.subtotal > 0 ? (quote.discountGlobal / quote.subtotal * 100).toStringAsFixed(0) : '0'}%)',
                 '- ${currency.format(quote.discountGlobal)}',
                 color: PdfColors.red700,
-              ),
-            if (quote.itbis > 0)
-              _totalRow(
-                'ITBIS (18%)',
-                '+ ${currency.format(quote.itbis)}',
-                color: PdfColors.blue700,
-              ),
-            if (quote.isr > 0)
-              _totalRow(
-                'Retención ISR (1%)',
-                '- ${currency.format(quote.isr)}',
-                color: PdfColors.orange700,
               ),
             pw.Divider(color: PdfColors.grey400),
             _totalRow(

@@ -1,3 +1,4 @@
+/// Modelo que representa un producto del inventario.
 class Product {
   final int? id;
   final String name;
@@ -19,16 +20,16 @@ class Product {
     required this.createdAt,
   });
 
-  // Ganancia por unidad
+  /// Ganancia por unidad (precio_venta - precio_compra).
   double get profit => salePrice - purchasePrice;
 
-  // Margen en porcentaje
+  /// Margen de ganancia como porcentaje del precio de venta.
   double get marginPercent => (profit / salePrice) * 100;
 
-  // Si el stock está por debajo del mínimo
+  /// Indica si el stock actual está por debajo del mínimo permitido.
   bool get isLowStock => stock <= minStock;
 
-  // Convertir a Map para guardar en SQLite
+  /// Convierte el producto a Map para guardar en SQLite.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -42,7 +43,7 @@ class Product {
     };
   }
 
-  // Crear un Product desde un Map que viene de SQLite
+  /// Crea un Product desde un Map devuelto por SQLite.
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
       id: map['id'],
@@ -56,7 +57,7 @@ class Product {
     );
   }
 
-  // Para hacer copias modificadas del objeto
+  /// Crea una copia del producto con algunos campos modificados.
   Product copyWith({
     int? id,
     String? name,

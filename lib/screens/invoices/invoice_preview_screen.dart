@@ -4,6 +4,10 @@ import 'package:printing/printing.dart';
 import '../../theme/app_theme.dart';
 import '../../models/invoice.dart';
 
+/// Pantalla de vista previa e impresión de PDF de una factura.
+///
+/// Muestra el PDF generado usando [PdfPreview] y ofrece botones
+/// para imprimir directamente o guardar el archivo.
 class InvoicePreviewScreen extends StatelessWidget {
   final Uint8List pdfBytes;
   final Invoice invoice;
@@ -38,6 +42,7 @@ class InvoicePreviewScreen extends StatelessWidget {
     );
   }
 
+  /// Barra superior con botón de retroceso, título, imprimir y guardar PDF.
   Widget _buildTopBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -67,7 +72,6 @@ class InvoicePreviewScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // Botón imprimir
           ElevatedButton.icon(
             onPressed: () async {
               await Printing.layoutPdf(onLayout: (_) => pdfBytes);
@@ -84,7 +88,6 @@ class InvoicePreviewScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          // Botón guardar PDF
           OutlinedButton.icon(
             onPressed: () async {
               await Printing.sharePdf(

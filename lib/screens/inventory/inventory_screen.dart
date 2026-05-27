@@ -11,8 +11,14 @@ import 'widgets/product_dialog.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../services/excel_service.dart';
+import '../../widgets/pagination_bar.dart';
 
 
+/// Pantalla de gestión del inventario de productos.
+///
+/// Permite buscar, crear, editar y eliminar productos. Incluye
+/// paginación local, exportación a Excel y acceso directo a un
+/// producto específico mediante [focusProductId].
 class InventoryScreen extends StatefulWidget {
   /// Si se indica, tras cargar la lista se abre el diálogo de edición de ese producto.
   final int? focusProductId;
@@ -33,8 +39,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
     decimalDigits: 0,
   );
 
+  static const int _pageSize = 10;
+  int _currentPage = 0;
   List<Product> _products = [];
   bool _loading = true;
+
+  /// Productos visibles en la página actual.
+  List<Product> get _paginatedProducts {
+    final start = _currentPage * _pageSize;
+    return _products.skip(start).take(_pageSize).toList();
+  }
+
+  /// Total de páginas según la cantidad de productos.
+  int get _totalPages =>
+      _pageSize >= _products.length ? 1 : (_products.length / _pageSize).ceil();
 
   @override
   void initState() {
@@ -49,6 +67,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     super.dispose();
   }
 
+  /// Carga productos desde el repositorio, opcionalmente filtrados por búsqueda.
   Future<void> _loadProducts([String query = '']) async {
     setState(() => _loading = true);
     try {
@@ -58,6 +77,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       if (mounted) {
         setState(() {
           _products = result;
+          _currentPage = 0;
           _loading = false;
         });
         _tryOpenFocusProduct();
@@ -68,6 +88,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
+  /// Si se especificó un [focusProductId] y el producto existe en la lista,
+  /// abre automáticamente el diálogo de edición.
   void _tryOpenFocusProduct() {
     final id = widget.focusProductId;
     if (id == null) return;
@@ -105,6 +127,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Encabezado con título, subtítulo y botones de acción (Excel, nuevo producto).
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -173,6 +196,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Exporta la lista actual de productos a un archivo Excel.
   Future<void> _exportExcel() async {
     try {
       final saved = await ExcelService.exportInventory(_products);
@@ -186,6 +210,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
+  /// Barra de búsqueda con debounce.
   Widget _buildToolbar() {
     return SizedBox(
       width: 320,
@@ -225,6 +250,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Tabla de productos con cabecera, filas paginadas y barra de paginación.
   Widget _buildTable() {
     return StateBuilder(
       isLoading: _loading,
@@ -244,14 +270,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
         child: Column(
           children: [
             _buildTableHeader(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _products.length,
-                itemBuilder: (_, i) => KeyedSubtree(
-                  key: ValueKey(_products[i].id),
-                  child: _buildTableRow(_products[i], i),
-                ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _paginatedProducts.length,
+              itemBuilder: (_, i) => KeyedSubtree(
+                key: ValueKey(_paginatedProducts[i].id),
+                child: _buildTableRow(_paginatedProducts[i], i + _currentPage * _pageSize),
               ),
+            ),
+          ),
+          if (_totalPages > 1)
+            PaginationBar(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              totalItems: _products.length,
+              onPageChanged: (p) => setState(() => _currentPage = p),
             ),
           ],
         ),
@@ -259,6 +292,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Cabecera de la tabla con nombres de columnas.
   Widget _buildTableHeader() {
     final style = TextStyle(
       fontSize: 11,
@@ -286,6 +320,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Fila individual de la tabla con datos del producto y botones editar/eliminar.
   Widget _buildTableRow(Product p, int index) {
     final isEven = index % 2 == 0;
     final profit = p.salePrice - p.purchasePrice;
@@ -426,6 +461,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Muestra diálogo de confirmación antes de eliminar un producto.
   void _confirmDelete(Product p) {
     showDialog(
       context: context,
@@ -465,6 +501,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  /// Muestra el diálogo para crear o editar un producto y maneja la
+  /// persistencia al guardar.
   void _showProductDialog({Product? product}) {
     showDialog(
       context: context,

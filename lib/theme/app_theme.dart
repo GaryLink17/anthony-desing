@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Clase centralizada para manejo de temas de la aplicación
+/// Define colores y temas (claro/oscuro) para toda la aplicación.
+/// Todos los componentes deben referenciar estos colores en vez de valores fijos.
 class AppTheme {
   // ---- COLORES PRINCIPALES ----
   static const Color primaryBlue = Color(0xFF1B3A6B);

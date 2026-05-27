@@ -11,7 +11,6 @@ import '../../core/pdf_service.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../services/document_totals_service.dart';
-import '../../services/tax_service.dart';
 import '../../models/quote.dart';
 import '../../models/quote_item.dart';
 import '../../models/invoice.dart';
@@ -20,8 +19,13 @@ import '../../models/product.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
+import '../../widgets/pagination_bar.dart';
 
 
+/// Pantalla de gestión de cotizaciones.
+///
+/// Permite crear, editar, visualizar en PDF, eliminar y convertir
+/// cotizaciones en facturas. Incluye paginación y búsqueda por cliente.
 class QuotesScreen extends StatefulWidget {
   const QuotesScreen({super.key});
 
@@ -34,8 +38,20 @@ class _QuotesScreenState extends State<QuotesScreen> {
   final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
   final _debouncer = Debouncer();
+  static const int _pageSize = 10;
+  int _currentPage = 0;
   List<Quote> _quotes = [];
   bool _loading = true;
+
+  /// Cotizaciones visibles en la página actual.
+  List<Quote> get _paginatedQuotes {
+    final start = _currentPage * _pageSize;
+    return _quotes.skip(start).take(_pageSize).toList();
+  }
+
+  /// Total de páginas según la cantidad de cotizaciones.
+  int get _totalPages =>
+      _pageSize >= _quotes.length ? 1 : (_quotes.length / _pageSize).ceil();
 
   static final _currency = NumberFormat.currency(
     locale: 'en_US',
@@ -56,6 +72,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     super.dispose();
   }
 
+  /// Carga cotizaciones desde el repositorio, opcionalmente filtradas por búsqueda.
   Future<void> _load([String query = '']) async {
     setState(() => _loading = true);
     try {
@@ -65,6 +82,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
       if (mounted) {
         setState(() {
           _quotes = result;
+          _currentPage = 0;
           _loading = false;
         });
       }
@@ -94,6 +112,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Encabezado con título, subtítulo y botón de nueva cotización.
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -132,6 +151,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Barra de búsqueda por nombre de cliente con debounce.
   Widget _buildSearchBar() {
     return SizedBox(
       width: 320,
@@ -158,6 +178,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Contenido principal: tabla de cotizaciones o estado vacío.
   Widget _buildContent() {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
@@ -197,15 +218,23 @@ class _QuotesScreenState extends State<QuotesScreen> {
           _buildTableHeader(),
           Expanded(
             child: ListView.builder(
-              itemCount: _quotes.length,
-              itemBuilder: (_, i) => _buildRow(_quotes[i], i),
+              itemCount: _paginatedQuotes.length,
+              itemBuilder: (_, i) => _buildRow(_paginatedQuotes[i], i + _currentPage * _pageSize),
             ),
           ),
+          if (_totalPages > 1)
+            PaginationBar(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              totalItems: _quotes.length,
+              onPageChanged: (p) => setState(() => _currentPage = p),
+            ),
         ],
       ),
     );
   }
 
+  /// Cabecera de la tabla con nombres de columnas.
   Widget _buildTableHeader() {
     final style = TextStyle(
       fontSize: 11,
@@ -231,6 +260,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Fila individual de la tabla con datos de la cotización y acciones.
   Widget _buildRow(Quote quote, int index) {
     final date = DateFormat(
       'dd/MM/yyyy',
@@ -382,6 +412,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Abre el diálogo para crear una nueva cotización.
   void _openNewQuote() async {
     final products = await ProductRepository().getAll();
     if (!mounted) return;
@@ -404,6 +435,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Abre el diálogo para editar una cotización existente.
   void _openEditQuote(Quote quote) async {
     final products = await ProductRepository().getAll();
     final existingItems = await _quoteRepo.getItems(quote.id!);
@@ -421,8 +453,6 @@ class _QuotesScreenState extends State<QuotesScreen> {
               customerRnc: updatedQuote.customerRnc,
               subtotal: updatedQuote.subtotal,
               discountGlobal: updatedQuote.discountGlobal,
-              itbis: updatedQuote.itbis,
-              isr: updatedQuote.isr,
               total: updatedQuote.total,
               expiresAt: updatedQuote.expiresAt,
             );
@@ -440,6 +470,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
   }
 
+  /// Genera el PDF de la cotización y navega a la vista previa.
   Future<void> _printQuote(Quote quote) async {
     try {
       final items = await _quoteRepo.getItems(quote.id!);
@@ -458,6 +489,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     }
   }
 
+  /// Convierte una cotización en factura, descontando el stock de los productos.
   void _convertToInvoice(Quote quote) async {
     try {
     final items = await _quoteRepo.getItems(quote.id!);
@@ -496,8 +528,6 @@ class _QuotesScreenState extends State<QuotesScreen> {
       customerName: quote.customerName,
       subtotal: quote.subtotal,
       discountGlobal: quote.discountGlobal,
-      itbis: quote.itbis,
-      isr: quote.isr,
       total: quote.total,
       createdAt: DateTime.now().toIso8601String(),
     );
@@ -523,6 +553,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
     }
   }
 
+  /// Muestra diálogo de confirmación antes de eliminar una cotización.
   void _confirmDelete(Quote quote) {
     showDialog(
       context: context,
@@ -559,6 +590,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
   }
 }
 
+/// Pantalla de vista previa e impresión de PDF de una cotización.
 class _QuotePreviewScreen extends StatelessWidget {
   final Uint8List pdfBytes;
   final Quote quote;
@@ -589,6 +621,7 @@ class _QuotePreviewScreen extends StatelessWidget {
     );
   }
 
+  /// Barra superior con retroceso, título y botones imprimir/guardar PDF.
   Widget _buildTopBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -659,6 +692,8 @@ class _QuotePreviewScreen extends StatelessWidget {
   }
 }
 
+/// Diálogo modal para crear o editar una cotización con selección de
+/// productos, cantidades, descuentos y fecha de vencimiento.
 class _NewQuoteDialog extends StatefulWidget {
   final List<Product> products;
   final Function(Quote, List<QuoteItem>) onSave;
@@ -688,13 +723,6 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   List<Product> _filteredProducts = [];
   final bool _showProductList = true;
 
-  TaxConfig _taxConfig = const TaxConfig(
-    applyItbis: false,
-    itbisRate: TaxService.defaultItbisRate,
-    applyIsr: false,
-    isrRate: TaxService.defaultIsrRate,
-  );
-
   static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
@@ -705,8 +733,6 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   void initState() {
     super.initState();
     _filteredProducts = widget.products;
-
-    _loadTaxConfig();
 
     if (widget.existingQuote != null) {
       _customerName = widget.existingQuote!.customerName ?? '';
@@ -739,26 +765,16 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }
   }
 
-  Future<void> _loadTaxConfig() async {
-    final config = await TaxService.getConfig();
-    if (mounted) setState(() => _taxConfig = config);
-  }
-
   DocumentTotals get _totals => DocumentTotalsService.calculateFromItems(
     items: _items,
     discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
-    taxConfig: _taxConfig,
   );
 
   double get _subtotal => _totals.subtotal;
   double get _globalDiscount => _totals.discountAmount;
-  TaxResult get _taxResult => _totals.taxResult;
+  double get _total => _totals.total;
 
-  double get _itbis => _taxResult.itbis;
-  double get _isr => _taxResult.isr;
-
-  double get _total => _taxResult.total;
-
+  /// Filtra la lista de productos según el texto de búsqueda.
   void _filterProducts(String query) {
     setState(() {
       _filteredProducts = widget.products
@@ -767,6 +783,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     });
   }
 
+  /// Abre el diálogo de configuración y agrega un producto a la lista de items.
   void _addProduct(Product p) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -785,10 +802,12 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }
   }
 
+  /// Elimina un producto de la lista de items.
   void _removeItem(int index) {
     setState(() => _items.removeAt(index));
   }
 
+  /// Abre el selector de fecha de vencimiento de la cotización.
   void _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -801,6 +820,8 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }
   }
 
+  /// Valida el formulario, construye la cotización y los items y
+  /// entrega todo mediante el callback [onSave].
   void _save() {
     if (_items.isEmpty) return;
     if (!_formKey.currentState!.validate()) return;
@@ -812,8 +833,6 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
       customerRnc: _customerRnc,
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
-      itbis: _itbis,
-      isr: _isr,
       total: _total,
       createdAt: DateTime.now().toIso8601String(),
       expiresAt: _expiresAt.toIso8601String(),
@@ -863,6 +882,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     );
   }
 
+  /// Encabezado del diálogo con título y botón de cierre.
   Widget _buildDialogHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -900,6 +920,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     );
   }
 
+  /// Panel izquierdo con formulario de cliente, fecha, descuento y selector de productos.
   Widget _buildLeftPanel() {
     return Expanded(
       flex: 3,
@@ -1052,6 +1073,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     );
   }
 
+  /// Panel derecho con lista de items seleccionados, totales y botón de guardar.
   Widget _buildRightPanel() {
     return Expanded(
       flex: 2,
@@ -1155,22 +1177,6 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
             _buildSummaryRow('Subtotal', _subtotal),
             if (_globalDiscount > 0)
               _buildSummaryRow('Descuento', -_globalDiscount, isDiscount: true),
-            TaxToggleRow(
-              label: 'ITBIS ${_taxConfig.itbisRate.toStringAsFixed(0)}%',
-              value: _taxConfig.applyItbis,
-              onChanged: (v) =>
-                  setState(() => _taxConfig = _taxConfig.copyWith(applyItbis: v)),
-              color: Colors.blue.shade700,
-              formattedAmount: '+ ${_currency.format(_itbis.abs())}',
-            ),
-            TaxToggleRow(
-              label: 'ISR ${_taxConfig.isrRate.toStringAsFixed(0)}% (ret.)',
-              value: _taxConfig.applyIsr,
-              onChanged: (v) =>
-                  setState(() => _taxConfig = _taxConfig.copyWith(applyIsr: v)),
-              color: Colors.orange.shade700,
-              formattedAmount: '- ${_currency.format(_isr.abs())}',
-            ),
             const Divider(height: 8),
             _buildSummaryRow('Total', _total, isTotal: true),
             const SizedBox(height: 16),
@@ -1196,6 +1202,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     );
   }
 
+  /// Fila resumen reutilizable para subtotal, descuento y total.
   Widget _buildSummaryRow(
     String label,
     double amount, {
@@ -1214,6 +1221,8 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   }
 }
 
+/// Diálogo para configurar cantidad, precio unitario y descuento de un producto
+/// antes de agregarlo a la cotización.
 class _ProductConfigDialog extends StatefulWidget {
   final Product product;
   final NumberFormat currency;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Fila reutilizable para mostrar resumen de totales (subtotal, descuento, total)
+/// en la vista previa de facturas y cotizaciones.
 class DocumentSummaryRow extends StatelessWidget {
   final String label;
   final String formattedAmount;
@@ -46,50 +48,4 @@ class DocumentSummaryRow extends StatelessWidget {
   }
 }
 
-class TaxToggleRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final Color color;
-  final String? formattedAmount;
 
-  const TaxToggleRow({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    required this.color,
-    this.formattedAmount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 22,
-            height: 22,
-            child: Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              activeColor: color,
-              side: BorderSide(color: color, width: 1.5),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(label, style: TextStyle(fontSize: 11, color: color)),
-          ),
-          if (value && formattedAmount != null)
-            Text(
-              formattedAmount!,
-              style: TextStyle(fontSize: 11, color: color),
-            ),
-        ],
-      ),
-    );
-  }
-}

@@ -3,9 +3,11 @@ import 'app_exception.dart';
 import '../models/quote.dart';
 import '../models/quote_item.dart';
 
+/// Repositorio para operaciones CRUD de cotizaciones y sus líneas de detalle.
 class QuoteRepository {
   final _db = DatabaseHelper.instance;
 
+  /// Obtiene todas las cotizaciones ordenadas por fecha descendente.
   Future<List<Quote>> getAll() async {
     try {
       final db = await _db.database;
@@ -19,6 +21,7 @@ class QuoteRepository {
     }
   }
 
+  /// Busca cotizaciones por nombre de cliente.
   Future<List<Quote>> search(String query) async {
     try {
       final db = await _db.database;
@@ -37,6 +40,7 @@ class QuoteRepository {
     }
   }
 
+  /// Obtiene las líneas de detalle (items) de una cotización.
   Future<List<QuoteItem>> getItems(int quoteId) async {
     try {
       final db = await _db.database;
@@ -54,6 +58,7 @@ class QuoteRepository {
     }
   }
 
+  /// Obtiene una cotización por su ID, o null si no existe.
   Future<Quote?> getById(int quoteId) async {
     try {
       final db = await _db.database;
@@ -72,6 +77,8 @@ class QuoteRepository {
     }
   }
 
+  /// Guarda una nueva cotización junto con sus items en una transacción.
+  /// NOTA: a diferencia de facturas, las cotizaciones NO descuentan stock.
   Future<int> save(Quote quote, List<QuoteItem> items) async {
     try {
       final db = await _db.database;
@@ -80,8 +87,6 @@ class QuoteRepository {
           'customer_name': quote.customerName,
           'subtotal': quote.subtotal,
           'discount_global': quote.discountGlobal,
-          'itbis': quote.itbis,
-          'isr': quote.isr,
           'total': quote.total,
           'created_at': quote.createdAt,
           'expires_at': quote.expiresAt,
@@ -110,6 +115,8 @@ class QuoteRepository {
     }
   }
 
+  /// Marca una cotización como convertida a factura (is_converted = 1).
+  /// Previene que se convierta dos veces.
   Future<void> markAsConverted(int quoteId) async {
     try {
       final db = await _db.database;
@@ -127,6 +134,7 @@ class QuoteRepository {
     }
   }
 
+  /// Elimina una cotización y sus items asociados en una transacción.
   Future<void> delete(int quoteId) async {
     try {
       final db = await _db.database;

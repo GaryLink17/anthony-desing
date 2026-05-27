@@ -7,6 +7,10 @@ import 'providers/theme_provider.dart';
 import 'core/database.dart';
 import 'utils/state_persistence.dart';
 
+/// Punto de entrada de la aplicación.
+///
+/// Inicializa la base de datos, la persistencia de estado, los providers
+/// globales y lanza la interfaz con el tema y datos de la empresa cargados.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es', null);

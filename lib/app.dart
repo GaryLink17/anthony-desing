@@ -14,9 +14,14 @@ import 'services/notification_service.dart';
 import 'app_routes.dart';
 import 'utils/state_persistence.dart';
 
+/// Widget raíz de la aplicación.
+///
+/// Configura el MaterialApp con tema claro/oscuro y define el
+/// generador de rutas que envuelve cada pantalla en el [MainLayout].
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  /// Constructor de ruta sin animación de transición.
   PageRouteBuilder<void> _buildNoAnimationRoute({
     required WidgetBuilder builder,
     required RouteSettings settings,
@@ -71,6 +76,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// Envoltorio que inicializa el servicio de notificaciones y delega en [MainLayout].
 class MainLayoutWrapper extends StatefulWidget {
   final String initialRoute;
   final int? focusInventoryProductId;
@@ -102,6 +108,10 @@ class _MainLayoutWrapperState extends State<MainLayoutWrapper> {
   }
 }
 
+/// Layout principal con sidebar persistente y área de contenido dinámico.
+///
+/// Mantiene la barra lateral fija a la izquierda y cambia la pantalla
+/// según la ruta activa sin recargar el layout completo.
 class MainLayout extends StatefulWidget {
   final String initialRoute;
   final int? focusInventoryProductId;
@@ -117,6 +127,7 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
+  /// Retorna el widget de pantalla correspondiente al índice del menú.
   Widget _screenForIndex(int index) {
     switch (index) {
       case 0:

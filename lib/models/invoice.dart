@@ -1,11 +1,10 @@
+/// Modelo que representa una factura (cabecera).
 class Invoice {
   final int? id;
   final String? customerName;
   final String? customerRnc;
   final double subtotal;
   final double discountGlobal;
-  final double itbis;
-  final double isr;
   final double total;
   final String status;
   final String paymentStatus;
@@ -17,30 +16,28 @@ class Invoice {
     this.customerRnc,
     required this.subtotal,
     this.discountGlobal = 0,
-    this.itbis = 0,
-    this.isr = 0,
     required this.total,
     this.status = 'active',
     this.paymentStatus = 'pending',
     required this.createdAt,
   });
 
+  /// La factura fue anulada.
   bool get isCancelled => status == 'cancelled';
+  /// La factura está activa (no anulada).
   bool get isActive => status == 'active';
+  /// El pago fue realizado.
   bool get isPaid => paymentStatus == 'paid';
+  /// El pago está pendiente.
   bool get isPending => paymentStatus == 'pending';
 
-  /// Base imponible: subtotal menos descuento global
-  double get taxableBase => subtotal - discountGlobal;
-
+  /// Crea una copia con algunos campos modificados.
   Invoice copyWith({
     int? id,
     String? customerName,
     String? customerRnc,
     double? subtotal,
     double? discountGlobal,
-    double? itbis,
-    double? isr,
     double? total,
     String? status,
     String? paymentStatus,
@@ -52,8 +49,6 @@ class Invoice {
       customerRnc: customerRnc ?? this.customerRnc,
       subtotal: subtotal ?? this.subtotal,
       discountGlobal: discountGlobal ?? this.discountGlobal,
-      itbis: itbis ?? this.itbis,
-      isr: isr ?? this.isr,
       total: total ?? this.total,
       status: status ?? this.status,
       paymentStatus: paymentStatus ?? this.paymentStatus,
@@ -61,6 +56,7 @@ class Invoice {
     );
   }
 
+  /// Convierte la factura a Map para SQLite.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -68,8 +64,6 @@ class Invoice {
       'customer_rnc': customerRnc,
       'subtotal': subtotal,
       'discount_global': discountGlobal,
-      'itbis': itbis,
-      'isr': isr,
       'total': total,
       'status': status,
       'payment_status': paymentStatus,
@@ -77,6 +71,7 @@ class Invoice {
     };
   }
 
+  /// Crea una Invoice desde un Map de SQLite.
   factory Invoice.fromMap(Map<String, dynamic> map) {
     return Invoice(
       id: map['id'],
@@ -84,8 +79,6 @@ class Invoice {
       customerRnc: map['customer_rnc'],
       subtotal: (map['subtotal'] as num).toDouble(),
       discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
-      itbis: (map['itbis'] as num? ?? 0).toDouble(),
-      isr: (map['isr'] as num? ?? 0).toDouble(),
       total: (map['total'] as num).toDouble(),
       status: map['status'] ?? 'active',
       paymentStatus: map['payment_status'] ?? 'pending',

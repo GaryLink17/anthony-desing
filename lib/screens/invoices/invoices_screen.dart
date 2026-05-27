@@ -12,14 +12,19 @@ import '../../widgets/state_builder.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../services/document_totals_service.dart';
-import '../../services/tax_service.dart';
 import '../../services/excel_service.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
+import '../../widgets/pagination_bar.dart';
 import 'invoice_preview_screen.dart';
 
 
+/// Pantalla de gestión de facturas.
+///
+/// Permite crear, editar, imprimir, exportar a Excel, cambiar estado
+/// de pago y anular facturas. Incluye búsqueda, paginación y verificación
+/// de stock bajo al crear una factura.
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
 
@@ -31,8 +36,20 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
   final _debouncer = Debouncer();
+  static const int _pageSize = 10;
+  int _currentPage = 0;
   List<Invoice> _invoices = [];
   bool _loading = true;
+
+  /// Facturas visibles en la página actual.
+  List<Invoice> get _paginatedInvoices {
+    final start = _currentPage * _pageSize;
+    return _invoices.skip(start).take(_pageSize).toList();
+  }
+
+  /// Total de páginas según la cantidad de facturas.
+  int get _totalPages =>
+      _pageSize >= _invoices.length ? 1 : (_invoices.length / _pageSize).ceil();
 
   static final _currency = NumberFormat.currency(
     locale: 'en_US',
@@ -53,6 +70,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     super.dispose();
   }
 
+  /// Genera el PDF de la factura y navega a la vista previa.
   Future<void> _printInvoice(Invoice inv) async {
     try {
       final items = await _invoiceRepo.getItems(inv.id!);
@@ -71,6 +89,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     }
   }
 
+  /// Exporta las facturas (con sus items) a un archivo Excel.
   Future<void> _exportExcel() async {
     try {
       final invoicesWithItems = <MapEntry<Invoice, List<InvoiceItem>>>[];
@@ -87,6 +106,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     }
   }
 
+  /// Carga facturas desde el repositorio, opcionalmente filtradas por búsqueda.
   Future<void> _load([String query = '']) async {
     setState(() => _loading = true);
     try {
@@ -96,6 +116,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       if (mounted) {
         setState(() {
           _invoices = result;
+          _currentPage = 0;
           _loading = false;
         });
       }
@@ -125,6 +146,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Encabezado con título, subtítulo y botones Excel / Nueva factura.
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -184,6 +206,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Barra de búsqueda por nombre de cliente con debounce.
   Widget _buildSearchBar() {
     return SizedBox(
       width: 320,
@@ -210,6 +233,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Contenido principal: tabla de facturas con paginación o estado vacío.
   Widget _buildContent() {
     return StateBuilder(
       isLoading: _loading,
@@ -228,16 +252,24 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             _buildTableHeader(),
             Expanded(
               child: ListView.builder(
-                itemCount: _invoices.length,
-                itemBuilder: (_, i) => _buildRow(_invoices[i], i),
+                itemCount: _paginatedInvoices.length,
+                itemBuilder: (_, i) => _buildRow(_paginatedInvoices[i], i + _currentPage * _pageSize),
               ),
             ),
+            if (_totalPages > 1)
+              PaginationBar(
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                totalItems: _invoices.length,
+                onPageChanged: (p) => setState(() => _currentPage = p),
+              ),
           ],
         ),
       ),
     );
   }
 
+  /// Cabecera de la tabla con nombres de columnas.
   Widget _buildTableHeader() {
     final style = TextStyle(
       fontSize: 11,
@@ -263,6 +295,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Fila individual de la tabla con datos de la factura y acciones.
   Widget _buildRow(Invoice inv, int index) {
     final date = DateFormat(
       'dd/MM/yyyy HH:mm',
@@ -451,6 +484,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Alterna el estado de pago de la factura entre pagada y pendiente.
   Future<void> _togglePaymentStatus(Invoice inv) async {
     final newStatus = inv.isPaid ? 'pending' : 'paid';
     try {
@@ -461,6 +495,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     }
   }
 
+  /// Muestra diálogo de confirmación para anular una factura con opción de reponer stock.
   void _confirmCancel(Invoice inv) {
     showDialog(
       context: context,
@@ -622,6 +657,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Abre el diálogo para crear una nueva factura.
   void _openNewInvoice() async {
     final products = await ProductRepository().getAll();
     if (!mounted) return;
@@ -645,6 +681,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
+  /// Verifica si alguno de los productos facturados quedó con stock bajo
+  /// y muestra notificación si es necesario.
   Future<void> _checkLowStock(List<int> productIds) async {
     try {
       final lowStock =
@@ -663,6 +701,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     }
   }
 
+  /// Abre el diálogo para editar una factura existente con sus items actuales.
   void _openEditInvoice(Invoice inv) async {
     final products = await ProductRepository().getAll();
     final existingItems = await _invoiceRepo.getItems(inv.id!);
@@ -680,8 +719,6 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               customerRnc: updatedInvoice.customerRnc,
               subtotal: updatedInvoice.subtotal,
               discountGlobal: updatedInvoice.discountGlobal,
-              itbis: updatedInvoice.itbis,
-              isr: updatedInvoice.isr,
               total: updatedInvoice.total,
             );
             await _invoiceRepo.update(invoiceWithId, items);
@@ -698,6 +735,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   }
 }
 
+/// Diálogo modal para crear o editar una factura con selección de
+/// productos, cantidades, precios, descuentos y resumen de totales.
 class _NewInvoiceDialog extends StatefulWidget {
   final List<Product> products;
   final Function(Invoice, List<InvoiceItem>) onSave;
@@ -727,13 +766,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   List<Product> _filteredProducts = [];
   final bool _showProductList = true;
 
-  TaxConfig _taxConfig = const TaxConfig(
-    applyItbis: false,
-    itbisRate: TaxService.defaultItbisRate,
-    applyIsr: false,
-    isrRate: TaxService.defaultIsrRate,
-  );
-
   static final _currency = NumberFormat.currency(
     locale: 'en_US',
     symbol: 'RD\$ ',
@@ -744,7 +776,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   void initState() {
     super.initState();
     _filteredProducts = widget.products;
-    _loadTaxConfig();
 
     // Si es edición cargamos los datos existentes
     if (widget.existingInvoice != null) {
@@ -775,28 +806,16 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }
   }
 
-  Future<void> _loadTaxConfig() async {
-    final config = await TaxService.getConfig();
-    if (mounted) setState(() => _taxConfig = config);
-  }
-
   DocumentTotals get _totals => DocumentTotalsService.calculateFromItems(
     items: _items,
     discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
-    taxConfig: _taxConfig,
   );
 
   double get _subtotal => _totals.subtotal;
   double get _globalDiscount => _totals.discountAmount;
-  TaxResult get _taxResult => _totals.taxResult;
+  double get _total => _totals.total;
 
-  double get _itbis => _taxResult.itbis;
-  double get _isr => _taxResult.isr;
-
-  // Total final (base + ITBIS - ISR)
-  double get _total => _taxResult.total;
-
-  // Filtrar productos según búsqueda
+  /// Filtra la lista de productos según el texto de búsqueda.
   void _filterProducts(String query) {
     setState(() {
       _filteredProducts = widget.products
@@ -805,7 +824,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     });
   }
 
-  // Agregar producto a la lista de items
+  /// Abre el diálogo de configuración y agrega un producto a la lista de items.
   void _addProduct(Product p) async {
     if (p.stock <= 0) return;
 
@@ -826,6 +845,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }
   }
 
+  /// Verifica que todos los productos tengan stock suficiente.
   bool _validateStock() {
     for (final item in _items) {
       final p = item['product'] as Product;
@@ -837,10 +857,13 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     return true;
   }
 
+  /// Elimina un producto de la lista de items.
   void _removeItem(int index) {
     setState(() => _items.removeAt(index));
   }
 
+  /// Valida el formulario, construye la factura y los items y
+  /// entrega todo mediante el callback [onSave].
   void _save() {
     if (_items.isEmpty) return;
     if (!_formKey.currentState!.validate()) return;
@@ -857,8 +880,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
       customerRnc: _customerRnc,
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
-      itbis: _itbis,
-      isr: _isr,
       total: _total,
       createdAt: DateTime.now().toIso8601String(),
     );
@@ -907,6 +928,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     );
   }
 
+  /// Encabezado del diálogo con título y botón de cierre.
   Widget _buildDialogHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -942,6 +964,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     );
   }
 
+  /// Panel izquierdo con formulario de cliente, descuento y selector de productos.
   Widget _buildLeftPanel() {
     return Expanded(
       flex: 3,
@@ -1066,6 +1089,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     );
   }
 
+  /// Panel derecho con lista de items seleccionados, totales y botón de guardar.
   Widget _buildRightPanel() {
     return Expanded(
       flex: 2,
@@ -1169,24 +1193,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
             _buildSummaryRow('Subtotal', _subtotal),
             if (_globalDiscount > 0)
               _buildSummaryRow('Descuento', -_globalDiscount, isDiscount: true),
-            TaxToggleRow(
-              label: 'ITBIS ${_taxConfig.itbisRate.toStringAsFixed(0)}%',
-              value: _taxConfig.applyItbis,
-              onChanged: (v) => setState(
-                () => _taxConfig = _taxConfig.copyWith(applyItbis: v),
-              ),
-              color: Colors.blue.shade700,
-              formattedAmount: '+ ${_currency.format(_itbis.abs())}',
-            ),
-            TaxToggleRow(
-              label: 'ISR ${_taxConfig.isrRate.toStringAsFixed(0)}% (ret.)',
-              value: _taxConfig.applyIsr,
-              onChanged: (v) => setState(
-                () => _taxConfig = _taxConfig.copyWith(applyIsr: v),
-              ),
-              color: Colors.orange.shade700,
-              formattedAmount: '- ${_currency.format(_isr.abs())}',
-            ),
             const Divider(height: 8),
             _buildSummaryRow('Total', _total, isTotal: true),
             const SizedBox(height: 16),
@@ -1211,6 +1217,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     );
   }
 
+  /// Fila resumen reutilizable para subtotal, descuento y total.
   Widget _buildSummaryRow(
     String label,
     double amount, {
@@ -1229,6 +1236,8 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   }
 }
 
+/// Diálogo para configurar cantidad, precio unitario y descuento de un producto
+/// antes de agregarlo a la factura.
 class _ProductConfigDialog extends StatefulWidget {
   final Product product;
   final NumberFormat currency;

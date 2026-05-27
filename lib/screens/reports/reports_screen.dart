@@ -8,6 +8,11 @@ import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 
 
+/// Pantalla de reportes de ventas con filtro por fechas.
+///
+/// Muestra cuatro tarjetas con métricas (total, ganancia, facturas,
+/// ticket promedio), un gráfico de barras de ventas por día/mes y
+/// listas de productos y categorías más vendidos.
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -47,6 +52,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
+  /// Abre el selector de fecha de inicio.
   Future<void> _selectStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -62,6 +68,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  /// Abre el selector de fecha de fin.
   Future<void> _selectEndDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -77,6 +84,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  /// Navega un día hacia atrás en la fecha indicada.
   void _prevDay(bool isStart) {
     setState(() {
       if (isStart) {
@@ -88,6 +96,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
+  /// Navega un día hacia adelante en la fecha indicada.
   void _nextDay(bool isStart) {
     final now = DateTime.now();
     setState(() {
@@ -115,6 +124,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
+  /// Restablece ambas fechas al día de hoy.
   void _setToday() {
     final now = DateTime.now();
     setState(() {
@@ -124,6 +134,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
+  /// Carga en paralelo resumen, ventas por día, top productos y top categorías.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -173,6 +184,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Encabezado con título, subtítulo y controles de selector de fechas.
   Widget _buildHeader() {
     final now = DateTime.now();
     final isToday =
@@ -251,6 +263,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Control de fecha con flechas de navegación y botón para abrir el calendario.
   Widget _buildDateField(String label, DateTime date, VoidCallback onTap) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -331,6 +344,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Botón de flecha para navegación de fechas (izquierda/derecha).
   Widget _dateArrow(IconData icon, bool isStart, bool isPrev) {
     return InkWell(
       onTap: () => isPrev ? _prevDay(isStart) : _nextDay(isStart),
@@ -342,6 +356,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Fila de cuatro tarjetas con métricas del período seleccionado.
   Widget _buildMetrics() {
     return Row(
       children: [
@@ -391,6 +406,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Gráfico de barras de ventas por día o por mes (si el rango > 60 días).
   Widget _buildChart() {
     if (_chartData.isEmpty) {
       return _panel(
@@ -483,6 +499,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Fila inferior con las dos listas: top productos y top categorías.
   Widget _buildBottomRow() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,6 +511,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Lista ranking de productos más vendidos en el período.
   Widget _buildTopProducts() {
     return _panel(
       title: 'Productos más vendidos',
@@ -570,6 +588,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Lista de categorías más vendidas con barra de progreso proporcional.
   Widget _buildTopCategories() {
     final catTotal = _topCategories.fold(
       0.0,
@@ -639,6 +658,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Contenedor reutilizable con bordes redondeados para secciones del reporte.
   Widget _panel({required String title, required Widget child}) {
     return Container(
       width: double.infinity,
@@ -667,6 +687,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 }
 
+/// Tarjeta individual para mostrar una métrica con ícono, valor y etiqueta.
 class _MetricCard extends StatelessWidget {
   final IconData icon;
   final Color iconBg;

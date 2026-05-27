@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Provider para manejar el estado del tema (claro/oscuro)
+/// Provider que maneja el estado del tema (claro/oscuro) con persistencia
+/// en SharedPreferences.
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
   late SharedPreferences _prefs;

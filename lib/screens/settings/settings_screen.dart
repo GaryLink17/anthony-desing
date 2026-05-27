@@ -12,9 +12,14 @@ import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../core/backup_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/tax_service.dart';
 
 
+
+/// Pantalla de configuración global del negocio.
+///
+/// Permite editar datos de la empresa (nombre, RNC, teléfono, email,
+/// dirección, logo), cambiar el tema claro/oscuro, gestionar respaldos
+/// de base de datos y configurar el pie de página de las facturas.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -37,22 +42,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _backupLoading = false;
   bool _restoreLoading = false;
 
-  TaxConfig _taxConfig = const TaxConfig(
-    applyItbis: false,
-    itbisRate: TaxService.defaultItbisRate,
-    applyIsr: false,
-    isrRate: TaxService.defaultIsrRate,
-  );
-
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  /// Carga los valores guardados desde SharedPreferences.
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final taxConfig = await TaxService.getConfig();
     setState(() {
       _nameCtrl.text = prefs.getString('company_name') ?? '';
       _phoneCtrl.text = prefs.getString('company_phone') ?? '';
@@ -65,10 +63,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _footerTermsCtrl.text =
           prefs.getString('footer_terms') ??
           'Mercancía no se acepta devolución después de 24 horas.';
-      _taxConfig = taxConfig;
     });
   }
 
+  /// Persiste todos los campos de configuración en SharedPreferences
+  /// y recarga los datos de la empresa en el provider global.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final prefs = await SharedPreferences.getInstance();
@@ -83,8 +82,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await prefs.setString('company_logo', _logoPath!);
     }
 
-    await TaxService.saveConfig(_taxConfig);
-
     if (mounted) {
       await context.read<AppProvider>().loadCompanyData();
     }
@@ -95,6 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  /// Abre la galería para seleccionar una imagen de logo.
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -119,8 +117,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildCompanySection(),
             const SizedBox(height: 20),
             _buildAppearanceSection(),
-            const SizedBox(height: 20),
-            _buildTaxSection(),
             const SizedBox(height: 20),
             _buildBackupSection(),
             const SizedBox(height: 20),
@@ -379,153 +375,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
 
-  Widget _buildTaxSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: ThemeHelper.getCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Impuestos (RD)',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: ThemeHelper.getTextColor(context),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Activa los impuestos que se aplicarán por defecto al crear una factura',
-            style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
-          ),
-          const SizedBox(height: 16),
-          // ITBIS
-          Row(
-            children: [
-              Switch(
-                value: _taxConfig.applyItbis,
-                onChanged: (v) =>
-                    setState(() => _taxConfig = _taxConfig.copyWith(applyItbis: v)),
-                activeThumbColor: Colors.blue.shade700,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ITBIS',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: ThemeHelper.getTextColor(context),
-                      ),
-                    ),
-                    Text(
-                      'Impuesto sobre Transferencias de Bienes y Servicios',
-                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 80,
-                child: TextFormField(
-                  initialValue: _taxConfig.itbisRate.toStringAsFixed(0),
-                  enabled: _taxConfig.applyItbis,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                  decoration: InputDecoration(
-                    suffixText: '%',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  ),
-                  onChanged: (v) {
-                    final rate = double.tryParse(v);
-                    if (rate != null && rate >= 0 && rate <= 100) {
-                      setState(() => _taxConfig = _taxConfig.copyWith(itbisRate: rate));
-                    }
-                  },
-                  validator: _taxConfig.applyItbis
-                      ? (v) {
-                          final n = double.tryParse(v?.trim() ?? '');
-                          if (n == null) return 'Inválido';
-                          if (n < 0 || n > 100) return '0-100';
-                          return null;
-                        }
-                      : null,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // ISR
-          Row(
-            children: [
-              Switch(
-                value: _taxConfig.applyIsr,
-                onChanged: (v) =>
-                    setState(() => _taxConfig = _taxConfig.copyWith(applyIsr: v)),
-                activeThumbColor: Colors.orange.shade700,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Retención ISR',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: ThemeHelper.getTextColor(context),
-                      ),
-                    ),
-                    Text(
-                      'Retención sobre servicios (se descuenta del total)',
-                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 80,
-                child: TextFormField(
-                  initialValue: _taxConfig.isrRate.toStringAsFixed(0),
-                  enabled: _taxConfig.applyIsr,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                  decoration: InputDecoration(
-                    suffixText: '%',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  ),
-                  onChanged: (v) {
-                    final rate = double.tryParse(v);
-                    if (rate != null && rate >= 0 && rate <= 100) {
-                      setState(() => _taxConfig = _taxConfig.copyWith(isrRate: rate));
-                    }
-                  },
-                  validator: _taxConfig.applyIsr
-                      ? (v) {
-                          final n = double.tryParse(v?.trim() ?? '');
-                          if (n == null) return 'Inválido';
-                          if (n < 0 || n > 100) return '0-100';
-                          return null;
-                        }
-                      : null,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSaveButton() {
     return Row(
       children: [
@@ -626,6 +475,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Exporta la base de datos completa a un archivo de respaldo.
   Future<void> _exportBackup() async {
     setState(() => _backupLoading = true);
     try {
@@ -642,6 +492,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Restaura la base de datos desde un archivo de respaldo.
+  /// Solicita confirmación antes de proceder.
   Future<void> _restoreBackup() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -690,6 +542,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Campo de formulario reutilizable con validación opcional y
+  /// formateo para teléfono.
   Widget _field(
     TextEditingController ctrl,
     String label, {

@@ -3,6 +3,10 @@ import '../../../models/product.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/theme_helper.dart';
 
+/// Diálogo modal para crear o editar un producto del inventario.
+///
+/// Muestra campos de nombre, categoría, precios y stock, con cálculo
+/// en tiempo real de la ganancia y margen por unidad.
 class ProductDialog extends StatefulWidget {
   final Product? product;
   final Function(Product) onSave;
@@ -30,6 +34,7 @@ class _ProductDialogState extends State<ProductDialog> {
     super.initState();
     final p = widget.product;
     if (p != null) {
+      // Modo edición: precargar datos del producto existente.
       _nameCtrl.text = p.name;
       _categoryCtrl.text = p.category ?? '';
       _purchaseCtrl.text = p.purchasePrice.toStringAsFixed(0);
@@ -53,6 +58,7 @@ class _ProductDialogState extends State<ProductDialog> {
     super.dispose();
   }
 
+  /// Recalcula ganancia y margen cada vez que cambia precio de compra o venta.
   void _updateProfit() {
     final purchase = double.tryParse(_purchaseCtrl.text) ?? 0;
     final sale = double.tryParse(_saleCtrl.text) ?? 0;
@@ -241,6 +247,7 @@ class _ProductDialogState extends State<ProductDialog> {
     );
   }
 
+  /// Construye un campo de formulario reutilizable con validación integrada.
   Widget _field(
     TextEditingController ctrl,
     String label, {
@@ -288,6 +295,8 @@ class _ProductDialogState extends State<ProductDialog> {
     );
   }
 
+  /// Valida el formulario, construye el objeto [Product] y lo entrega
+  /// mediante el callback [onSave].
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     final product = Product(

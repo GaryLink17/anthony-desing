@@ -2,9 +2,11 @@ import 'database.dart';
 import 'app_exception.dart';
 import '../models/product.dart';
 
+/// Repositorio para operaciones CRUD de productos en el inventario.
 class ProductRepository {
   final _db = DatabaseHelper.instance;
 
+  /// Obtiene todos los productos ordenados por nombre.
   Future<List<Product>> getAll() async {
     try {
       final db = await _db.database;
@@ -18,6 +20,7 @@ class ProductRepository {
     }
   }
 
+  /// Busca productos cuyo nombre contenga [query].
   Future<List<Product>> search(String query) async {
     try {
       final db = await _db.database;
@@ -36,6 +39,7 @@ class ProductRepository {
     }
   }
 
+  /// Inserta un nuevo producto y retorna su ID generado.
   Future<int> insert(Product product) async {
     try {
       final db = await _db.database;
@@ -48,6 +52,7 @@ class ProductRepository {
     }
   }
 
+  /// Actualiza los datos de un producto existente.
   Future<void> update(Product product) async {
     try {
       final db = await _db.database;
@@ -65,6 +70,7 @@ class ProductRepository {
     }
   }
 
+  /// Elimina un producto por su ID.
   Future<void> delete(int id) async {
     try {
       final db = await _db.database;
@@ -77,6 +83,7 @@ class ProductRepository {
     }
   }
 
+  /// Reduce el stock de un producto en [quantity] unidades.
   Future<void> decreaseStock(int productId, int quantity) async {
     try {
       final db = await _db.database;
@@ -92,6 +99,7 @@ class ProductRepository {
     }
   }
 
+  /// Obtiene productos cuyo stock está por debajo del mínimo.
   Future<List<Product>> getLowStock() async {
     try {
       final db = await _db.database;
@@ -131,6 +139,7 @@ class ProductRepository {
     }
   }
 
+  /// Obtiene un producto por su ID, o null si no existe.
   Future<Product?> getById(int id) async {
     try {
       final db = await _db.database;
@@ -149,6 +158,7 @@ class ProductRepository {
     }
   }
 
+  /// Verifica si hay suficiente stock disponible para [quantity] unidades.
   Future<bool> hasStock(int productId, int quantity) async {
     try {
       final product = await getById(productId);
@@ -162,6 +172,7 @@ class ProductRepository {
     }
   }
 
+  /// Inserta un producto usando valores planos (sin modelo).
   Future<int> insertRaw({
     required String name,
     required String category,

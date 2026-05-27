@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// Enum para los tipos de notificación
+/// Tipos de notificación disponibles.
 enum NotificationType { success, error, warning, info }
 
-/// Clase para configurar una notificación
+/// Configuración de una notificación individual.
 class NotificationConfig {
   final String message;
   final NotificationType type;
@@ -25,7 +25,8 @@ class NotificationConfig {
   });
 }
 
-/// Servicio global para mostrar notificaciones
+/// Servicio singleton para mostrar notificaciones tipo toast
+/// usando OverlayEntry. Permite hasta [_maxVisible] notificaciones simultáneas.
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
 

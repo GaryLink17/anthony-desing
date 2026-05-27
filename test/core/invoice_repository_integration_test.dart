@@ -38,9 +38,7 @@ void main() {
       customerRnc: '101010101',
       subtotal: 30,
       discountGlobal: 0,
-      itbis: 5.4,
-      isr: 0,
-      total: 35.4,
+      total: 30,
       paymentStatus: 'paid',
       createdAt: DateTime.now().toIso8601String(),
     );
@@ -62,8 +60,7 @@ void main() {
 
     final updated = saved.copyWith(
       subtotal: 60,
-      total: 70.8,
-      itbis: 10.8,
+      total: 60,
       customerRnc: '202020202',
       paymentStatus: 'pending',
     );

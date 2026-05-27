@@ -1,9 +1,14 @@
 import 'database.dart';
 import 'app_exception.dart';
 
+/// Repositorio para consultas agregadas de reportes y estadísticas.
 class ReportsRepository {
   final _db = DatabaseHelper.instance;
 
+  /// Obtiene resumen de ventas en un rango de fechas:
+  /// total vendido, ganancia estimada, cantidad de facturas y ticket promedio.
+  /// La ganancia se calcula como (precio_venta - precio_compra) * cantidad,
+  /// prorrateando el descuento global de la factura proporcionalmente.
   Future<Map<String, dynamic>> getSummary(DateTime from, DateTime to) async {
     try {
       final db = await _db.database;
@@ -59,6 +64,7 @@ class ReportsRepository {
     }
   }
 
+  /// Obtiene el total vendido y cantidad de facturas agrupado por día.
   Future<List<Map<String, dynamic>>> getSalesByDay(
     DateTime from,
     DateTime to,
@@ -86,6 +92,7 @@ class ReportsRepository {
     }
   }
 
+  /// Obtiene el total vendido agrupado por mes para un año dado.
   Future<List<Map<String, dynamic>>> getSalesByMonth(int year) async {
     try {
       final db = await _db.database;
@@ -110,6 +117,7 @@ class ReportsRepository {
     }
   }
 
+  /// Obtiene los 5 productos más vendidos por cantidad en un rango de fechas.
   Future<List<Map<String, dynamic>>> getTopProducts(
     DateTime from,
     DateTime to,
@@ -139,6 +147,7 @@ class ReportsRepository {
     }
   }
 
+  /// Obtiene las 5 categorías más vendidas por monto en un rango de fechas.
   Future<List<Map<String, dynamic>>> getTopCategories(
     DateTime from,
     DateTime to,

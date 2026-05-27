@@ -1,3 +1,4 @@
+/// Modelo que representa una línea de detalle de una factura.
 class InvoiceItem {
   final int? id;
   final int invoiceId;
@@ -19,6 +20,7 @@ class InvoiceItem {
     required this.subtotal,
   });
 
+  /// Convierte el item a Map para SQLite.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -32,6 +34,7 @@ class InvoiceItem {
     };
   }
 
+  /// Crea un InvoiceItem desde un Map de SQLite.
   factory InvoiceItem.fromMap(Map<String, dynamic> map) {
     return InvoiceItem(
       id: map['id'],

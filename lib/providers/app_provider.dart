@@ -5,10 +5,13 @@ import '../core/app_exception.dart';
 import '../models/product.dart';
 import '../utils/performance_helpers.dart';
 
+/// Provider principal de la aplicación.
+/// Maneja los datos de la empresa (desde SharedPreferences) y
+/// los datos del dashboard (desde SQLite).
 class AppProvider extends ChangeNotifier {
   final _db = DatabaseHelper.instance;
 
-  // Datos de la empresa
+  // Datos de la empresa (cargados de SharedPreferences)
   String _companyName = 'Mi Negocio';
   String _companyPhone = '';
   String? _companyLogo;
@@ -36,7 +39,7 @@ class AppProvider extends ChangeNotifier {
   List<double> get weeklySales => _weeklySales;
   int? get lastDashboardLoadMs => _lastDashboardLoadMs;
 
-  // Carga los datos de la empresa desde SharedPreferences
+  /// Carga los datos de la empresa desde SharedPreferences.
   Future<void> loadCompanyData() async {
     final prefs = await SharedPreferences.getInstance();
     _companyName = prefs.getString('company_name') ?? 'Mi Negocio';
@@ -45,7 +48,9 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Carga todos los datos del dashboard de una vez
+  /// Carga todos los datos del dashboard en paralelo:
+  /// ventas mensuales, ganancia, conteo de facturas/productos,
+  /// productos con stock bajo, últimas 5 facturas y ventas de los últimos 7 días.
   Future<void> loadDashboard() async {
     final perf = PerformanceMonitor();
     perf.startMeasure('loadDashboard');
@@ -54,6 +59,7 @@ class AppProvider extends ChangeNotifier {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
 
+    // Total de ventas del mes actual
     final salesResult = await db.rawQuery(
       '''
       SELECT COALESCE(SUM(total), 0) as total
@@ -63,6 +69,7 @@ class AppProvider extends ChangeNotifier {
     );
     _monthlySales = (salesResult.first['total'] as num).toDouble();
 
+    // Cantidad de facturas del mes actual
     final invoiceResult = await db.rawQuery(
       '''
       SELECT COUNT(*) as count
@@ -72,11 +79,13 @@ class AppProvider extends ChangeNotifier {
     );
     _invoiceCount = (invoiceResult.first['count'] as num).toInt();
 
+    // Total de productos en inventario
     final productResult = await db.rawQuery(
       'SELECT COUNT(*) as count FROM products',
     );
     _totalProducts = (productResult.first['count'] as num).toInt();
 
+    // Ganancia estimada del mes
     final profitResult = await db.rawQuery(
       '''
       SELECT COALESCE(SUM(
@@ -92,6 +101,7 @@ class AppProvider extends ChangeNotifier {
     );
     _monthlyProfit = (profitResult.first['profit'] as num).toDouble();
 
+    // Productos con stock bajo (top 5)
     final lowStockResult = await db.query(
       'products',
       where: 'stock <= min_stock',
@@ -100,12 +110,14 @@ class AppProvider extends ChangeNotifier {
     );
     _lowStockProducts = lowStockResult.map(Product.fromMap).toList();
 
+    // Últimas 5 facturas
     _recentInvoices = await db.query(
       'invoices',
       orderBy: 'created_at DESC',
       limit: 5,
     );
 
+    // Ventas de los últimos 7 días para el gráfico semanal
     _weeklySales = List.filled(7, 0);
     for (int i = 6; i >= 0; i--) {
       final day = now.subtract(Duration(days: i));
@@ -141,6 +153,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  /// Recarga datos de empresa y dashboard después de restaurar un backup.
   Future<void> reloadAfterRestore() async {
     await loadCompanyData();
     await loadDashboard();

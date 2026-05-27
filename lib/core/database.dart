@@ -2,6 +2,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+/// Helper singleton para manejar la base de datos SQLite.
+/// Proporciona inicialización, creación y migración de esquema.
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
@@ -9,6 +11,8 @@ class DatabaseHelper {
 
   DatabaseHelper._init();
 
+  /// Inicializa el motor FFI de SQLite (necesario en Windows/desktop).
+  /// Solo debe llamarse una vez.
   static Future<void> initialize() async {
     if (_initialized) return;
     sqfliteFfiInit();
@@ -16,12 +20,14 @@ class DatabaseHelper {
     _initialized = true;
   }
 
+  /// Obtiene la instancia de la base de datos, creándola si es necesario.
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB('control_gastos.db');
     return _database!;
   }
 
+  /// Abre (o crea) la base de datos en el directorio de soporte de la app.
   Future<Database> _initDB(String fileName) async {
     await initialize();
 
@@ -38,8 +44,10 @@ class DatabaseHelper {
     );
   }
 
+  /// Migraciones progresivas de esquema de base de datos.
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
+      // v2: Agrega columna status a invoices, crea tablas quotes y quote_items
       await db.execute(
         "ALTER TABLE invoices ADD COLUMN status TEXT DEFAULT 'active'",
       );
@@ -47,9 +55,9 @@ class DatabaseHelper {
         CREATE TABLE IF NOT EXISTS quotes (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           customer_name TEXT,
-          subtotal REAL NOT NULL,
-          discount_global REAL DEFAULT 0,
-          total REAL NOT NULL,
+        subtotal REAL NOT NULL,
+        discount_global REAL DEFAULT 0,
+        total REAL NOT NULL,
           created_at TEXT NOT NULL,
           expires_at TEXT,
           is_converted INTEGER DEFAULT 0
@@ -71,27 +79,13 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 3) {
+      // v3: Agrega columna payment_status a invoices
       await db.execute(
         "ALTER TABLE invoices ADD COLUMN payment_status TEXT DEFAULT 'pending'",
       );
     }
-    if (oldVersion < 4) {
-      // ITBIS e ISR para facturas y cotizaciones
-      await db.execute(
-        'ALTER TABLE invoices ADD COLUMN itbis REAL DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE invoices ADD COLUMN isr REAL DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE quotes ADD COLUMN itbis REAL DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE quotes ADD COLUMN isr REAL DEFAULT 0',
-      );
-    }
     if (oldVersion < 5) {
-      // Tabla de clientes
+      // v5: Crea tabla de clientes
       await db.execute('''
         CREATE TABLE IF NOT EXISTS customers (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +99,7 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 6) {
-      // RNC del cliente en facturas y cotizaciones
+      // v6: Agrega RNC del cliente a facturas y cotizaciones
       await db.execute(
         'ALTER TABLE invoices ADD COLUMN customer_rnc TEXT',
       );
@@ -115,8 +109,9 @@ class DatabaseHelper {
     }
   }
 
+  /// Crea todas las tablas desde cero (base nueva).
   Future _createDB(Database db, int version) async {
-    // Tabla de productos
+    // Tabla de productos del inventario
     await db.execute('''
       CREATE TABLE products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,7 +125,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla de facturas
+    // Tabla de facturas (cabecera)
     await db.execute('''
       CREATE TABLE invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,8 +133,6 @@ class DatabaseHelper {
         customer_rnc TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
-        itbis REAL DEFAULT 0,
-        isr REAL DEFAULT 0,
         total REAL NOT NULL,
         status TEXT DEFAULT 'active',
         payment_status TEXT DEFAULT 'pending',
@@ -147,7 +140,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla de líneas de factura (qué productos tiene cada factura)
+    // Tabla de líneas de factura (detalle: productos en cada factura)
     await db.execute('''
       CREATE TABLE invoice_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,7 +156,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla de cotizaciones
+    // Tabla de cotizaciones (cabecera)
     await db.execute('''
       CREATE TABLE quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,8 +164,6 @@ class DatabaseHelper {
         customer_rnc TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
-        itbis REAL DEFAULT 0,
-        isr REAL DEFAULT 0,
         total REAL NOT NULL,
         created_at TEXT NOT NULL,
         expires_at TEXT,
@@ -180,7 +171,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla de líneas de cotización
+    // Tabla de líneas de cotización (detalle)
     await db.execute('''
       CREATE TABLE quote_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -210,11 +201,12 @@ class DatabaseHelper {
     ''');
   }
 
+  /// Cierra la conexión y reinicia el estado interno de la base de datos.
+  /// NO reinicia _initialized porque sqfliteFfiInit() solo debe llamarse una vez.
   static Future<void> closeAndReset() async {
     if (_database != null) {
       await _database!.close();
       _database = null;
     }
-    // NO resetear _initialized — sqfliteFfiInit() no debe llamarse dos veces
   }
 }

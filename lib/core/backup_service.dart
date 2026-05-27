@@ -5,6 +5,8 @@ import 'package:file_selector/file_selector.dart';
 import 'app_exception.dart';
 import 'database.dart';
 
+/// Servicio singleton para exportar e importar copias de seguridad
+/// de la base de datos SQLite usando el selector de archivos nativo.
 class BackupService {
   static final BackupService instance = BackupService._();
   BackupService._();
@@ -72,7 +74,7 @@ class BackupService {
     try {
       await sourceFile.copy(destPath);
     } catch (e) {
-      // Rollback
+      // Rollback: si falla la copia, restauramos la copia de seguridad
       if (await File(safetyPath).exists()) {
         await File(safetyPath).copy(destPath);
         await DatabaseHelper.closeAndReset();

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 
 
+/// Modelo de un elemento del menú lateral.
 class SidebarItem {
   final String label;
   final IconData icon;
@@ -13,6 +14,9 @@ class SidebarItem {
   const SidebarItem({required this.label, required this.icon, this.badgeCount});
 }
 
+/// Barra lateral de navegación principal.
+/// Soporta modo colapsado (solo íconos) y expandido (íconos + etiquetas).
+/// Muestra el logo/nombre de la empresa en la cabecera.
 class Sidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
@@ -101,6 +105,7 @@ class Sidebar extends StatelessWidget {
     );
   }
 
+  /// Cabecera con logo/nombre de empresa.
   Widget _buildHeader(BuildContext context, bool isDark) {
     final provider = context.watch<AppProvider>();
     final logoPath = provider.companyLogo;
@@ -186,6 +191,7 @@ class Sidebar extends StatelessWidget {
     );
   }
 
+  /// Construye un grupo de items del menú con su etiqueta de sección.
   Widget _buildGroup(
     BuildContext context,
     bool isDark,
