@@ -5,6 +5,7 @@ import 'package:esc_pos_utils_lts/esc_pos_utils_lts.dart';
 import 'package:libserialport_plus/libserialport_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 import '../models/quote.dart';
@@ -79,11 +80,38 @@ class ThermalPrinterService {
   Future<void> _sendUsb(List<int> bytes, ThermalPrinterConfig config) async {
     final path = config.usbPortName;
 
+    if (path.isEmpty) {
+      throw const AppException('Puerto USB no especificado.');
+    }
+
+    // Linux raw USB printer device
     if (path.startsWith('/dev/usb/lp')) {
       await _sendRawFile(bytes, path);
       return;
     }
 
+    // Windows printer share path (\\localhost\PrinterName o \\COMPUTER\Printer)
+    if (path.startsWith('\\\\') || path.startsWith('\\localhost\\')) {
+      await _sendWindowsPrinter(bytes, path);
+      return;
+    }
+
+    // Windows named printer or COM port
+    if (Platform.isWindows) {
+      if (path.startsWith('COM')) {
+        await _sendSerialPort(bytes, path);
+        return;
+      }
+      // Es un nombre de impresora Windows (ej. "POS-58", "TM-T20")
+      await _sendWindowsPrinter(bytes, path);
+      return;
+    }
+
+    // Fallback: intentar como puerto serie
+    await _sendSerialPort(bytes, path);
+  }
+
+  Future<void> _sendSerialPort(List<int> bytes, String path) async {
     final port = SerialPort(path);
     try {
       port.open(SerialPortMode.readWrite);
@@ -91,11 +119,66 @@ class ThermalPrinterService {
       port.close();
     } on Exception catch (e) {
       throw AppException(
-        'No se pudo conectar a la impresora USB en $path',
+        'No se pudo conectar al puerto serie $path',
         technical: e.toString(),
       );
     } finally {
       port.dispose();
+    }
+  }
+
+  /// Envía bytes raw a una impresora Windows por su nombre de dispositivo.
+  /// Usa Write-Printer de PowerShell 5+ (no requiere compartir la impresora)
+  /// con fallback a copy /b (requiere compartir).
+  Future<void> _sendWindowsPrinter(List<int> bytes, String printerName) async {
+    try {
+      final tempFile = File(p.join(
+        Directory.systemTemp.path,
+        'pos_${DateTime.now().millisecondsSinceEpoch}.bin',
+      ));
+      await tempFile.writeAsBytes(bytes);
+
+      // Estrategia 1: PowerShell Write-Printer (no requiere compartir)
+      final result = await Process.run(
+        'powershell',
+        [
+          '-NoProfile',
+          '-Command',
+          '\$data = [System.IO.File]::ReadAllBytes(\'${tempFile.path}\'); '
+          'Write-Printer -Name "$printerName" -Data \$data',
+        ],
+        runInShell: true,
+      );
+
+      // Estrategia 2 (fallback): copy /b a ruta compartida
+      if (result.exitCode != 0) {
+        final target = printerName.startsWith('\\\\')
+            ? printerName
+            : '\\\\localhost\\$printerName';
+        final result2 = await Process.run(
+          'cmd',
+          ['/c', 'copy', '/b', tempFile.path, target],
+          runInShell: true,
+        );
+
+        if (result2.exitCode != 0) {
+          throw AppException(
+            'No se pudo imprimir en "$printerName". '
+            'Asegúrate de que: (1) la impresora esté instalada, '
+            '(2) tenga un driver "Generic / Text Only" instalado, '
+            'o (3) comparte la impresora en Windows y usa el nombre de recurso.',
+          );
+        }
+      }
+
+      try { await tempFile.delete(); } catch (_) {}
+    } on AppException {
+      rethrow;
+    } on Exception catch (e) {
+      throw AppException(
+        'Error al enviar a la impresora Windows',
+        technical: e.toString(),
+      );
     }
   }
 
@@ -135,7 +218,9 @@ class ThermalPrinterService {
     }
   }
 
-  /// Detecta puertos USB disponibles: serie (COM* / tty*) y raw (/dev/usb/lp*).
+  /// Detecta puertos disponibles para la impresora POS.
+  /// - Linux: /dev/usb/lp* y puertos serie (ttyUSB*, ttyS*)
+  /// - Windows: COM* y nombres de impresoras compartidas
   static Future<List<String>> detectUsbPorts() async {
     final ports = <String>{};
 
@@ -143,17 +228,67 @@ class ThermalPrinterService {
       ports.addAll(SerialPort.getAvailablePorts());
     } catch (_) {}
 
-    try {
-      final dir = Directory('/dev/usb');
-      if (await dir.exists()) {
-        await for (final entry in dir.list()) {
-          final path = entry.path;
-          if (path.startsWith('/dev/usb/lp')) {
-            ports.add(path);
+    if (Platform.isLinux) {
+      try {
+        final dir = Directory('/dev/usb');
+        if (await dir.exists()) {
+          await for (final entry in dir.list()) {
+            final path = entry.path;
+            if (path.startsWith('/dev/usb/lp')) {
+              ports.add(path);
+            }
           }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
+
+    if (Platform.isWindows) {
+      // Detectar impresoras locales instaladas (para Write-Printer)
+      try {
+        final result = await Process.run(
+          'powershell',
+          [
+            '-NoProfile',
+            '-Command',
+            'Get-CimInstance Win32_Printer | '
+            'Where-Object { \$_.Local -and \$_.DeviceName } | '
+            'ForEach-Object { "IMPRESORA: \$(\$_.Name)" }',
+          ],
+          runInShell: true,
+        );
+        if (result.exitCode == 0) {
+          for (final line in result.stdout.toString().split('\n')) {
+            final trimmed = line.trim();
+            if (trimmed.isNotEmpty && trimmed.startsWith('IMPRESORA:')) {
+              ports.add(trimmed.substring('IMPRESORA: '.length).trim());
+            }
+          }
+        }
+      } catch (_) {}
+
+      // Detectar impresoras compartidas (para copy /b)
+      try {
+        final result = await Process.run(
+          'powershell',
+          [
+            '-NoProfile',
+            '-Command',
+            'Get-CimInstance Win32_Printer | '
+            'Where-Object { \$_.Shared } | '
+            'ForEach-Object { "COMPARTIDA: \$(\$_.ShareName)" }',
+          ],
+          runInShell: true,
+        );
+        if (result.exitCode == 0) {
+          for (final line in result.stdout.toString().split('\n')) {
+            final trimmed = line.trim();
+            if (trimmed.isNotEmpty && trimmed.startsWith('COMPARTIDA:')) {
+              ports.add('\\\\localhost\\${trimmed.substring('COMPARTIDA: '.length)}');
+            }
+          }
+        }
+      } catch (_) {}
+    }
 
     return ports.toList();
   }
