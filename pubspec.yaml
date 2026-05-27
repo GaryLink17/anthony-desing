@@ -20,6 +20,9 @@ dependencies:
   printing: ^5.13.1                # Imprimir / exportar PDF
   file_selector: ^0.9.3+2          # Selector de archivos/carpetas (backup)
   excel: ^4.0.6                     # Exportar datos a Excel (.xlsx)
+  esc_pos_printer_lts: ^4.1.2      # Impresión POS térmica por red
+  esc_pos_utils_lts: ^0.0.1        # Codificación ESC/POS para tickets
+  libserialport_plus: ^0.1.2       # Puerto serie USB para impresora POS
 
 dev_dependencies:
   flutter_test:

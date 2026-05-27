@@ -20,6 +20,7 @@ import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 import '../../widgets/pagination_bar.dart';
+import '../../services/thermal_printer_service.dart';
 
 
 /// Pantalla de gestión de cotizaciones.
@@ -481,7 +482,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => _QuotePreviewScreen(pdfBytes: pdfBytes, quote: quote),
+          builder: (_) => _QuotePreviewScreen(pdfBytes: pdfBytes, quote: quote, items: items),
         ),
       );
     } on AppException catch (e) {
@@ -594,8 +595,13 @@ class _QuotesScreenState extends State<QuotesScreen> {
 class _QuotePreviewScreen extends StatelessWidget {
   final Uint8List pdfBytes;
   final Quote quote;
+  final List<QuoteItem> items;
 
-  const _QuotePreviewScreen({required this.pdfBytes, required this.quote});
+  const _QuotePreviewScreen({
+    required this.pdfBytes,
+    required this.quote,
+    required this.items,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -660,6 +666,26 @@ class _QuotePreviewScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
+            onPressed: () async {
+              try {
+                await ThermalPrinterService.instance.printQuote(quote, items);
+              } on AppException catch (e) {
+                if (context.mounted) NotificationService().error(e.message);
+              }
+            },
+            icon: const Icon(Icons.receipt_long_rounded, size: 16),
+            label: const Text('POS'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.accentMagenta,
+              side: const BorderSide(color: AppTheme.accentMagenta),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

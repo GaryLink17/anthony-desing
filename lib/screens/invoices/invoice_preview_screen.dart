@@ -3,19 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import '../../theme/app_theme.dart';
 import '../../models/invoice.dart';
+import '../../models/invoice_item.dart';
+import '../../services/thermal_printer_service.dart';
+import '../../services/notification_service.dart';
+import '../../core/app_exception.dart';
 
 /// Pantalla de vista previa e impresión de PDF de una factura.
 ///
 /// Muestra el PDF generado usando [PdfPreview] y ofrece botones
-/// para imprimir directamente o guardar el archivo.
+/// para imprimir directamente, guardar el PDF o enviar a una impresora POS.
 class InvoicePreviewScreen extends StatelessWidget {
   final Uint8List pdfBytes;
   final Invoice invoice;
+  final List<InvoiceItem> items;
 
   const InvoicePreviewScreen({
     super.key,
     required this.pdfBytes,
     required this.invoice,
+    required this.items,
   });
 
   @override
@@ -81,6 +87,26 @@ class InvoicePreviewScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
+            onPressed: () async {
+              try {
+                await ThermalPrinterService.instance.printInvoice(invoice, items);
+              } on AppException catch (e) {
+                if (context.mounted) NotificationService().error(e.message);
+              }
+            },
+            icon: const Icon(Icons.receipt_long_rounded, size: 16),
+            label: const Text('POS'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.accentMagenta,
+              side: const BorderSide(color: AppTheme.accentMagenta),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

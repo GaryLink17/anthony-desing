@@ -81,7 +81,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv),
+          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv, items: items),
         ),
       );
     } on AppException catch (e) {

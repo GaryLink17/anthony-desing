@@ -767,7 +767,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv),
+          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv, items: items),
         ),
       );
     } on AppException catch (e) {

@@ -1,0 +1,345 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:esc_pos_printer_lts/esc_pos_printer_lts.dart';
+import 'package:esc_pos_utils_lts/esc_pos_utils_lts.dart';
+import 'package:libserialport_plus/libserialport_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import '../models/invoice.dart';
+import '../models/invoice_item.dart';
+import '../models/quote.dart';
+import '../models/quote_item.dart';
+import '../models/thermal_printer_config.dart';
+import '../core/app_exception.dart';
+
+/// Servicio para imprimir tickets fiscales en impresoras térmicas POS
+/// compatibles con ESC/POS a través de red TCP/IP o USB.
+class ThermalPrinterService {
+  ThermalPrinterService._();
+
+  static final ThermalPrinterService instance = ThermalPrinterService._();
+
+  static NumberFormat _currency() => NumberFormat.currency(
+    locale: 'en_US',
+    symbol: 'RD\$ ',
+    decimalDigits: 0,
+  );
+
+  static NumberFormat _qty() => NumberFormat.decimalPattern('en_US');
+
+  Future<ThermalPrinterConfig> _loadConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    return ThermalPrinterConfig.fromPrefs(prefs);
+  }
+
+  Future<_CompanyConfig> _loadCompanyConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _CompanyConfig(
+      companyName: prefs.getString('company_name') ?? 'Mi Negocio',
+      companyPhone: prefs.getString('company_phone') ?? '',
+      companyRnc: prefs.getString('company_rnc') ?? '',
+      companyAddress: prefs.getString('company_address') ?? '',
+      companyEmail: prefs.getString('company_email') ?? '',
+      footerMessage: prefs.getString('footer_message') ?? '¡Gracias por su compra!',
+      footerTerms: prefs.getString('footer_terms') ?? '',
+    );
+  }
+
+  Future<Generator> _getGenerator(ThermalPrinterConfig config) async {
+    final paperSize = config.paperWidthMM == 58 ? PaperSize.mm58 : PaperSize.mm80;
+    final profile = await CapabilityProfile.load();
+    return Generator(paperSize, profile);
+  }
+
+  Future<void> _sendNetwork(List<int> bytes, ThermalPrinterConfig config) async {
+    final paperSize = config.paperWidthMM == 58 ? PaperSize.mm58 : PaperSize.mm80;
+    final profile = await CapabilityProfile.load();
+    final printer = NetworkPrinter(paperSize, profile);
+
+    try {
+      final result = await printer.connect(
+        config.ipAddress,
+        port: config.port,
+        timeout: const Duration(seconds: 5),
+      );
+
+      if (result != PosPrintResult.success) {
+        throw AppException(
+          'No se pudo conectar a la impresora en ${config.ipAddress}:${config.port}',
+          technical: result.msg,
+        );
+      }
+
+      printer.rawBytes(bytes);
+    } finally {
+      printer.disconnect();
+    }
+  }
+
+  Future<void> _sendUsb(List<int> bytes, ThermalPrinterConfig config) async {
+    final path = config.usbPortName;
+
+    if (path.startsWith('/dev/usb/lp')) {
+      await _sendRawFile(bytes, path);
+      return;
+    }
+
+    final port = SerialPort(path);
+    try {
+      port.open(SerialPortMode.readWrite);
+      port.write(Uint8List.fromList(bytes));
+      port.close();
+    } on Exception catch (e) {
+      throw AppException(
+        'No se pudo conectar a la impresora USB en $path',
+        technical: e.toString(),
+      );
+    } finally {
+      port.dispose();
+    }
+  }
+
+  Future<void> _sendRawFile(List<int> bytes, String path) async {
+    try {
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+    } on Exception catch (e) {
+      throw AppException(
+        'No se pudo escribir en $path',
+        technical: e.toString(),
+      );
+    }
+  }
+
+  Future<void> _routeBytes(List<int> bytes, ThermalPrinterConfig config) async {
+    if (!config.enabled) {
+      throw const AppException(
+        'Impresora POS no configurada. Actívala en Configuración > Impresión POS.',
+      );
+    }
+
+    if (config.connectionType == 'usb') {
+      if (config.usbPortName.isEmpty) {
+        throw const AppException(
+          'Puerto USB no seleccionado. Ve a Configuración > Impresión POS.',
+        );
+      }
+      await _sendUsb(bytes, config);
+    } else {
+      if (config.ipAddress.isEmpty) {
+        throw const AppException(
+          'Dirección IP no configurada. Ve a Configuración > Impresión POS.',
+        );
+      }
+      await _sendNetwork(bytes, config);
+    }
+  }
+
+  /// Detecta puertos USB disponibles: serie (COM* / tty*) y raw (/dev/usb/lp*).
+  static Future<List<String>> detectUsbPorts() async {
+    final ports = <String>{};
+
+    try {
+      ports.addAll(SerialPort.getAvailablePorts());
+    } catch (_) {}
+
+    try {
+      final dir = Directory('/dev/usb');
+      if (await dir.exists()) {
+        await for (final entry in dir.list()) {
+          final path = entry.path;
+          if (path.startsWith('/dev/usb/lp')) {
+            ports.add(path);
+          }
+        }
+      }
+    } catch (_) {}
+
+    return ports.toList();
+  }
+
+  Future<void> printInvoice(Invoice invoice, List<InvoiceItem> items) async {
+    final config = await _loadConfig();
+    final gen = await _getGenerator(config);
+    final company = await _loadCompanyConfig();
+
+    final bytes = _buildInvoiceBytes(gen, company, invoice, items);
+    await _routeBytes(bytes, config);
+  }
+
+  Future<void> printQuote(Quote quote, List<QuoteItem> items) async {
+    final config = await _loadConfig();
+    final gen = await _getGenerator(config);
+    final company = await _loadCompanyConfig();
+
+    final bytes = _buildQuoteBytes(gen, company, quote, items);
+    await _routeBytes(bytes, config);
+  }
+
+  Future<void> printTest() async {
+    final config = await _loadConfig();
+    final gen = await _getGenerator(config);
+
+    final bytes = _buildTestBytes(gen);
+    await _routeBytes(bytes, config);
+  }
+
+  List<int> _buildInvoiceBytes(Generator gen, _CompanyConfig company, Invoice invoice, List<InvoiceItem> items) {
+    var bytes = <int>[];
+    bytes += _headerBytes(gen, company, 'FACTURA #${invoice.id.toString().padLeft(4, '0')}', invoice.createdAt);
+    bytes += _customerBytes(gen, invoice.customerName, invoice.customerRnc);
+    bytes += _itemsHeaderBytes(gen);
+    for (final item in items) {
+      bytes += _itemRowBytes(gen, item.productName, item.quantity, item.unitPrice, item.discountItem, item.subtotal);
+    }
+    bytes += _totalsBytes(gen, invoice.subtotal, invoice.discountGlobal, invoice.total);
+    bytes += _footerBytes(gen, company);
+    bytes += gen.cut();
+    return bytes;
+  }
+
+  List<int> _buildQuoteBytes(Generator gen, _CompanyConfig company, Quote quote, List<QuoteItem> items) {
+    var bytes = <int>[];
+    bytes += _headerBytes(gen, company, 'COTIZACIÓN #${quote.id.toString().padLeft(4, '0')}', quote.createdAt);
+    bytes += _customerBytes(gen, quote.customerName, quote.customerRnc);
+    bytes += _itemsHeaderBytes(gen);
+    for (final item in items) {
+      bytes += _itemRowBytes(gen, item.productName, item.quantity, item.unitPrice, item.discountItem, item.subtotal);
+    }
+    bytes += _totalsBytes(gen, quote.subtotal, quote.discountGlobal, quote.total);
+    bytes += _footerBytes(gen, company);
+    bytes += gen.cut();
+    return bytes;
+  }
+
+  List<int> _buildTestBytes(Generator gen) {
+    var bytes = <int>[];
+    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.text('IMPRESIÓN DE PRUEBA', styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+    bytes += gen.feed(1);
+    bytes += gen.hr();
+    bytes += gen.text('Si puedes leer esto, la impresora');
+    bytes += gen.text('funciona correctamente.');
+    bytes += gen.feed(1);
+    bytes += gen.hr();
+    bytes += gen.setStyles(const PosStyles());
+    bytes += gen.text('Anthony Design - POS');
+    bytes += gen.text('Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}');
+    bytes += gen.feed(2);
+    bytes += gen.cut();
+    return bytes;
+  }
+
+  List<int> _headerBytes(Generator gen, _CompanyConfig company, String docTitle, String createdAt) {
+    var bytes = <int>[];
+    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.feed(1);
+    bytes += gen.text(company.companyName, styles: const PosStyles(align: PosAlign.center, bold: true));
+    bytes += gen.feed(1);
+    if (company.companyAddress.isNotEmpty) bytes += gen.text(company.companyAddress);
+    if (company.companyPhone.isNotEmpty) bytes += gen.text('Tel: ${company.companyPhone}');
+    bytes += gen.feed(1);
+    bytes += gen.hr(ch: '=');
+    bytes += gen.text(docTitle, styles: const PosStyles(bold: true, align: PosAlign.center));
+    bytes += gen.text(DateFormat('dd/MM/yyyy     HH:mm').format(DateTime.parse(createdAt)));
+    bytes += gen.setStyles(const PosStyles());
+    bytes += gen.feed(1);
+    return bytes;
+  }
+
+  List<int> _customerBytes(Generator gen, String? customerName, String? customerRnc) {
+    var bytes = <int>[];
+    bytes += gen.hr();
+    if (customerName != null && customerName.isNotEmpty) {
+      bytes += gen.text('Cliente: $customerName');
+    }
+    if (customerRnc != null && customerRnc.isNotEmpty) {
+      bytes += gen.text('RNC: $customerRnc');
+    }
+    bytes += gen.hr();
+    return bytes;
+  }
+
+  List<int> _itemsHeaderBytes(Generator gen) {
+    var bytes = <int>[];
+    bytes += gen.row([
+      PosColumn(text: 'PRODUCTO', width: 5, styles: const PosStyles(bold: true)),
+      PosColumn(text: 'CTD', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
+      PosColumn(text: 'PRECIO', width: 2, styles: const PosStyles(bold: true, align: PosAlign.right)),
+      PosColumn(text: 'TOTAL', width: 3, styles: const PosStyles(bold: true, align: PosAlign.right)),
+    ]);
+    bytes += gen.hr();
+    return bytes;
+  }
+
+  List<int> _itemRowBytes(Generator gen, String productName, int quantity, double unitPrice, double discountItem, double subtotal) {
+    var bytes = <int>[];
+    final currency = _currency();
+    final displayName = productName.length > 20 ? '${productName.substring(0, 18)}..' : productName;
+    bytes += gen.row([
+      PosColumn(text: displayName, width: 5),
+      PosColumn(text: _qty().format(quantity), width: 2, styles: const PosStyles(align: PosAlign.center)),
+      PosColumn(text: currency.format(unitPrice), width: 2, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(text: currency.format(subtotal), width: 3, styles: const PosStyles(align: PosAlign.right)),
+    ]);
+    if (discountItem > 0) {
+      bytes += gen.text('  Desc. ${discountItem.toStringAsFixed(0)}%', styles: const PosStyles(align: PosAlign.right));
+    }
+    return bytes;
+  }
+
+  List<int> _totalsBytes(Generator gen, double subtotal, double discountGlobal, double total) {
+    var bytes = <int>[];
+    final currency = _currency();
+    bytes += gen.hr();
+    bytes += gen.row([
+      PosColumn(text: 'Subtotal', width: 8, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(text: currency.format(subtotal), width: 4, styles: const PosStyles(align: PosAlign.right)),
+    ]);
+    if (discountGlobal > 0) {
+      bytes += gen.row([
+        PosColumn(text: 'Descuento', width: 8, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: '-${currency.format(discountGlobal)}', width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+    }
+    bytes += gen.hr(ch: '=');
+    bytes += gen.row([
+      PosColumn(text: 'TOTAL', width: 8, styles: const PosStyles(bold: true, align: PosAlign.right)),
+      PosColumn(text: currency.format(total), width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
+    ]);
+    bytes += gen.feed(1);
+    return bytes;
+  }
+
+  List<int> _footerBytes(Generator gen, _CompanyConfig company) {
+    var bytes = <int>[];
+    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.text(company.footerMessage, styles: const PosStyles(align: PosAlign.center));
+    if (company.footerTerms.isNotEmpty) {
+      bytes += gen.text(company.footerTerms, styles: const PosStyles(align: PosAlign.center));
+    }
+    bytes += gen.setStyles(const PosStyles());
+    bytes += gen.feed(3);
+    return bytes;
+  }
+}
+
+class _CompanyConfig {
+  final String companyName;
+  final String companyPhone;
+  final String companyRnc;
+  final String companyAddress;
+  final String companyEmail;
+  final String footerMessage;
+  final String footerTerms;
+
+  const _CompanyConfig({
+    required this.companyName,
+    required this.companyPhone,
+    required this.companyRnc,
+    required this.companyAddress,
+    required this.companyEmail,
+    required this.footerMessage,
+    required this.footerTerms,
+  });
+}

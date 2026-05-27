@@ -12,6 +12,7 @@ import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../core/backup_service.dart';
 import '../../services/notification_service.dart';
+import 'thermal_printer_settings_screen.dart';
 
 
 
@@ -119,6 +120,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildAppearanceSection(),
             const SizedBox(height: 20),
             _buildBackupSection(),
+            const SizedBox(height: 20),
+            _buildThermalPrinterSection(),
             const SizedBox(height: 20),
             _buildFooterSection(),
             const SizedBox(height: 24),
@@ -374,6 +377,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+
+  Widget _buildThermalPrinterSection() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ThermalPrinterSettingsScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: ThemeHelper.getCardDecoration(context),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.accentMagenta.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.receipt_long_rounded, size: 20, color: AppTheme.accentMagenta),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Impresión POS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Configura la impresora térmica para tickets',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ThemeHelper.getTextLightColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: ThemeHelper.getTextLightColor(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSaveButton() {
     return Row(
