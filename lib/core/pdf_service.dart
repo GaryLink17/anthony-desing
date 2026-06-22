@@ -9,13 +9,14 @@ import '../models/invoice_item.dart';
 import '../models/quote.dart';
 import '../models/quote_item.dart';
 import 'dart:typed_data';
+import '../utils/currency_config.dart';
 
 
 /// Configuración de empresa cargada desde SharedPreferences para el PDF.
 class _PdfCompanyConfig {
   final String companyName;
   final String companyPhone;
-  final String companyRnc;
+  // final String companyRnc; // RNC deshabilitado
   final String companyAddress;
   final String companyEmail;
   final String? logoPath;
@@ -25,7 +26,7 @@ class _PdfCompanyConfig {
   const _PdfCompanyConfig({
     required this.companyName,
     required this.companyPhone,
-    required this.companyRnc,
+    // required this.companyRnc, // RNC deshabilitado
     required this.companyAddress,
     required this.companyEmail,
     required this.logoPath,
@@ -38,11 +39,7 @@ class _PdfCompanyConfig {
 /// Usa las librerías `pdf` (generación) y `printing` (vista previa/impresión).
 class PdfService {
   /// Formatea montos en RD$ sin decimales.
-  static NumberFormat _currencyFormatter() => NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static NumberFormat _currencyFormatter() => currencyFormatter();
 
   /// Carga la configuración de la empresa desde SharedPreferences.
   static Future<_PdfCompanyConfig> _loadCompanyConfig({
@@ -52,7 +49,7 @@ class PdfService {
     return _PdfCompanyConfig(
       companyName: prefs.getString('company_name') ?? 'Mi Negocio',
       companyPhone: prefs.getString('company_phone') ?? '',
-      companyRnc: prefs.getString('company_rnc') ?? '',
+      // companyRnc: prefs.getString('company_rnc') ?? '', // RNC deshabilitado
       companyAddress: prefs.getString('company_address') ?? '',
       companyEmail: prefs.getString('company_email') ?? '',
       logoPath: prefs.getString('company_logo'),
@@ -89,7 +86,7 @@ class PdfService {
             _buildHeader(
               config.companyName,
               config.companyPhone,
-              config.companyRnc,
+              // config.companyRnc, // RNC deshabilitado
               config.companyAddress,
               config.companyEmail,
               logoImage,
@@ -113,7 +110,7 @@ class PdfService {
   static pw.Widget _buildHeader(
     String companyName,
     String companyPhone,
-    String companyRnc,
+    // String companyRnc, // RNC deshabilitado
     String companyAddress,
     String companyEmail,
     pw.ImageProvider? logo,
@@ -149,13 +146,13 @@ class PdfService {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
-                if (companyRnc.isNotEmpty) ...[
-                  pw.SizedBox(height: 3),
-                  pw.Text(
-                    'RNC: $companyRnc',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-                  ),
-                ],
+                // if (companyRnc.isNotEmpty) ...[
+                //   pw.SizedBox(height: 3),
+                //   pw.Text(
+                //     'RNC: $companyRnc',
+                //     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                //   ),
+                // ],
                 if (companyAddress.isNotEmpty) ...[
                   pw.SizedBox(height: 3),
                   pw.Text(
@@ -210,13 +207,13 @@ class PdfService {
                 style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
               ),
             ],
-            if (invoice.customerRnc != null && invoice.customerRnc!.isNotEmpty) ...[
-              pw.SizedBox(height: 2),
-              pw.Text(
-                'RNC: ${invoice.customerRnc}',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-              ),
-            ],
+            // if (invoice.customerRnc != null && invoice.customerRnc!.isNotEmpty) ...[
+            //   pw.SizedBox(height: 2),
+            //   pw.Text(
+            //     'RNC: ${invoice.customerRnc}',
+            //     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            //   ),
+            // ],
           ],
         ),
       ],
@@ -406,7 +403,7 @@ class PdfService {
             _buildHeader(
               config.companyName,
               config.companyPhone,
-              config.companyRnc,
+              // config.companyRnc, // RNC deshabilitado
               config.companyAddress,
               config.companyEmail,
               logoImage,
@@ -449,7 +446,7 @@ class PdfService {
             _buildQuoteHeader(
               config.companyName,
               config.companyPhone,
-              config.companyRnc,
+              // config.companyRnc, // RNC deshabilitado
               config.companyAddress,
               config.companyEmail,
               logoImage,
@@ -473,7 +470,7 @@ class PdfService {
   static pw.Widget _buildQuoteHeader(
     String companyName,
     String companyPhone,
-    String companyRnc,
+    // String companyRnc, // RNC deshabilitado
     String companyAddress,
     String companyEmail,
     pw.ImageProvider? logo,
@@ -509,13 +506,13 @@ class PdfService {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
-                if (companyRnc.isNotEmpty) ...[
-                  pw.SizedBox(height: 3),
-                  pw.Text(
-                    'RNC: $companyRnc',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-                  ),
-                ],
+                // if (companyRnc.isNotEmpty) ...[
+                //   pw.SizedBox(height: 3),
+                //   pw.Text(
+                //     'RNC: $companyRnc',
+                //     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                //   ),
+                // ],
                 if (companyAddress.isNotEmpty) ...[
                   pw.SizedBox(height: 3),
                   pw.Text(
@@ -574,13 +571,13 @@ class PdfService {
                 style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
               ),
             ],
-            if (quote.customerRnc != null && quote.customerRnc!.isNotEmpty) ...[
-              pw.SizedBox(height: 2),
-              pw.Text(
-                'RNC: ${quote.customerRnc}',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-              ),
-            ],
+            // if (quote.customerRnc != null && quote.customerRnc!.isNotEmpty) ...[
+            //   pw.SizedBox(height: 2),
+            //   pw.Text(
+            //     'RNC: ${quote.customerRnc}',
+            //     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            //   ),
+            // ],
           ],
         ),
       ],

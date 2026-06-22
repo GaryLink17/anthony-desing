@@ -15,6 +15,7 @@ import '../../services/document_totals_service.dart';
 import '../../services/excel_service.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
+import '../../utils/currency_config.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 import '../../widgets/pagination_bar.dart';
 import 'invoice_preview_screen.dart';
@@ -51,11 +52,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   int get _totalPages =>
       _pageSize >= _invoices.length ? 1 : (_invoices.length / _pageSize).ceil();
 
-  static final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static final _currency = currencyFormatter();
 
   @override
   void initState() {
@@ -716,7 +713,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           try {
             final invoiceWithId = inv.copyWith(
               customerName: updatedInvoice.customerName,
-              customerRnc: updatedInvoice.customerRnc,
+              // customerRnc: updatedInvoice.customerRnc, // RNC deshabilitado
               subtotal: updatedInvoice.subtotal,
               discountGlobal: updatedInvoice.discountGlobal,
               total: updatedInvoice.total,
@@ -756,7 +753,7 @@ class _NewInvoiceDialog extends StatefulWidget {
 
 class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   String _customerName = '';
-  String? _customerRnc;
+  // String? _customerRnc; // RNC deshabilitado
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -766,11 +763,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   List<Product> _filteredProducts = [];
   final bool _showProductList = true;
 
-  static final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static final _currency = currencyFormatter();
 
   @override
   void initState() {
@@ -877,7 +870,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
       customerName: _customerName.trim().isEmpty
           ? null
           : _customerName.trim(),
-      customerRnc: _customerRnc,
+      // customerRnc: _customerRnc, // RNC deshabilitado
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
       total: _total,

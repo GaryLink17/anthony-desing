@@ -23,7 +23,7 @@ void main() {
     invoiceRepository = InvoiceRepository();
   });
 
-  test('save y update preservan customerRnc y paymentStatus', () async {
+  test('save y update preservan paymentStatus', () async {
     final productId = await productRepository.insertRaw(
       name: 'Producto Test Repo',
       category: 'Test',
@@ -35,7 +35,7 @@ void main() {
 
     final created = Invoice(
       customerName: 'Cliente Repo',
-      customerRnc: '101010101',
+      // customerRnc: '101010101', // RNC deshabilitado
       subtotal: 30,
       discountGlobal: 0,
       total: 30,
@@ -55,13 +55,13 @@ void main() {
     final invoiceId = await invoiceRepository.save(created, [item]);
     final saved = await invoiceRepository.getById(invoiceId);
     expect(saved, isNotNull);
-    expect(saved!.customerRnc, '101010101');
-    expect(saved.paymentStatus, 'paid');
+    // expect(saved!.customerRnc, '101010101'); // RNC deshabilitado
+    expect(saved!.paymentStatus, 'paid');
 
     final updated = saved.copyWith(
       subtotal: 60,
       total: 60,
-      customerRnc: '202020202',
+      // customerRnc: '202020202', // RNC deshabilitado
       paymentStatus: 'pending',
     );
     final updatedItem = InvoiceItem(
@@ -76,7 +76,7 @@ void main() {
     await invoiceRepository.update(updated, [updatedItem]);
     final reloaded = await invoiceRepository.getById(invoiceId);
     expect(reloaded, isNotNull);
-    expect(reloaded!.customerRnc, '202020202');
-    expect(reloaded.paymentStatus, 'pending');
+    // expect(reloaded!.customerRnc, '202020202'); // RNC deshabilitado
+    expect(reloaded!.paymentStatus, 'pending');
   });
 }

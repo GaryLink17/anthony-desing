@@ -21,6 +21,7 @@ import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 import '../../widgets/pagination_bar.dart';
 import '../../services/thermal_printer_service.dart';
+import '../../utils/currency_config.dart';
 
 
 /// Pantalla de gestión de cotizaciones.
@@ -54,11 +55,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
   int get _totalPages =>
       _pageSize >= _quotes.length ? 1 : (_quotes.length / _pageSize).ceil();
 
-  static final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static final _currency = currencyFormatter();
 
   @override
   void initState() {
@@ -451,7 +448,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
           try {
             final newQuote = quote.copyWith(
               customerName: updatedQuote.customerName,
-              customerRnc: updatedQuote.customerRnc,
+              // customerRnc: updatedQuote.customerRnc, // RNC deshabilitado
               subtotal: updatedQuote.subtotal,
               discountGlobal: updatedQuote.discountGlobal,
               total: updatedQuote.total,
@@ -739,7 +736,7 @@ class _NewQuoteDialog extends StatefulWidget {
 
 class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   String _customerName = '';
-  String? _customerRnc;
+  // String? _customerRnc; // RNC deshabilitado
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -749,11 +746,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   List<Product> _filteredProducts = [];
   final bool _showProductList = true;
 
-  static final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static final _currency = currencyFormatter();
 
   @override
   void initState() {
@@ -856,7 +849,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
       customerName: _customerName.trim().isEmpty
           ? null
           : _customerName.trim(),
-      customerRnc: _customerRnc,
+      // customerRnc: _customerRnc, // RNC deshabilitado
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
       total: _total,

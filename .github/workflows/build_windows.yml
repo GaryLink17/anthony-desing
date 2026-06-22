@@ -25,6 +25,12 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      - name: Análisis estático
+        run: flutter analyze
+
+      - name: Pruebas unitarias
+        run: flutter test
+
       - name: Compilar Windows
         run: flutter build windows --release
 

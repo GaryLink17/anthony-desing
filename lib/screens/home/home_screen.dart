@@ -9,6 +9,7 @@ import '../../services/notification_service.dart';
 import '../../models/product.dart';
 import '../../app_routes.dart';
 import '../../utils/state_persistence.dart';
+import '../../utils/currency_config.dart';
 
 /// Pantalla principal (Dashboard) con resumen mensual del negocio.
 ///
@@ -25,11 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Evita repetir la notificación al volver al Dashboard en la misma sesión.
   bool _lowStockWarningShownThisSession = false;
 
-  static final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static final _currency = currencyFormatter();
 
   @override
   void initState() {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/product.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/theme_helper.dart';
+import '../../../utils/currency_config.dart';
 
 /// Diálogo modal para crear o editar un producto del inventario.
 ///
@@ -192,7 +193,7 @@ class _ProductDialogState extends State<ProductDialog> {
                             ),
                           ),
                           Text(
-                            'RD\$ ${_profit.toStringAsFixed(0)}  (${_margin.toStringAsFixed(1)}%)',
+                            '${currencyFormatter().format(_profit)}  (${_margin.toStringAsFixed(1)}%)',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,

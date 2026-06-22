@@ -9,6 +9,7 @@ import '../../services/notification_service.dart';
 import '../../models/invoice.dart';
 import '../invoices/invoice_preview_screen.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/currency_config.dart';
 
 /// Pantalla de historial de facturas con filtros por fecha, texto y estado.
 ///
@@ -25,11 +26,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _repo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
-  final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  final _currency = currencyFormatter();
   final _dateFormat = DateFormat('dd/MM/yyyy', 'es');
 
   List<Invoice> _all = [];

@@ -59,7 +59,7 @@ class ExcelService {
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) {
     final headers = [
-      '#', 'Cliente', 'RNC', 'Fecha', 'Subtotal', 'Descuento',
+      '#', 'Cliente', /* 'RNC', */ 'Fecha', 'Subtotal', 'Descuento',
       'Total', 'Estado Pago', 'Estado',
     ];
     _writeHeaders(sheet, headers);
@@ -74,20 +74,18 @@ class ExcelService {
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
           .value = TextCellValue(inv.customerName ?? 'Cliente general');
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
-          .value = TextCellValue(inv.customerRnc ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
           .value = TextCellValue(date);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
           .value = DoubleCellValue(inv.subtotal);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
           .value = DoubleCellValue(inv.discountGlobal);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
           .value = DoubleCellValue(inv.total);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
           .value = TextCellValue(
             inv.isCancelled ? 'ANULADA' : inv.isPaid ? 'PAGADA' : 'PENDIENTE',
           );
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row))
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
           .value = TextCellValue(inv.isCancelled ? 'Anulada' : 'Activa');
 
       if (!inv.isCancelled) totalSum += inv.total;
@@ -97,13 +95,13 @@ class ExcelService {
     // Fila de totales al final
     row++;
     final totalCell = sheet.cell(
-      CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row),
+      CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row),
     );
     totalCell.value = TextCellValue('TOTAL ACTIVAS:');
     totalCell.cellStyle = _totalStyle();
 
     final totalAmountCell = sheet.cell(
-      CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row),
+      CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row),
     );
     totalAmountCell.value = DoubleCellValue(totalSum);
     totalAmountCell.cellStyle = _totalStyle();

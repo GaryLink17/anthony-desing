@@ -31,7 +31,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _rncCtrl = TextEditingController();
+  // final _rncCtrl = TextEditingController(); // RNC deshabilitado
   final _addressCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _footerMsgCtrl = TextEditingController();
@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _nameCtrl.text = prefs.getString('company_name') ?? '';
       _phoneCtrl.text = prefs.getString('company_phone') ?? '';
-      _rncCtrl.text = prefs.getString('company_rnc') ?? '';
+      // _rncCtrl.text = prefs.getString('company_rnc') ?? ''; // RNC deshabilitado
       _addressCtrl.text = prefs.getString('company_address') ?? '';
       _emailCtrl.text = prefs.getString('company_email') ?? '';
       _logoPath = prefs.getString('company_logo');
@@ -74,7 +74,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('company_name', _nameCtrl.text.trim());
     await prefs.setString('company_phone', _phoneCtrl.text.trim());
-    await prefs.setString('company_rnc', _rncCtrl.text.trim());
+    // await prefs.setString('company_rnc', _rncCtrl.text.trim()); // RNC deshabilitado
     await prefs.setString('company_address', _addressCtrl.text.trim());
     await prefs.setString('company_email', _emailCtrl.text.trim());
     await prefs.setString('footer_message', _footerMsgCtrl.text.trim());
@@ -237,7 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     _field(_nameCtrl, 'Nombre del negocio', required: true),
                     const SizedBox(height: 12),
-                    _field(_rncCtrl, 'RNC'),
+                    // _field(_rncCtrl, 'RNC'), // RNC deshabilitado
                     const SizedBox(height: 12),
                     _field(_phoneCtrl, 'Teléfono', isPhone: true),
                     const SizedBox(height: 12),

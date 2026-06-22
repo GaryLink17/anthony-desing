@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -13,8 +14,14 @@ class DatabaseHelper {
 
   /// Inicializa el motor FFI de SQLite (necesario en Windows/desktop).
   /// Solo debe llamarse una vez.
+  /// Lanza [UnsupportedError] si se ejecuta en web.
   static Future<void> initialize() async {
     if (_initialized) return;
+    if (kIsWeb) {
+      throw UnsupportedError(
+        'Web no soportado. Usa la versión de escritorio.',
+      );
+    }
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     _initialized = true;
@@ -85,28 +92,27 @@ class DatabaseHelper {
       );
     }
     if (oldVersion < 5) {
-      // v5: Crea tabla de clientes
+      // v5: Crea tabla de clientes (RNC deshabilitado, columna omitida)
       await db.execute('''
         CREATE TABLE IF NOT EXISTS customers (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           phone TEXT,
           email TEXT,
-          rnc TEXT,
           address TEXT,
           created_at TEXT NOT NULL
         )
       ''');
     }
-    if (oldVersion < 6) {
-      // v6: Agrega RNC del cliente a facturas y cotizaciones
-      await db.execute(
-        'ALTER TABLE invoices ADD COLUMN customer_rnc TEXT',
-      );
-      await db.execute(
-        'ALTER TABLE quotes ADD COLUMN customer_rnc TEXT',
-      );
-    }
+    // if (oldVersion < 6) {
+    //   // v6: Agrega RNC del cliente a facturas y cotizaciones
+    //   await db.execute(
+    //     'ALTER TABLE invoices ADD COLUMN customer_rnc TEXT',
+    //   );
+    //   await db.execute(
+    //     'ALTER TABLE quotes ADD COLUMN customer_rnc TEXT',
+    //   );
+    // }
   }
 
   /// Crea todas las tablas desde cero (base nueva).
@@ -130,7 +136,6 @@ class DatabaseHelper {
       CREATE TABLE invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_name TEXT,
-        customer_rnc TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
         total REAL NOT NULL,
@@ -161,7 +166,6 @@ class DatabaseHelper {
       CREATE TABLE quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_name TEXT,
-        customer_rnc TEXT,
         subtotal REAL NOT NULL,
         discount_global REAL DEFAULT 0,
         total REAL NOT NULL,

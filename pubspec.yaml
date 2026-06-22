@@ -9,7 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqflite_common_ffi: ^2.3.3      # SQLite para Windows (desktop)
+  sqflite_common_ffi: ^2.3.3      # SQLite vía FFI (solo desktop: Windows, Linux, macOS)
+  # NOTA: sqflite_common_ffi usa dart:ffi, incompatible con web.
+  # Si en futuro se requiere Android/iOS, agregar sqflite y usar conditional imports.
   path: ^1.9.0                     # Para rutas de archivos
   path_provider: ^2.1.4            # Rutas del sistema (AppData) — necesario para MSIX
   provider: ^6.1.2                 # Manejo de estado

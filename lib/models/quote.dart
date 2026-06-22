@@ -2,7 +2,7 @@
 class Quote {
   final int? id;
   final String? customerName;
-  final String? customerRnc;
+  // final String? customerRnc; // RNC deshabilitado
   final double subtotal;
   final double discountGlobal;
   final double total;
@@ -13,7 +13,7 @@ class Quote {
   Quote({
     this.id,
     this.customerName,
-    this.customerRnc,
+    // this.customerRnc, // RNC deshabilitado
     required this.subtotal,
     this.discountGlobal = 0,
     required this.total,
@@ -35,7 +35,7 @@ class Quote {
   Quote copyWith({
     int? id,
     String? customerName,
-    String? customerRnc,
+    // String? customerRnc, // RNC deshabilitado
     double? subtotal,
     double? discountGlobal,
     double? total,
@@ -46,7 +46,7 @@ class Quote {
     return Quote(
       id: id ?? this.id,
       customerName: customerName ?? this.customerName,
-      customerRnc: customerRnc ?? this.customerRnc,
+      // customerRnc: customerRnc ?? this.customerRnc, // RNC deshabilitado
       subtotal: subtotal ?? this.subtotal,
       discountGlobal: discountGlobal ?? this.discountGlobal,
       total: total ?? this.total,
@@ -61,7 +61,7 @@ class Quote {
     return {
       'id': id,
       'customer_name': customerName,
-      'customer_rnc': customerRnc,
+      // 'customer_rnc': customerRnc, // RNC deshabilitado
       'subtotal': subtotal,
       'discount_global': discountGlobal,
       'total': total,
@@ -76,7 +76,7 @@ class Quote {
     return Quote(
       id: map['id'],
       customerName: map['customer_name'],
-      customerRnc: map['customer_rnc'],
+      // customerRnc: map['customer_rnc'], // RNC deshabilitado
       subtotal: (map['subtotal'] as num).toDouble(),
       discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
       total: (map['total'] as num).toDouble(),

@@ -11,6 +11,7 @@ import '../models/invoice_item.dart';
 import '../models/quote.dart';
 import '../models/quote_item.dart';
 import '../models/thermal_printer_config.dart';
+import '../utils/currency_config.dart';
 import '../core/app_exception.dart';
 
 /// Servicio para imprimir tickets fiscales en impresoras térmicas POS
@@ -20,11 +21,7 @@ class ThermalPrinterService {
 
   static final ThermalPrinterService instance = ThermalPrinterService._();
 
-  static NumberFormat _currency() => NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static NumberFormat _currency() => currencyFormatter();
 
   static NumberFormat _qty() => NumberFormat.decimalPattern('en_US');
 
@@ -38,7 +35,7 @@ class ThermalPrinterService {
     return _CompanyConfig(
       companyName: prefs.getString('company_name') ?? 'Mi Negocio',
       companyPhone: prefs.getString('company_phone') ?? '',
-      companyRnc: prefs.getString('company_rnc') ?? '',
+      // companyRnc: prefs.getString('company_rnc') ?? '', // RNC deshabilitado
       companyAddress: prefs.getString('company_address') ?? '',
       companyEmail: prefs.getString('company_email') ?? '',
       footerMessage: prefs.getString('footer_message') ?? '¡Gracias por su compra!',
@@ -322,7 +319,7 @@ class ThermalPrinterService {
   List<int> _buildInvoiceBytes(Generator gen, _CompanyConfig company, Invoice invoice, List<InvoiceItem> items) {
     var bytes = <int>[];
     bytes += _headerBytes(gen, company, 'FACTURA #${invoice.id.toString().padLeft(4, '0')}', invoice.createdAt);
-    bytes += _customerBytes(gen, invoice.customerName, invoice.customerRnc);
+    bytes += _customerBytes(gen, invoice.customerName /*, invoice.customerRnc*/);
     bytes += _itemsHeaderBytes(gen);
     for (final item in items) {
       bytes += _itemRowBytes(gen, item.productName, item.quantity, item.unitPrice, item.discountItem, item.subtotal);
@@ -336,7 +333,7 @@ class ThermalPrinterService {
   List<int> _buildQuoteBytes(Generator gen, _CompanyConfig company, Quote quote, List<QuoteItem> items) {
     var bytes = <int>[];
     bytes += _headerBytes(gen, company, 'COTIZACIÓN #${quote.id.toString().padLeft(4, '0')}', quote.createdAt);
-    bytes += _customerBytes(gen, quote.customerName, quote.customerRnc);
+    bytes += _customerBytes(gen, quote.customerName /*, quote.customerRnc*/);
     bytes += _itemsHeaderBytes(gen);
     for (final item in items) {
       bytes += _itemRowBytes(gen, item.productName, item.quantity, item.unitPrice, item.discountItem, item.subtotal);
@@ -382,15 +379,15 @@ class ThermalPrinterService {
     return bytes;
   }
 
-  List<int> _customerBytes(Generator gen, String? customerName, String? customerRnc) {
+  List<int> _customerBytes(Generator gen, String? customerName /*, String? customerRnc*/) {
     var bytes = <int>[];
     bytes += gen.hr();
     if (customerName != null && customerName.isNotEmpty) {
       bytes += gen.text('Cliente: $customerName');
     }
-    if (customerRnc != null && customerRnc.isNotEmpty) {
-      bytes += gen.text('RNC: $customerRnc');
-    }
+    // if (customerRnc != null && customerRnc.isNotEmpty) {
+    //   bytes += gen.text('RNC: $customerRnc');
+    // }
     bytes += gen.hr();
     return bytes;
   }
@@ -462,7 +459,7 @@ class ThermalPrinterService {
 class _CompanyConfig {
   final String companyName;
   final String companyPhone;
-  final String companyRnc;
+  // final String companyRnc; // RNC deshabilitado
   final String companyAddress;
   final String companyEmail;
   final String footerMessage;
@@ -471,7 +468,7 @@ class _CompanyConfig {
   const _CompanyConfig({
     required this.companyName,
     required this.companyPhone,
-    required this.companyRnc,
+    // required this.companyRnc, // RNC deshabilitado
     required this.companyAddress,
     required this.companyEmail,
     required this.footerMessage,

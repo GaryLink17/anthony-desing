@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../core/product_repository.dart';
 import '../../models/product.dart';
 import '../../theme/app_theme.dart';
@@ -11,6 +10,7 @@ import 'widgets/product_dialog.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../services/excel_service.dart';
+import '../../utils/currency_config.dart';
 import '../../widgets/pagination_bar.dart';
 
 
@@ -33,11 +33,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   final _repo = ProductRepository();
   final _searchController = TextEditingController();
   final _debouncer = Debouncer();
-  static final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  static final _currency = currencyFormatter();
 
   static const int _pageSize = 10;
   int _currentPage = 0;

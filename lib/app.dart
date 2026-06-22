@@ -21,19 +21,14 @@ import 'utils/state_persistence.dart';
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  /// Constructor de ruta sin animación de transición.
-  PageRouteBuilder<void> _buildNoAnimationRoute({
+  Route<void> _buildNoAnimationRoute({
     required WidgetBuilder builder,
     required RouteSettings settings,
   }) {
     return PageRouteBuilder<void>(
       settings: settings,
-      pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+      pageBuilder: (context, _, _) => builder(context),
       transitionDuration: Duration.zero,
-      reverseTransitionDuration: Duration.zero,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return child;
-      },
     );
   }
 

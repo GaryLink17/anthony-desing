@@ -6,6 +6,7 @@ import '../../core/reports_repository.dart';
 import '../../utils/responsive_helper.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
+import '../../utils/currency_config.dart';
 
 
 /// Pantalla de reportes de ventas con filtro por fechas.
@@ -22,11 +23,7 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   final _repo = ReportsRepository();
-  final _currency = NumberFormat.currency(
-    locale: 'en_US',
-    symbol: 'RD\$ ',
-    decimalDigits: 0,
-  );
+  final _currency = currencyFormatter();
   final _dateFormat = DateFormat('dd/MM/yyyy', 'es');
 
   late DateTime _startDate;
