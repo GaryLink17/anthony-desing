@@ -125,10 +125,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         });
       }
     } on AppException catch (e) {
-      if (mounted) setState(() {
-        _loading = false;
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _errorMessage = e.message;
+        });
+      }
     }
   }
 
@@ -1603,11 +1605,13 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                           if (!_formKey.currentState!.validate()) return;
                           setState(() => _canPop = true);
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) Navigator.pop(context, {
-                              'quantity': int.parse(_quantityCtrl.text),
-                              'unitPrice': double.parse(_priceCtrl.text),
-                              'discount': double.tryParse(_discountCtrl.text) ?? 0,
-                            });
+                            if (mounted) {
+                              Navigator.pop(context, {
+                                'quantity': int.parse(_quantityCtrl.text),
+                                'unitPrice': double.parse(_priceCtrl.text),
+                                'discount': double.tryParse(_discountCtrl.text) ?? 0,
+                              });
+                            }
                           });
                         },
                         style: ElevatedButton.styleFrom(

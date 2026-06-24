@@ -86,10 +86,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
         _tryOpenFocusProduct();
       }
     } on AppException catch (e) {
-      if (mounted) setState(() {
-        _loading = false;
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _errorMessage = e.message;
+        });
+      }
     }
   }
 

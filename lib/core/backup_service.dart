@@ -196,18 +196,6 @@ class BackupService {
     }
   }
 
-  /// Lee la marca de tiempo del último backup de forma síncrona.
-  String? _readLastBackupTimeSync() {
-    if (_lastBackupTimePath.isEmpty) return null;
-    final file = File(_lastBackupTimePath);
-    if (!file.existsSync()) return null;
-    try {
-      return file.readAsStringSync();
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Actualiza la marca de tiempo del último backup automático.
   Future<void> _updateLastBackupTime() async {
     if (_lastBackupTimePath.isEmpty) return;

@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(strokeWidth: 3),
+              const CircularProgressIndicator(strokeWidth: 3),
               const SizedBox(height: 16),
               Text(
                 'Cargando dashboard...',
