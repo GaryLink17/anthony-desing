@@ -103,9 +103,9 @@ class InvoiceRepository {
       final db = await _db.database;
       return await db.transaction((txn) async {
         for (final item in items) {
-          final rows = await txn.query(
+          final rows = await txn.rawQuery(
             'SELECT stock FROM products WHERE id = ?',
-            whereArgs: [item.productId],
+            [item.productId],
           );
           if (rows.isEmpty) {
             throw AppException(
@@ -267,9 +267,9 @@ class InvoiceRepository {
         );
 
         for (final item in items) {
-          final rows = await txn.query(
+          final rows = await txn.rawQuery(
             'SELECT stock FROM products WHERE id = ?',
-            whereArgs: [item.productId],
+            [item.productId],
           );
           if (rows.isEmpty) {
             throw AppException(
