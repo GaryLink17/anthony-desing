@@ -113,13 +113,15 @@ class ThermalPrinterService {
     try {
       port.open(SerialPortMode.readWrite);
       port.write(Uint8List.fromList(bytes));
-      port.close();
     } on Exception catch (e) {
       throw AppException(
         'No se pudo conectar al puerto serie $path',
         technical: e.toString(),
       );
     } finally {
+      try {
+        port.close();
+      } catch (_) {}
       port.dispose();
     }
   }

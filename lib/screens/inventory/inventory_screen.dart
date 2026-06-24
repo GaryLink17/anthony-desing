@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/product_repository.dart';
 import '../../models/product.dart';
 import '../../theme/app_theme.dart';
@@ -32,6 +33,7 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen> {
   final _repo = ProductRepository();
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   final _debouncer = Debouncer();
   static final _currency = currencyFormatter();
 
@@ -39,6 +41,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   int _currentPage = 0;
   List<Product> _products = [];
   bool _loading = true;
+  String? _errorMessage;
 
   /// Productos visibles en la página actual.
   List<Product> get _paginatedProducts {
@@ -59,13 +62,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _debouncer.dispose();
     super.dispose();
   }
 
   /// Carga productos desde el repositorio, opcionalmente filtrados por búsqueda.
   Future<void> _loadProducts([String query = '']) async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
     try {
       final result = query.isEmpty
           ? await _repo.getAll()
@@ -79,8 +86,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
         _tryOpenFocusProduct();
       }
     } on AppException catch (e) {
-      if (mounted) setState(() => _loading = false);
-      NotificationService().error(e.message);
+      if (mounted) setState(() {
+        _loading = false;
+        _errorMessage = e.message;
+      });
     }
   }
 
@@ -103,21 +112,53 @@ class _InventoryScreenState extends State<InventoryScreen> {
     });
   }
 
+  bool _ctrlPressed = false;
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight) {
+      if (event is KeyDownEvent) _ctrlPressed = true;
+      if (event is KeyUpEvent) _ctrlPressed = false;
+      return KeyEventResult.ignored;
+    }
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (!_ctrlPressed) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.keyN:
+        _showProductDialog();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyF:
+        _searchFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyE:
+        if (_products.isNotEmpty) _exportExcel();
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.bgColor,
-      body: Padding(
-        padding: context.responsivePadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildToolbar(),
-            const SizedBox(height: 16),
-            Expanded(child: _buildTable()),
-          ],
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        backgroundColor: context.bgColor,
+        body: Padding(
+          padding: context.responsivePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              _buildToolbar(),
+              const SizedBox(height: 16),
+              Expanded(child: _buildTable()),
+            ],
+          ),
         ),
       ),
     );
@@ -212,6 +253,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       width: 320,
       child: TextField(
         controller: _searchController,
+        focusNode: _searchFocusNode,
         onChanged: (q) => _debouncer(() => _loadProducts(q)),
         decoration: InputDecoration(
           hintText: 'Buscar producto...',
@@ -251,6 +293,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return StateBuilder(
       isLoading: _loading,
       isEmpty: _products.isEmpty,
+      errorMessage: _errorMessage,
+      onRetry: _errorMessage != null ? () => _loadProducts(_searchController.text) : null,
       icon: Icons.inventory_2_outlined,
       emptyTitle: 'No hay productos aún',
       emptyDescription: 'Presiona "Nuevo producto" para agregar el primero',

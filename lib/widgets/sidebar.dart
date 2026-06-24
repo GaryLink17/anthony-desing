@@ -107,10 +107,9 @@ class Sidebar extends StatelessWidget {
 
   /// Cabecera con logo/nombre de empresa.
   Widget _buildHeader(BuildContext context, bool isDark) {
-    final provider = context.watch<AppProvider>();
-    final logoPath = provider.companyLogo;
-    final name = provider.companyName;
-    final phone = provider.companyPhone;
+    final companyLogo = context.select((AppProvider p) => p.companyLogo);
+    final name = context.select((AppProvider p) => p.companyName);
+    final phone = context.select((AppProvider p) => p.companyPhone);
 
     final initials = name
         .trim()
@@ -142,20 +141,13 @@ class Sidebar extends StatelessWidget {
               borderRadius: BorderRadius.circular(9),
             ),
             clipBehavior: Clip.antiAlias,
-            child: logoPath != null && File(logoPath).existsSync()
-                ? Image.file(File(logoPath), fit: BoxFit.cover)
-                : Center(
-                    child: Text(
-                      initials.isEmpty ? 'NB' : initials,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? AppTheme.accentMagenta
-                            : AppTheme.primaryBlue,
-                      ),
-                    ),
-                  ),
+            child: companyLogo != null
+                ? Image.file(
+                    File(companyLogo),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _buildLogoFallback(initials, isDark),
+                  )
+                : _buildLogoFallback(initials, isDark),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -187,6 +179,21 @@ class Sidebar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogoFallback(String initials, bool isDark) {
+    return Center(
+      child: Text(
+        initials.isEmpty ? 'NB' : initials,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: isDark
+              ? AppTheme.accentMagenta
+              : AppTheme.primaryBlue,
+        ),
       ),
     );
   }

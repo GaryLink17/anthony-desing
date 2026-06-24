@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/theme_helper.dart';
@@ -10,6 +11,7 @@ import '../../models/invoice.dart';
 import '../invoices/invoice_preview_screen.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/currency_config.dart';
+import '../../widgets/pagination_bar.dart';
 
 /// Pantalla de historial de facturas con filtros por fecha, texto y estado.
 ///
@@ -26,6 +28,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _repo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
+  final _searchFocusNode = FocusNode();
   final _currency = currencyFormatter();
   final _dateFormat = DateFormat('dd/MM/yyyy', 'es');
 
@@ -35,6 +38,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   late DateTime _endDate;
   String _statusFilter = 'all';
   bool _loading = true;
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+  static const int _pageSize = 50;
+
+  double _cachedFilteredTotal = 0;
+  double _cachedFilteredDiscount = 0;
+  int _cachedActiveCount = 0;
 
   @override
   void initState() {
@@ -177,35 +193,82 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
         return matchesQuery && matchesDate && matchesStatus;
       }).toList();
+      _currentPage = 0;
+      _updateCachedTotals();
     });
   }
 
-  // Totales del período filtrado (solo activas para métricas)
-  double get _filteredTotal => _filtered
-      .where((inv) => inv.isActive)
-      .fold(0, (sum, inv) => sum + inv.total);
-  double get _filteredDiscount => _filtered
-      .where((inv) => inv.isActive)
-      .fold(0, (sum, inv) => sum + inv.discountGlobal);
-  int get _activeCount => _filtered.where((inv) => inv.isActive).length;
+  List<Invoice> get _paginatedFiltered {
+    final start = _currentPage * _pageSize;
+    if (start >= _filtered.length) return [];
+    final end = start + _pageSize;
+    return _filtered.sublist(start, end > _filtered.length ? _filtered.length : end);
+  }
+
+  int get _totalPages => (_filtered.length / _pageSize).ceil();
+
+  void _updateCachedTotals() {
+    double total = 0, discount = 0;
+    int count = 0;
+    for (final inv in _filtered) {
+      if (inv.isActive) {
+        total += inv.total;
+        discount += inv.discountGlobal;
+        count++;
+      }
+    }
+    _cachedFilteredTotal = total;
+    _cachedFilteredDiscount = discount;
+    _cachedActiveCount = count;
+  }
+
+  double get _filteredTotal => _cachedFilteredTotal;
+  double get _filteredDiscount => _cachedFilteredDiscount;
+  int get _activeCount => _cachedActiveCount;
+
+  bool _ctrlPressed = false;
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight) {
+      if (event is KeyDownEvent) _ctrlPressed = true;
+      if (event is KeyUpEvent) _ctrlPressed = false;
+      return KeyEventResult.ignored;
+    }
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (!_ctrlPressed) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.keyF:
+        _searchFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.bgColor,
-      body: Padding(
-        padding: context.responsivePadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 16),
-            _buildSummaryBar(),
-            const SizedBox(height: 16),
-            _buildToolbar(),
-            const SizedBox(height: 12),
-            Expanded(child: _buildTable()),
-          ],
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        backgroundColor: context.bgColor,
+        body: Padding(
+          padding: context.responsivePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 16),
+              _buildSummaryBar(),
+              const SizedBox(height: 16),
+              _buildToolbar(),
+              const SizedBox(height: 12),
+              Expanded(child: _buildTable()),
+            ],
+          ),
         ),
       ),
     );
@@ -307,6 +370,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           width: 260,
           child: TextField(
             controller: _searchCtrl,
+            focusNode: _searchFocusNode,
             onChanged: (_) => _applyFilters(),
             decoration: InputDecoration(
               hintText: 'Buscar por cliente o # factura...',
@@ -554,10 +618,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _buildTableHeader(),
           Expanded(
             child: ListView.builder(
-              itemCount: _filtered.length,
-              itemBuilder: (_, i) => _buildRow(_filtered[i], i),
+              itemCount: _paginatedFiltered.length,
+              itemBuilder: (_, i) => _buildRow(_paginatedFiltered[i], _currentPage * _pageSize + i),
+              key: const PageStorageKey<String>('history_list'),
             ),
           ),
+          if (_totalPages > 1)
+            PaginationBar(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              totalItems: _filtered.length,
+              onPageChanged: (p) => setState(() => _currentPage = p),
+            ),
         ],
       ),
     );

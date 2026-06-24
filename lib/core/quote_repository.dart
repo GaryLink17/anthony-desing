@@ -115,6 +115,50 @@ class QuoteRepository {
     }
   }
 
+  /// Actualiza una cotización existente y sus items en una transacción.
+  /// A diferencia del patrón delete+save, esto es atómico y no pierde datos
+  /// si falla la operación.
+  Future<void> update(int quoteId, Quote quote, List<QuoteItem> items) async {
+    try {
+      final db = await _db.database;
+      await db.transaction((txn) async {
+        await txn.update(
+          'quotes',
+          {
+            'customer_name': quote.customerName,
+            'subtotal': quote.subtotal,
+            'discount_global': quote.discountGlobal,
+            'total': quote.total,
+            'expires_at': quote.expiresAt,
+          },
+          where: 'id = ?',
+          whereArgs: [quoteId],
+        );
+        await txn.delete(
+          'quote_items',
+          where: 'quote_id = ?',
+          whereArgs: [quoteId],
+        );
+        for (final item in items) {
+          await txn.insert('quote_items', {
+            'quote_id': quoteId,
+            'product_id': item.productId,
+            'product_name': item.productName,
+            'quantity': item.quantity,
+            'unit_price': item.unitPrice,
+            'discount_item': item.discountItem,
+            'subtotal': item.subtotal,
+          });
+        }
+      });
+    } catch (e) {
+      throw AppException(
+        'No se pudo actualizar la cotización.',
+        technical: e.toString(),
+      );
+    }
+  }
+
   /// Marca una cotización como convertida a factura (is_converted = 1).
   /// Previene que se convierta dos veces.
   Future<void> markAsConverted(int quoteId) async {

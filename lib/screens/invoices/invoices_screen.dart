@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/theme_helper.dart';
@@ -36,11 +37,13 @@ class InvoicesScreen extends StatefulWidget {
 class _InvoicesScreenState extends State<InvoicesScreen> {
   final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
+  final _searchFocusNode = FocusNode();
   final _debouncer = Debouncer();
   static const int _pageSize = 10;
   int _currentPage = 0;
   List<Invoice> _invoices = [];
   bool _loading = true;
+  String? _errorMessage;
 
   /// Facturas visibles en la página actual.
   List<Invoice> get _paginatedInvoices {
@@ -63,6 +66,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocusNode.dispose();
     _debouncer.dispose();
     super.dispose();
   }
@@ -105,7 +109,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   /// Carga facturas desde el repositorio, opcionalmente filtradas por búsqueda.
   Future<void> _load([String query = '']) async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
     try {
       final result = query.isEmpty
           ? await _invoiceRepo.getAll()
@@ -118,26 +125,63 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         });
       }
     } on AppException catch (e) {
-      if (mounted) setState(() => _loading = false);
-      NotificationService().error(e.message);
+      if (mounted) setState(() {
+        _loading = false;
+        _errorMessage = e.message;
+      });
+    }
+  }
+
+  bool _ctrlPressed = false;
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight) {
+      if (event is KeyDownEvent) _ctrlPressed = true;
+      if (event is KeyUpEvent) _ctrlPressed = false;
+      return KeyEventResult.ignored;
+    }
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (!_ctrlPressed) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.keyN:
+        _openNewInvoice();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyF:
+        _searchFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyE:
+        if (_invoices.isNotEmpty) _exportExcel();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyP:
+        if (_invoices.isNotEmpty) _printInvoice(_invoices.first);
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.bgColor,
-      body: Padding(
-        padding: context.responsivePadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildSearchBar(),
-            const SizedBox(height: 16),
-            Expanded(child: _buildContent()),
-          ],
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        backgroundColor: context.bgColor,
+        body: Padding(
+          padding: context.responsivePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              _buildSearchBar(),
+              const SizedBox(height: 16),
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
       ),
     );
@@ -209,6 +253,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       width: 320,
       child: TextField(
         controller: _searchCtrl,
+        focusNode: _searchFocusNode,
         onChanged: (q) => _debouncer(() => _load(q)),
         decoration: InputDecoration(
           hintText: 'Buscar por cliente...',
@@ -235,6 +280,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return StateBuilder(
       isLoading: _loading,
       isEmpty: _invoices.isEmpty,
+      errorMessage: _errorMessage,
+      onRetry: _errorMessage != null ? () => _load(_searchCtrl.text) : null,
       icon: Icons.receipt_long_outlined,
       emptyTitle: 'No hay facturas aún',
       emptyDescription: 'Presiona "Nueva factura" para comenzar',
@@ -251,6 +298,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               child: ListView.builder(
                 itemCount: _paginatedInvoices.length,
                 itemBuilder: (_, i) => _buildRow(_paginatedInvoices[i], i + _currentPage * _pageSize),
+                key: const PageStorageKey<String>('invoice_list'),
               ),
             ),
             if (_totalPages > 1)
@@ -484,6 +532,34 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   /// Alterna el estado de pago de la factura entre pagada y pendiente.
   Future<void> _togglePaymentStatus(Invoice inv) async {
     final newStatus = inv.isPaid ? 'pending' : 'paid';
+    final label = inv.isPaid ? 'pendiente' : 'pagada';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cambiar estado de pago'),
+        content: Text(
+          '¿Marcar factura #${inv.id.toString().padLeft(4, '0')} como $label?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentMagenta,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await _invoiceRepo.updatePaymentStatus(inv.id!, newStatus);
       await _load(_searchCtrl.text);
@@ -752,11 +828,12 @@ class _NewInvoiceDialog extends StatefulWidget {
 }
 
 class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
-  String _customerName = '';
+  final _customerNameCtrl = TextEditingController();
   // String? _customerRnc; // RNC deshabilitado
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _canPop = false;
 
   // Cada item: {product, quantity, unitPrice, discount}
   final List<Map<String, dynamic>> _items = [];
@@ -769,10 +846,11 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   void initState() {
     super.initState();
     _filteredProducts = widget.products;
+    _discountCtrl.addListener(_invalidateTotals);
 
     // Si es edición cargamos los datos existentes
     if (widget.existingInvoice != null) {
-      _customerName = widget.existingInvoice!.customerName ?? '';
+      _customerNameCtrl.text = widget.existingInvoice!.customerName ?? '';
       final inv = widget.existingInvoice!;
       _discountCtrl.text = (inv.discountGlobal > 0 && inv.subtotal > 0)
           ? (inv.discountGlobal / inv.subtotal * 100).toStringAsFixed(0)
@@ -799,10 +877,25 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }
   }
 
-  DocumentTotals get _totals => DocumentTotalsService.calculateFromItems(
-    items: _items,
-    discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
-  );
+  @override
+  void dispose() {
+    _customerNameCtrl.dispose();
+    _discountCtrl.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  DocumentTotals? _cachedTotals;
+
+  DocumentTotals get _totals {
+    _cachedTotals ??= DocumentTotalsService.calculateFromItems(
+      items: _items,
+      discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
+    );
+    return _cachedTotals!;
+  }
+
+  void _invalidateTotals() => _cachedTotals = null;
 
   double get _subtotal => _totals.subtotal;
   double get _globalDiscount => _totals.discountAmount;
@@ -834,6 +927,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
           'unitPrice': result['unitPrice'],
           'discount': result['discount'],
         });
+        _invalidateTotals();
       });
     }
   }
@@ -852,7 +946,10 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
 
   /// Elimina un producto de la lista de items.
   void _removeItem(int index) {
-    setState(() => _items.removeAt(index));
+    setState(() {
+      _items.removeAt(index);
+      _invalidateTotals();
+    });
   }
 
   /// Valida el formulario, construye la factura y los items y
@@ -867,9 +964,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }
 
     final invoice = Invoice(
-      customerName: _customerName.trim().isEmpty
+      customerName: _customerNameCtrl.text.trim().isEmpty
           ? null
-          : _customerName.trim(),
+          : _customerNameCtrl.text.trim(),
       // customerRnc: _customerRnc, // RNC deshabilitado
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
@@ -894,16 +991,61 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     }).toList();
 
     widget.onSave(invoice, items);
-    Navigator.pop(context);
+    setState(() => _canPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: ThemeHelper.getCardColor(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Form(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog(
+        backgroundColor: ThemeHelper.getCardColor(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: PopScope(
+        canPop: _canPop,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('¿Descartar cambios?'),
+              content: const Text('Los datos ingresados se perderán.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Seguir editando'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Descartar'),
+                ),
+              ],
+            ),
+          );
+          if (confirm == true && mounted) {
+            setState(() => _canPop = true);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.of(context).pop();
+            });
+          }
+        },
+        child: Form(
         key: _formKey,
         child: SizedBox(
           width: 700,
@@ -913,9 +1055,11 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
               _buildDialogHeader(),
               Expanded(
                 child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
+        ),
         ),
       ),
     );
@@ -967,8 +1111,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              controller: TextEditingController(text: _customerName),
-              onChanged: (v) => _customerName = v,
+              controller: _customerNameCtrl,
               style: TextStyle(
                 fontSize: 13,
                 color: ThemeHelper.getTextColor(context),
@@ -1246,6 +1389,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
   late TextEditingController _priceCtrl;
   late TextEditingController _discountCtrl;
   final _formKey = GlobalKey<FormState>();
+  bool _canPop = false;
 
   @override
   void initState() {
@@ -1274,162 +1418,209 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: 320,
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.product.name,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: ThemeHelper.getTextColor(context),
-                ),
-              ),
-              Text(
-                'Stock disponible: ${widget.product.stock}',
-                style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _quantityCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Cantidad',
-                        labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                      ),
-                      validator: (v) {
-                        final n = int.tryParse(v ?? '');
-                        if (n == null || n < 1) return 'Mín. 1';
-                        if (n > widget.product.stock) return 'Stock: ${widget.product.stock}';
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _discountCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Desc. %',
-                        labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                      ),
-                      validator: (v) {
-                        final text = v?.trim() ?? '';
-                        if (text.isEmpty) return null;
-                        final n = double.tryParse(text);
-                        if (n == null) return 'Número inválido';
-                        if (n < 0 || n > 100) return '0 - 100';
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _priceCtrl,
-                keyboardType: TextInputType.number,
-                style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  labelText: 'Precio unitario',
-                  labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
-                  border: const OutlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                ),
-                validator: (v) {
-                  final n = double.tryParse(v ?? '');
-                  if (n == null) return 'Ingresa un precio válido';
-                  if (n <= 0) return 'Debe ser mayor a 0';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: ThemeHelper.getAltRowColor(context),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Subtotal:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: ThemeHelper.getTextColor(context),
-                      ),
-                    ),
-                    Text(
-                      widget.currency.format(_subtotal),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: ThemeHelper.getTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: PopScope(
+          canPop: _canPop,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('¿Descartar cambios?'),
+                content: const Text('La configuración del producto se perderá.'),
+                actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
-                    child: const Text('Cancelar'),
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Seguir editando'),
                   ),
-                  const SizedBox(width: 12),
                   ElevatedButton(
-                    onPressed: () {
-                      if (!_formKey.currentState!.validate()) return;
-                      Navigator.pop(context, {
-                        'quantity': int.parse(_quantityCtrl.text),
-                        'unitPrice': double.parse(_priceCtrl.text),
-                        'discount': double.tryParse(_discountCtrl.text) ?? 0,
-                      });
-                    },
+                    onPressed: () => Navigator.pop(ctx, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentMagenta,
+                      backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Agregar'),
+                    child: const Text('Descartar'),
                   ),
                 ],
               ),
-            ],
+            );
+            if (confirm == true && mounted) {
+              setState(() => _canPop = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop();
+              });
+            }
+          },
+          child: Container(
+            width: 320,
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.product.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
+                  ),
+                  Text(
+                    'Stock disponible: ${widget.product.stock}',
+                    style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _quantityCtrl,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Cantidad',
+                            labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                          validator: (v) {
+                            final n = int.tryParse(v ?? '');
+                            if (n == null || n < 1) return 'Mín. 1';
+                            if (n > widget.product.stock) return 'Stock: ${widget.product.stock}';
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _discountCtrl,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Desc. %',
+                            labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                          validator: (v) {
+                            final text = v?.trim() ?? '';
+                            if (text.isEmpty) return null;
+                            final n = double.tryParse(text);
+                            if (n == null) return 'Número inválido';
+                            if (n < 0 || n > 100) return '0 - 100';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _priceCtrl,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: 'Precio unitario',
+                      labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                    validator: (v) {
+                      final n = double.tryParse(v ?? '');
+                      if (n == null) return 'Ingresa un precio válido';
+                      if (n <= 0) return 'Debe ser mayor a 0';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ThemeHelper.getAltRowColor(context),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Subtotal:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
+                        ),
+                        Text(
+                          widget.currency.format(_subtotal),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => _canPop = true);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) Navigator.pop(context, {
+                              'quantity': int.parse(_quantityCtrl.text),
+                              'unitPrice': double.parse(_priceCtrl.text),
+                              'discount': double.tryParse(_discountCtrl.text) ?? 0,
+                            });
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentMagenta,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Agregar'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

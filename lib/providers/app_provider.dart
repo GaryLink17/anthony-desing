@@ -54,8 +54,8 @@ class AppProvider extends ChangeNotifier {
   Future<void> loadDashboard() async {
     final perf = PerformanceMonitor();
     perf.startMeasure('loadDashboard');
-    final db = await _db.database;
     try {
+    final db = await _db.database;
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
 
@@ -117,34 +117,35 @@ class AppProvider extends ChangeNotifier {
       limit: 5,
     );
 
-    // Ventas de los últimos 7 días para el gráfico semanal
+    // Ventas de los últimos 7 días — single query con GROUP BY en vez de 7 queries
+    final weekAgo = DateTime(now.year, now.month, now.day - 6);
+    final weekStart = DateTime(weekAgo.year, weekAgo.month, weekAgo.day).toIso8601String();
+    final weekEnd = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
+    final weeklyResult = await db.rawQuery(
+      '''
+      SELECT DATE(created_at) as day, COALESCE(SUM(total), 0) as total
+      FROM invoices WHERE created_at >= ? AND created_at <= ? AND status = 'active'
+      GROUP BY DATE(created_at)
+    ''',
+      [weekStart, weekEnd],
+    );
+
     _weeklySales = List.filled(7, 0);
-    for (int i = 6; i >= 0; i--) {
-      final day = now.subtract(Duration(days: i));
-      final dayStart = DateTime(day.year, day.month, day.day).toIso8601String();
-      final dayEnd = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        23,
-        59,
-        59,
-      ).toIso8601String();
-
-      final dayResult = await db.rawQuery(
-        '''
-        SELECT COALESCE(SUM(total), 0) as total
-        FROM invoices WHERE created_at BETWEEN ? AND ? AND status = 'active'
-      ''',
-        [dayStart, dayEnd],
-      );
-
-      _weeklySales[6 - i] = (dayResult.first['total'] as num).toDouble();
+    for (final row in weeklyResult) {
+      final dayStr = row['day'] as String;
+      final dayDate = DateTime.tryParse(dayStr);
+      if (dayDate == null) continue;
+      final diff = now.difference(dayDate).inDays;
+      if (diff >= 0 && diff < 7) {
+        _weeklySales[6 - diff] = (row['total'] as num).toDouble();
+      }
     }
 
     notifyListeners();
     _lastDashboardLoadMs = perf.endMeasure('loadDashboard');
     } catch (e) {
+      notifyListeners();
+      _lastDashboardLoadMs = null;
       perf.endMeasure('loadDashboard');
       throw AppException(
         'No se pudo cargar el dashboard.',

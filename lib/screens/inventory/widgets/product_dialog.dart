@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../models/product.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/theme_helper.dart';
@@ -26,6 +27,7 @@ class _ProductDialogState extends State<ProductDialog> {
   final _stockCtrl = TextEditingController();
   final _minStockCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _canPop = false;
 
   double _profit = 0;
   double _margin = 0;
@@ -73,11 +75,53 @@ class _ProductDialogState extends State<ProductDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.product != null;
 
-    return Dialog(
-      backgroundColor: ThemeHelper.getCardColor(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog(
+        backgroundColor: ThemeHelper.getCardColor(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: PopScope(
+          canPop: _canPop,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('¿Descartar cambios?'),
+                content: const Text('Los datos ingresados se perderán.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Seguir editando'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Descartar'),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              setState(() => _canPop = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop();
+              });
+            }
+          },
+          child: SizedBox(
         width: 460,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -238,11 +282,13 @@ class _ProductDialogState extends State<ProductDialog> {
                         ),
                       ],
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
+            ),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -310,9 +356,12 @@ class _ProductDialogState extends State<ProductDialog> {
       salePrice: double.parse(_saleCtrl.text),
       stock: int.parse(_stockCtrl.text),
       minStock: int.tryParse(_minStockCtrl.text) ?? 5,
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: widget.product?.createdAt ?? DateTime.now().toIso8601String(),
     );
     widget.onSave(product);
-    Navigator.pop(context);
+    setState(() => _canPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.pop(context);
+    });
   }
 }

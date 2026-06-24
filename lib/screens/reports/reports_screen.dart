@@ -131,37 +131,56 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _load();
   }
 
-  /// Carga en paralelo resumen, ventas por día, top productos y top categorías.
+  /// Carga las cuatro secciones del reporte de forma aislada.
+  /// Si una consulta falla, las demás se muestran igual y se notifica el error.
   Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final results = await Future.wait([
-        _repo.getSummary(_startDate, _endDate),
-        _repo.getSalesByDay(_startDate, _endDate),
-        _repo.getTopProducts(_startDate, _endDate),
-        _repo.getTopCategories(_startDate, _endDate),
-      ]);
+    setState(() {
+      _loading = true;
+      _summary = {'total': 0.0, 'profit': 0.0, 'count': 0, 'avgTicket': 0.0};
+      _chartData = [];
+      _topProducts = [];
+      _topCategories = [];
+    });
 
-      if (mounted) {
-        setState(() {
-          _summary = results[0] as Map<String, dynamic>;
-          _chartData = results[1] as List<Map<String, dynamic>>;
-          _topProducts = results[2] as List<Map<String, dynamic>>;
-          _topCategories = results[3] as List<Map<String, dynamic>>;
-          _loading = false;
-        });
-      }
+    final results = await Future.wait([
+      _safeLoad(() => _repo.getSummary(_startDate, _endDate)),
+      _safeLoad(() => _repo.getSalesByDay(_startDate, _endDate)),
+      _safeLoad(() => _repo.getTopProducts(_startDate, _endDate)),
+      _safeLoad(() => _repo.getTopCategories(_startDate, _endDate)),
+    ]);
+
+    if (mounted) {
+      final summary = results[0];
+      final chartData = results[1];
+      final topProducts = results[2];
+      final topCategories = results[3];
+
+      if (summary != null) _summary = summary as Map<String, dynamic>;
+      if (chartData != null) _chartData = chartData as List<Map<String, dynamic>>;
+      if (topProducts != null) _topProducts = topProducts as List<Map<String, dynamic>>;
+      if (topCategories != null) _topCategories = topCategories as List<Map<String, dynamic>>;
+
+      setState(() => _loading = false);
+    }
+  }
+
+  /// Ejecuta [fn] y captura errores devolviendo null en vez de lanzar.
+  Future<dynamic> _safeLoad(Future<dynamic> Function() fn) async {
+    try {
+      return await fn();
     } on AppException catch (e) {
-      if (mounted) setState(() => _loading = false);
       NotificationService().error(e.message);
+      return null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.bgColor,
-      body: _loading
+    return Focus(
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: context.bgColor,
+        body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: context.responsivePadding,
@@ -178,6 +197,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
             ),
+          ),
     );
   }
 

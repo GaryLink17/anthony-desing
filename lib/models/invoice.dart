@@ -74,15 +74,15 @@ class Invoice {
   /// Crea una Invoice desde un Map de SQLite.
   factory Invoice.fromMap(Map<String, dynamic> map) {
     return Invoice(
-      id: map['id'],
-      customerName: map['customer_name'],
+      id: map['id'] as int?,
+      customerName: map['customer_name'] as String?,
       // customerRnc: map['customer_rnc'], // RNC deshabilitado
-      subtotal: (map['subtotal'] as num).toDouble(),
-      discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
-      total: (map['total'] as num).toDouble(),
-      status: map['status'] ?? 'active',
-      paymentStatus: map['payment_status'] ?? 'pending',
-      createdAt: map['created_at'],
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0,
+      discountGlobal: (map['discount_global'] as num?)?.toDouble() ?? 0,
+      total: (map['total'] as num?)?.toDouble() ?? 0,
+      status: (map['status'] as String?) ?? 'active',
+      paymentStatus: (map['payment_status'] as String?) ?? 'pending',
+      createdAt: (map['created_at'] as String?) ?? '',
     );
   }
 }

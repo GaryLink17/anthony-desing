@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import '../../theme/app_theme.dart';
@@ -39,11 +40,13 @@ class _QuotesScreenState extends State<QuotesScreen> {
   final _quoteRepo = QuoteRepository();
   final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
+  final _searchFocusNode = FocusNode();
   final _debouncer = Debouncer();
   static const int _pageSize = 10;
   int _currentPage = 0;
   List<Quote> _quotes = [];
   bool _loading = true;
+  String? _errorMessage;
 
   /// Cotizaciones visibles en la página actual.
   List<Quote> get _paginatedQuotes {
@@ -66,13 +69,17 @@ class _QuotesScreenState extends State<QuotesScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocusNode.dispose();
     _debouncer.dispose();
     super.dispose();
   }
 
   /// Carga cotizaciones desde el repositorio, opcionalmente filtradas por búsqueda.
   Future<void> _load([String query = '']) async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
     try {
       final result = query.isEmpty
           ? await _quoteRepo.getAll()
@@ -85,26 +92,57 @@ class _QuotesScreenState extends State<QuotesScreen> {
         });
       }
     } on AppException catch (e) {
-      if (mounted) setState(() => _loading = false);
-      NotificationService().error(e.message);
+      if (mounted) setState(() {
+        _loading = false;
+        _errorMessage = e.message;
+      });
+    }
+  }
+
+  bool _ctrlPressed = false;
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight) {
+      if (event is KeyDownEvent) _ctrlPressed = true;
+      if (event is KeyUpEvent) _ctrlPressed = false;
+      return KeyEventResult.ignored;
+    }
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (!_ctrlPressed) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.keyN:
+        _openNewQuote();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyF:
+        _searchFocusNode.requestFocus();
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.bgColor,
-      body: Padding(
-        padding: context.responsivePadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildSearchBar(),
-            const SizedBox(height: 16),
-            Expanded(child: _buildContent()),
-          ],
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        backgroundColor: context.bgColor,
+        body: Padding(
+          padding: context.responsivePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              _buildSearchBar(),
+              const SizedBox(height: 16),
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
       ),
     );
@@ -155,6 +193,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
       width: 320,
       child: TextField(
         controller: _searchCtrl,
+        focusNode: _searchFocusNode,
         onChanged: (q) => _debouncer(() => _load(q)),
         decoration: InputDecoration(
           hintText: 'Buscar por cliente...',
@@ -180,6 +219,38 @@ class _QuotesScreenState extends State<QuotesScreen> {
   Widget _buildContent() {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
+            const SizedBox(height: 12),
+            Text(
+              'Oops! Algo salió mal',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: ThemeHelper.getTextColor(context)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => _load(_searchCtrl.text),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Reintentar'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.errorColor,
+                side: const BorderSide(color: AppTheme.errorColor),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_quotes.isEmpty) {
       return Center(
         child: Column(
@@ -200,6 +271,17 @@ class _QuotesScreenState extends State<QuotesScreen> {
               'Presiona "Nueva cotización" para comenzar',
               style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _openNewQuote,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Nueva cotización'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
           ],
         ),
       );
@@ -218,6 +300,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
             child: ListView.builder(
               itemCount: _paginatedQuotes.length,
               itemBuilder: (_, i) => _buildRow(_paginatedQuotes[i], i + _currentPage * _pageSize),
+              key: const PageStorageKey<String>('quote_list'),
             ),
           ),
           if (_totalPages > 1)
@@ -448,14 +531,12 @@ class _QuotesScreenState extends State<QuotesScreen> {
           try {
             final newQuote = quote.copyWith(
               customerName: updatedQuote.customerName,
-              // customerRnc: updatedQuote.customerRnc, // RNC deshabilitado
               subtotal: updatedQuote.subtotal,
               discountGlobal: updatedQuote.discountGlobal,
               total: updatedQuote.total,
               expiresAt: updatedQuote.expiresAt,
             );
-            await _quoteRepo.delete(quote.id!);
-            await _quoteRepo.save(newQuote, items);
+            await _quoteRepo.update(quote.id!, newQuote, items);
             NotificationService().success('Cotización actualizada correctamente');
             _load();
           } on AppException catch (e) {
@@ -521,6 +602,27 @@ class _QuotesScreenState extends State<QuotesScreen> {
     );
 
     if (confirmed != true) return;
+
+    final productRepo = ProductRepository();
+    final outOfStock = <String>[];
+
+    for (final item in items) {
+      final product = await productRepo.getById(item.productId);
+      if (product == null) {
+        outOfStock.add('${item.productName} (producto eliminado)');
+      } else if (item.quantity > product.stock) {
+        outOfStock.add(
+          '${item.productName}: disponible ${product.stock}, solicitado ${item.quantity}',
+        );
+      }
+    }
+
+    if (outOfStock.isNotEmpty) {
+      NotificationService().error(
+        'No hay stock suficiente para convertir:\n${outOfStock.join('\n')}',
+      );
+      return;
+    }
 
     final invoice = Invoice(
       customerName: quote.customerName,
@@ -735,8 +837,7 @@ class _NewQuoteDialog extends StatefulWidget {
 }
 
 class _NewQuoteDialogState extends State<_NewQuoteDialog> {
-  String _customerName = '';
-  // String? _customerRnc; // RNC deshabilitado
+  final _customerNameCtrl = TextEditingController();
   final _discountCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -745,6 +846,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
   final bool _showProductList = true;
+  bool _canPop = false;
 
   static final _currency = currencyFormatter();
 
@@ -752,9 +854,10 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   void initState() {
     super.initState();
     _filteredProducts = widget.products;
+    _discountCtrl.addListener(_invalidateTotals);
 
     if (widget.existingQuote != null) {
-      _customerName = widget.existingQuote!.customerName ?? '';
+      _customerNameCtrl.text = widget.existingQuote!.customerName ?? '';
       final q = widget.existingQuote!;
       _discountCtrl.text = (q.discountGlobal > 0 && q.subtotal > 0)
           ? (q.discountGlobal / q.subtotal * 100).toStringAsFixed(0)
@@ -784,10 +887,25 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }
   }
 
-  DocumentTotals get _totals => DocumentTotalsService.calculateFromItems(
-    items: _items,
-    discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
-  );
+  @override
+  void dispose() {
+    _customerNameCtrl.dispose();
+    _discountCtrl.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  DocumentTotals? _cachedTotals;
+
+  DocumentTotals get _totals {
+    _cachedTotals ??= DocumentTotalsService.calculateFromItems(
+      items: _items,
+      discountPercent: double.tryParse(_discountCtrl.text) ?? 0,
+    );
+    return _cachedTotals!;
+  }
+
+  void _invalidateTotals() => _cachedTotals = null;
 
   double get _subtotal => _totals.subtotal;
   double get _globalDiscount => _totals.discountAmount;
@@ -804,6 +922,13 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
 
   /// Abre el diálogo de configuración y agrega un producto a la lista de items.
   void _addProduct(Product p) async {
+    if (p.stock <= 0) {
+      NotificationService().warning(
+        '${p.name} no tiene stock disponible.',
+      );
+      return;
+    }
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => _ProductConfigDialog(product: p, currency: _currency),
@@ -818,6 +943,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
           'discount': result['discount'],
         });
       });
+      _invalidateTotals();
     }
   }
 
@@ -846,9 +972,9 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final quote = Quote(
-      customerName: _customerName.trim().isEmpty
+      customerName: _customerNameCtrl.text.trim().isEmpty
           ? null
-          : _customerName.trim(),
+          : _customerNameCtrl.text.trim(),
       // customerRnc: _customerRnc, // RNC deshabilitado
       subtotal: _subtotal,
       discountGlobal: _globalDiscount,
@@ -879,22 +1005,68 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: ThemeHelper.getCardColor(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: 700,
-          height: 580,
-          child: Column(
-            children: [
-              _buildDialogHeader(),
-              Expanded(
-                child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog(
+        backgroundColor: ThemeHelper.getCardColor(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: PopScope(
+        canPop: _canPop,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('¿Descartar cambios?'),
+              content: const Text(
+                'Los datos ingresados se perderán.',
               ),
-            ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Seguir editando'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Descartar'),
+                ),
+              ],
+            ),
+          );
+          if (confirm == true && mounted) {
+            setState(() => _canPop = true);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.of(context).pop();
+            });
+          }
+        },
+        child: Form(
+          key: _formKey,
+          child: SizedBox(
+            width: 700,
+            height: 580,
+            child: Column(
+              children: [
+                _buildDialogHeader(),
+                Expanded(
+                  child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
+                ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -949,8 +1121,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              controller: TextEditingController(text: _customerName),
-              onChanged: (v) => _customerName = v,
+              controller: _customerNameCtrl,
               style: TextStyle(
                 fontSize: 13,
                 color: ThemeHelper.getTextColor(context),
@@ -1257,6 +1428,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
   late TextEditingController _priceCtrl;
   late TextEditingController _discountCtrl;
   final _formKey = GlobalKey<FormState>();
+  bool _canPop = false;
 
   @override
   void initState() {
@@ -1285,17 +1457,63 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: 320,
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: PopScope(
+        canPop: _canPop,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          if (_canPop) {
+            if (mounted) Navigator.of(context).pop();
+            return;
+          }
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('¿Descartar cambios?'),
+              content: const Text('La configuración del producto se perderá.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Seguir editando'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Descartar'),
+                ),
+              ],
+            ),
+          );
+          if (confirm == true && mounted) {
+            setState(() => _canPop = true);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) Navigator.of(context).pop();
+            });
+          }
+        },
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Text(
                 widget.product.name,
                 style: TextStyle(
@@ -1329,6 +1547,9 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                       validator: (v) {
                         final n = int.tryParse(v ?? '');
                         if (n == null || n < 1) return 'Mín. 1';
+                        if (n > widget.product.stock) {
+                          return 'Solo hay ${widget.product.stock} en stock';
+                        }
                         return null;
                       },
                     ),
@@ -1425,10 +1646,13 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                   ElevatedButton(
                     onPressed: () {
                       if (!_formKey.currentState!.validate()) return;
-                      Navigator.pop(context, {
-                        'quantity': int.parse(_quantityCtrl.text),
-                        'unitPrice': double.parse(_priceCtrl.text),
-                        'discount': double.tryParse(_discountCtrl.text) ?? 0,
+                      setState(() => _canPop = true);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) Navigator.pop(context, {
+                          'quantity': int.parse(_quantityCtrl.text),
+                          'unitPrice': double.parse(_priceCtrl.text),
+                          'discount': double.tryParse(_discountCtrl.text) ?? 0,
+                        });
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -1444,6 +1668,9 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
           ),
         ),
       ),
-    );
+      ),
+    ),
+  );
   }
 }
+

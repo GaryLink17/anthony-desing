@@ -74,14 +74,14 @@ class Quote {
   /// Crea una Quote desde un Map de SQLite.
   factory Quote.fromMap(Map<String, dynamic> map) {
     return Quote(
-      id: map['id'],
-      customerName: map['customer_name'],
+      id: map['id'] as int?,
+      customerName: map['customer_name'] as String?,
       // customerRnc: map['customer_rnc'], // RNC deshabilitado
-      subtotal: (map['subtotal'] as num).toDouble(),
-      discountGlobal: (map['discount_global'] as num? ?? 0).toDouble(),
-      total: (map['total'] as num).toDouble(),
-      createdAt: map['created_at'],
-      expiresAt: map['expires_at'],
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0,
+      discountGlobal: (map['discount_global'] as num?)?.toDouble() ?? 0,
+      total: (map['total'] as num?)?.toDouble() ?? 0,
+      createdAt: (map['created_at'] as String?) ?? '',
+      expiresAt: map['expires_at'] as String?,
       isConverted: map['is_converted'] == 1,
     );
   }

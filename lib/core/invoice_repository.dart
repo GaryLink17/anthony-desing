@@ -96,11 +96,31 @@ class InvoiceRepository {
   }
 
   /// Guarda una nueva factura junto con sus items en una transacción.
-  /// Descuenta automáticamente el stock de los productos vendidos.
+  /// Valida stock disponible y descuenta automáticamente los productos vendidos,
+  /// todo dentro de la misma transacción para evitar condiciones de carrera.
   Future<int> save(Invoice invoice, List<InvoiceItem> items) async {
     try {
       final db = await _db.database;
       return await db.transaction((txn) async {
+        for (final item in items) {
+          final rows = await txn.query(
+            'SELECT stock FROM products WHERE id = ?',
+            whereArgs: [item.productId],
+          );
+          if (rows.isEmpty) {
+            throw AppException(
+              'Producto "${item.productName}" no encontrado en inventario.',
+            );
+          }
+          final currentStock = rows.first['stock'] as int;
+          if (currentStock < item.quantity) {
+            throw AppException(
+              'Stock insuficiente para "${item.productName}". '
+              'Disponible: $currentStock, solicitado: ${item.quantity}.',
+            );
+          }
+        }
+
         final invoiceId = await txn.insert('invoices', {
           'customer_name': invoice.customerName,
           // 'customer_rnc': invoice.customerRnc, // RNC deshabilitado
@@ -132,6 +152,7 @@ class InvoiceRepository {
         return invoiceId;
       });
     } catch (e) {
+      if (e is AppException) rethrow;
       throw AppException(
         'No se pudo guardar la factura.',
         technical: e.toString(),
@@ -206,7 +227,8 @@ class InvoiceRepository {
   }
 
   /// Actualiza una factura existente: restaura stock anterior,
-  /// reemplaza items y descuenta el nuevo stock, todo en una transacción.
+  /// valida disponibilidad, reemplaza items y descuenta el nuevo stock,
+  /// todo en una transacción para evitar condiciones de carrera.
   Future<void> update(Invoice invoice, List<InvoiceItem> items) async {
     try {
       final db = await _db.database;
@@ -245,6 +267,23 @@ class InvoiceRepository {
         );
 
         for (final item in items) {
+          final rows = await txn.query(
+            'SELECT stock FROM products WHERE id = ?',
+            whereArgs: [item.productId],
+          );
+          if (rows.isEmpty) {
+            throw AppException(
+              'Producto "${item.productName}" no encontrado en inventario.',
+            );
+          }
+          final currentStock = rows.first['stock'] as int;
+          if (currentStock < item.quantity) {
+            throw AppException(
+              'Stock insuficiente para "${item.productName}". '
+              'Disponible: $currentStock, solicitado: ${item.quantity}.',
+            );
+          }
+
           await txn.insert('invoice_items', {
             'invoice_id': invoice.id,
             'product_id': item.productId,
@@ -261,6 +300,7 @@ class InvoiceRepository {
         }
       });
     } catch (e) {
+      if (e is AppException) rethrow;
       throw AppException(
         'No se pudo actualizar la factura.',
         technical: e.toString(),

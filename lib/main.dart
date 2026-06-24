@@ -6,6 +6,7 @@ import 'app.dart';
 import 'providers/app_provider.dart';
 import 'providers/theme_provider.dart';
 import 'core/database.dart';
+import 'core/backup_service.dart';
 import 'utils/state_persistence.dart';
 
 
@@ -39,6 +40,10 @@ void main() async {
   final themeProvider = ThemeProvider();
   await themeProvider.initialize();
 
+  // Inicializar caché de backup para uso sincrónico al cerrar la app
+  await BackupService.instance.initAutoBackupCache();
+  _scheduleStartupBackup();
+
   ErrorWidget.builder = (details) {
     return const Center(
       child: Text(
@@ -57,4 +62,28 @@ void main() async {
       child: const MyApp(),
     ),
   );
+}
+
+/// Ejecuta un backup automático al inicio si la frecuencia programada lo requiere.
+/// No bloquea el arranque de la aplicación (fire-and-forget).
+void _scheduleStartupBackup() {
+  Future(() async {
+    try {
+      final settings = await BackupService.instance.getAutoBackupSettings();
+      if (settings['enabled'] != true) return;
+      if (settings['frequency'] == 'on_close') return;
+
+      final shouldRun = await BackupService.instance.shouldRunBackup(
+        enabled: settings['enabled'] as bool,
+        frequency: settings['frequency'] as String,
+        lastTime: settings['lastTime'] as String?,
+      );
+
+      if (shouldRun) {
+        await BackupService.instance.performAutoBackup();
+      }
+    } catch (_) {
+      // No impedir el inicio de la app por un error de backup
+    }
+  });
 }

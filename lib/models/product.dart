@@ -46,14 +46,14 @@ class Product {
   /// Crea un Product desde un Map devuelto por SQLite.
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
-      id: map['id'],
-      name: map['name'],
-      category: map['category'],
-      purchasePrice: map['purchase_price'],
-      salePrice: map['sale_price'],
-      stock: map['stock'],
-      minStock: map['min_stock'],
-      createdAt: map['created_at'],
+      id: map['id'] as int?,
+      name: (map['name'] as String?) ?? '',
+      category: map['category'] as String?,
+      purchasePrice: (map['purchase_price'] as num?)?.toDouble() ?? 0,
+      salePrice: (map['sale_price'] as num?)?.toDouble() ?? 0,
+      stock: (map['stock'] as num?)?.toInt() ?? 0,
+      minStock: (map['min_stock'] as num?)?.toInt() ?? 5,
+      createdAt: (map['created_at'] as String?) ?? '',
     );
   }
 

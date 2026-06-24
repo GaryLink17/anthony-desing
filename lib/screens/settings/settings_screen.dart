@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../../theme/app_theme.dart';
 import '../../theme/theme_helper.dart';
@@ -42,6 +44,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _saved = false;
   bool _backupLoading = false;
   bool _restoreLoading = false;
+  bool _autoBackupEnabled = false;
+  String _autoBackupFrequency = 'daily';
+  String? _autoBackupLastTimeFormatted;
+  String _autoBackupPath = '';
+  String _autoBackupDefaultPath = '';
 
   @override
   void initState() {
@@ -49,9 +56,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    _emailCtrl.dispose();
+    _footerMsgCtrl.dispose();
+    _footerTermsCtrl.dispose();
+    super.dispose();
+  }
+
   /// Carga los valores guardados desde SharedPreferences.
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    final appDir = await getApplicationSupportDirectory();
+
+    final autoSettings = await BackupService.instance.getAutoBackupSettings();
+    final lastTimeFormatted =
+        await BackupService.instance.getLastAutoBackupTimeFormatted();
+
     setState(() {
       _nameCtrl.text = prefs.getString('company_name') ?? '';
       _phoneCtrl.text = prefs.getString('company_phone') ?? '';
@@ -64,6 +88,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _footerTermsCtrl.text =
           prefs.getString('footer_terms') ??
           'Mercancía no se acepta devolución después de 24 horas.';
+      _autoBackupEnabled = autoSettings['enabled'] as bool;
+      _autoBackupFrequency = autoSettings['frequency'] as String;
+      _autoBackupLastTimeFormatted = lastTimeFormatted;
+      _autoBackupPath = (autoSettings['path'] as String?) ?? '';
+      _autoBackupDefaultPath = p.join(appDir.path, 'backups');
     });
   }
 
@@ -102,12 +131,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Widget _buildLogoFallback(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.add_photo_alternate_rounded,
+          size: 24,
+          color: ThemeHelper.getTextLightColor(context),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Logo',
+          style: TextStyle(
+            fontSize: 11,
+            color: ThemeHelper.getTextLightColor(context),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
       body: Form(
-        key: _formKey,
+      key: _formKey,
         child: SingleChildScrollView(
         padding: context.responsivePadding,
         child: Column(
@@ -120,6 +170,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildAppearanceSection(),
             const SizedBox(height: 20),
             _buildBackupSection(),
+            const SizedBox(height: 20),
+            _buildAutoBackupSection(),
             const SizedBox(height: 20),
             _buildThermalPrinterSection(),
             const SizedBox(height: 20),
@@ -185,32 +237,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: 0.5,
                         ),
                       ),
-                      child: _logoPath != null && File(_logoPath!).existsSync()
+                      child: _logoPath != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(10),
                               child: Image.file(
                                 File(_logoPath!),
                                 fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => _buildLogoFallback(context),
                               ),
                             )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_photo_alternate_rounded,
-                                  size: 24,
-                                  color: ThemeHelper.getTextLightColor(context),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Logo',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: ThemeHelper.getTextLightColor(context),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          : _buildLogoFallback(context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -601,7 +637,225 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Campo de formulario reutilizable con validación opcional y
+  Widget _buildAutoBackupSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: ThemeHelper.getCardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Copia de seguridad automática',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: ThemeHelper.getTextColor(context),
+                  ),
+                ),
+              ),
+              Switch(
+                value: _autoBackupEnabled,
+                onChanged: _onAutoBackupEnabledChanged,
+                activeThumbColor: AppTheme.accentMagenta,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Programa respaldos automáticos de la base de datos',
+            style: TextStyle(
+              fontSize: 12,
+              color: ThemeHelper.getTextLightColor(context),
+            ),
+          ),
+          if (_autoBackupEnabled) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text(
+                  'Frecuencia:',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: ThemeHelper.getTextColor(context),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _autoBackupFrequency,
+                      isDense: true,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: ThemeHelper.getTextColor(context),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'hourly', child: Text('Cada hora')),
+                        DropdownMenuItem(value: 'daily', child: Text('Cada 24 horas')),
+                        DropdownMenuItem(value: 'weekly', child: Text('Cada semana')),
+                        DropdownMenuItem(value: 'on_close', child: Text('Al cerrar la app')),
+                      ],
+                      onChanged: _onAutoBackupFrequencyChanged,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.folder_rounded,
+                  size: 14,
+                  color: ThemeHelper.getInteractiveColor(context),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ubicación:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: ThemeHelper.getTextMediumColor(context),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _autoBackupPath.isNotEmpty
+                            ? _autoBackupPath
+                            : '$_autoBackupDefaultPath (por defecto)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: ThemeHelper.getTextLightColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _handlePickAutoBackupFolder,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Cambiar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ThemeHelper.getInteractiveColor(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.info_rounded,
+                  size: 14,
+                  color: ThemeHelper.getInteractiveColor(context),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Se conservarán máximo 10 copias',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: ThemeHelper.getTextMediumColor(context),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 14,
+                  color: ThemeHelper.getTextLightColor(context),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Último backup: ${_autoBackupLastTimeFormatted ?? 'Nunca'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: ThemeHelper.getTextLightColor(context),
+                  ),
+                ),
+              ],
+            ),
+            if (_autoBackupFrequency == 'on_close') ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.power_settings_new_rounded,
+                    size: 14,
+                    color: ThemeHelper.getTextLightColor(context),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'El backup se realizará al salir de la aplicación',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ThemeHelper.getTextLightColor(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _onAutoBackupEnabledChanged(bool value) {
+    setState(() => _autoBackupEnabled = value);
+    BackupService.instance.saveAutoBackupSettings(
+      enabled: value,
+      frequency: _autoBackupFrequency,
+    );
+  }
+
+  void _onAutoBackupFrequencyChanged(String? value) {
+    if (value == null) return;
+    setState(() => _autoBackupFrequency = value);
+    BackupService.instance.saveAutoBackupSettings(
+      enabled: _autoBackupEnabled,
+      frequency: value,
+    );
+  }
+
+  Future<void> _handlePickAutoBackupFolder() async {
+    final path = await BackupService.instance.pickAutoBackupFolder();
+    if (path != null && mounted) {
+      setState(() => _autoBackupPath = path);
+      await BackupService.instance.saveAutoBackupSettings(
+        enabled: _autoBackupEnabled,
+        frequency: _autoBackupFrequency,
+        path: path,
+      );
+      final formatted = await BackupService.instance.getLastAutoBackupTimeFormatted();
+      if (mounted) setState(() => _autoBackupLastTimeFormatted = formatted);
+      NotificationService().success('Carpeta de backup actualizada');
+    }
+  }  /// Campo de formulario reutilizable con validación opcional y
   /// formateo para teléfono.
   Widget _field(
     TextEditingController ctrl,

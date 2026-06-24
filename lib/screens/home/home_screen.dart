@@ -25,6 +25,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   /// Evita repetir la notificación al volver al Dashboard en la misma sesión.
   bool _lowStockWarningShownThisSession = false;
+  bool _loading = true;
 
   static final _currency = currencyFormatter();
 
@@ -38,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _notifyLowStock(provider);
       } on AppException catch (e) {
         NotificationService().error(e.message);
+      } finally {
+        if (mounted) setState(() => _loading = false);
       }
     });
   }
@@ -60,9 +63,33 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
 
-    return Scaffold(
-      backgroundColor: context.bgColor,
-      body: SingleChildScrollView(
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: context.bgColor,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(strokeWidth: 3),
+              const SizedBox(height: 16),
+              Text(
+                'Cargando dashboard...',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: ThemeHelper.getTextLightColor(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Focus(
+      autofocus: true,
+      child: Scaffold(
+        backgroundColor: context.bgColor,
+        body: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

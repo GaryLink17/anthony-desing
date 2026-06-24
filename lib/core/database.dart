@@ -8,6 +8,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static Future<Database>? _dbFuture;
   static bool _initialized = false;
 
   DatabaseHelper._init();
@@ -30,7 +31,8 @@ class DatabaseHelper {
   /// Obtiene la instancia de la base de datos, creándola si es necesario.
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('control_gastos.db');
+    _dbFuture ??= _initDB('control_gastos.db');
+    _database = await _dbFuture;
     return _database!;
   }
 
@@ -47,6 +49,9 @@ class DatabaseHelper {
         version: 6,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
+        onConfigure: (db) async {
+          await db.execute('PRAGMA foreign_keys = ON');
+        },
       ),
     );
   }
@@ -92,7 +97,7 @@ class DatabaseHelper {
       );
     }
     if (oldVersion < 5) {
-      // v5: Crea tabla de clientes (RNC deshabilitado, columna omitida)
+      // v5: Crea tabla de clientes
       await db.execute('''
         CREATE TABLE IF NOT EXISTS customers (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,15 +109,10 @@ class DatabaseHelper {
         )
       ''');
     }
-    // if (oldVersion < 6) {
-    //   // v6: Agrega RNC del cliente a facturas y cotizaciones
-    //   await db.execute(
-    //     'ALTER TABLE invoices ADD COLUMN customer_rnc TEXT',
-    //   );
-    //   await db.execute(
-    //     'ALTER TABLE quotes ADD COLUMN customer_rnc TEXT',
-    //   );
-    // }
+    if (oldVersion < 6) {
+      // v6: Agrega columna rnc a customers (schema drift entre _createDB y _upgradeDB v5)
+      await db.execute('ALTER TABLE customers ADD COLUMN rnc TEXT');
+    }
   }
 
   /// Crea todas las tablas desde cero (base nueva).
@@ -212,5 +212,6 @@ class DatabaseHelper {
       await _database!.close();
       _database = null;
     }
+    _dbFuture = null;
   }
 }

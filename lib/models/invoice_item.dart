@@ -60,14 +60,14 @@ class InvoiceItem {
   /// Crea un InvoiceItem desde un Map de SQLite.
   factory InvoiceItem.fromMap(Map<String, dynamic> map) {
     return InvoiceItem(
-      id: map['id'],
-      invoiceId: map['invoice_id'],
-      productId: map['product_id'],
-      productName: map['product_name'],
-      quantity: map['quantity'],
-      unitPrice: map['unit_price'],
-      discountItem: map['discount_item'],
-      subtotal: map['subtotal'],
+      id: map['id'] as int?,
+      invoiceId: (map['invoice_id'] as num?)?.toInt() ?? 0,
+      productId: (map['product_id'] as num?)?.toInt() ?? 0,
+      productName: (map['product_name'] as String?) ?? '',
+      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+      unitPrice: (map['unit_price'] as num?)?.toDouble() ?? 0,
+      discountItem: (map['discount_item'] as num?)?.toDouble() ?? 0,
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0,
     );
   }
 }
