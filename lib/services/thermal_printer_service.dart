@@ -320,8 +320,9 @@ class ThermalPrinterService {
 
   List<int> _buildInvoiceBytes(Generator gen, _CompanyConfig company, Invoice invoice, List<InvoiceItem> items) {
     var bytes = <int>[];
-    bytes += _headerBytes(gen, company, 'FACTURA #${invoice.id.toString().padLeft(4, '0')}', invoice.createdAt);
-    bytes += _customerBytes(gen, invoice.customerName /*, invoice.customerRnc*/);
+    final docNum = invoice.id != null ? '#${invoice.id.toString().padLeft(4, '0')}' : '';
+    bytes += _companyHeaderBytes(gen, company);
+    bytes += _documentHeaderBytes(gen, 'FACTURA', docNum, invoice.createdAt, invoice.customerName);
     bytes += _itemsHeaderBytes(gen);
     for (final item in items) {
       bytes += _itemRowBytes(gen, item.productName, item.quantity, item.unitPrice, item.discountItem, item.subtotal);
@@ -334,8 +335,13 @@ class ThermalPrinterService {
 
   List<int> _buildQuoteBytes(Generator gen, _CompanyConfig company, Quote quote, List<QuoteItem> items) {
     var bytes = <int>[];
-    bytes += _headerBytes(gen, company, 'COTIZACIÓN #${quote.id.toString().padLeft(4, '0')}', quote.createdAt);
-    bytes += _customerBytes(gen, quote.customerName /*, quote.customerRnc*/);
+    final docNum = quote.id != null ? '#${quote.id.toString().padLeft(4, '0')}' : '';
+    bytes += _companyHeaderBytes(gen, company);
+    bytes += _documentHeaderBytes(gen, 'COTIZACIÓN', docNum, quote.createdAt, quote.customerName);
+    if (quote.expiresAt != null && quote.expiresAt!.isNotEmpty) {
+      final expires = DateFormat('dd/MM/yyyy').format(DateTime.parse(quote.expiresAt!));
+      bytes += gen.text('Válida hasta:  $expires', styles: const PosStyles(align: PosAlign.left));
+    }
     bytes += _itemsHeaderBytes(gen);
     for (final item in items) {
       bytes += _itemRowBytes(gen, item.productName, item.quantity, item.unitPrice, item.discountItem, item.subtotal);
@@ -355,51 +361,74 @@ class ThermalPrinterService {
     bytes += gen.text('Si puedes leer esto, la impresora');
     bytes += gen.text('funciona correctamente.');
     bytes += gen.feed(1);
-    bytes += gen.hr();
+    bytes += gen.hr(ch: '=');
     bytes += gen.setStyles(const PosStyles());
     bytes += gen.text('Anthony Design - POS');
-    bytes += gen.text('Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}');
+    bytes += gen.text('Fecha: ${DateFormat('dd/MM/yyyy   HH:mm').format(DateTime.now())}');
     bytes += gen.feed(2);
     bytes += gen.cut();
     return bytes;
   }
 
-  List<int> _headerBytes(Generator gen, _CompanyConfig company, String docTitle, String createdAt) {
+  List<int> _companyHeaderBytes(Generator gen, _CompanyConfig company) {
     var bytes = <int>[];
     bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
     bytes += gen.feed(1);
-    bytes += gen.text(company.companyName, styles: const PosStyles(align: PosAlign.center, bold: true));
+    bytes += gen.text(company.companyName, styles: const PosStyles(
+      bold: true,
+      height: PosTextSize.size2,
+      width: PosTextSize.size2,
+      align: PosAlign.center,
+    ));
     bytes += gen.feed(1);
-    if (company.companyAddress.isNotEmpty) bytes += gen.text(company.companyAddress);
-    if (company.companyPhone.isNotEmpty) bytes += gen.text('Tel: ${company.companyPhone}');
-    bytes += gen.feed(1);
-    bytes += gen.hr(ch: '=');
-    bytes += gen.text(docTitle, styles: const PosStyles(bold: true, align: PosAlign.center));
-    bytes += gen.text(DateFormat('dd/MM/yyyy     HH:mm').format(DateTime.parse(createdAt)));
+    if (company.companyAddress.isNotEmpty) {
+      bytes += gen.text(company.companyAddress, styles: const PosStyles(align: PosAlign.center));
+    }
+    if (company.companyPhone.isNotEmpty) {
+      bytes += gen.text('Tel: ${company.companyPhone}', styles: const PosStyles(align: PosAlign.center));
+    }
+    if (company.companyEmail.isNotEmpty) {
+      bytes += gen.text(company.companyEmail, styles: const PosStyles(align: PosAlign.center));
+    }
     bytes += gen.setStyles(const PosStyles());
     bytes += gen.feed(1);
     return bytes;
   }
 
-  List<int> _customerBytes(Generator gen, String? customerName /*, String? customerRnc*/) {
+  List<int> _documentHeaderBytes(Generator gen, String docType, String docNumber, String createdAt, String? customerName) {
     var bytes = <int>[];
-    bytes += gen.hr();
-    if (customerName != null && customerName.isNotEmpty) {
-      bytes += gen.text('Cliente: $customerName');
+    bytes += gen.hr(ch: '=');
+    bytes += gen.feed(1);
+    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.text(docType, styles: const PosStyles(
+      bold: true,
+      height: PosTextSize.size2,
+      align: PosAlign.center,
+    ));
+    if (docNumber.isNotEmpty) {
+      bytes += gen.text(docNumber, styles: const PosStyles(
+        bold: true,
+        align: PosAlign.center,
+      ));
     }
-    // if (customerRnc != null && customerRnc.isNotEmpty) {
-    //   bytes += gen.text('RNC: $customerRnc');
-    // }
-    bytes += gen.hr();
+    bytes += gen.setStyles(const PosStyles());
+    bytes += gen.feed(1);
+    final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(createdAt));
+    final time = DateFormat('HH:mm').format(DateTime.parse(createdAt));
+    bytes += gen.text('Fecha:  $date  $time', styles: const PosStyles(align: PosAlign.left));
+    if (customerName != null && customerName.isNotEmpty) {
+      bytes += gen.text('Cliente:  $customerName', styles: const PosStyles(align: PosAlign.left));
+    }
+    bytes += gen.feed(1);
     return bytes;
   }
 
   List<int> _itemsHeaderBytes(Generator gen) {
     var bytes = <int>[];
     bytes += gen.row([
-      PosColumn(text: 'PRODUCTO', width: 5, styles: const PosStyles(bold: true)),
       PosColumn(text: 'CTD', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
-      PosColumn(text: 'PRECIO', width: 2, styles: const PosStyles(bold: true, align: PosAlign.right)),
+      PosColumn(text: 'DESCRIPCIÓN', width: 5, styles: const PosStyles(bold: true)),
+      PosColumn(text: 'P/U', width: 2, styles: const PosStyles(bold: true, align: PosAlign.right)),
       PosColumn(text: 'TOTAL', width: 3, styles: const PosStyles(bold: true, align: PosAlign.right)),
     ]);
     bytes += gen.hr();
@@ -409,10 +438,10 @@ class ThermalPrinterService {
   List<int> _itemRowBytes(Generator gen, String productName, int quantity, double unitPrice, double discountItem, double subtotal) {
     var bytes = <int>[];
     final currency = _currency();
-    final displayName = productName.length > 20 ? '${productName.substring(0, 18)}..' : productName;
+    final truncatedName = productName.length > 15 ? '${productName.substring(0, 14)}.' : productName;
     bytes += gen.row([
-      PosColumn(text: displayName, width: 5),
       PosColumn(text: _qty().format(quantity), width: 2, styles: const PosStyles(align: PosAlign.center)),
+      PosColumn(text: truncatedName, width: 5),
       PosColumn(text: currency.format(unitPrice), width: 2, styles: const PosStyles(align: PosAlign.right)),
       PosColumn(text: currency.format(subtotal), width: 3, styles: const PosStyles(align: PosAlign.right)),
     ]);
@@ -436,7 +465,10 @@ class ThermalPrinterService {
         PosColumn(text: '-${currency.format(discountGlobal)}', width: 4, styles: const PosStyles(align: PosAlign.right)),
       ]);
     }
-    bytes += gen.hr(ch: '=');
+    bytes += gen.row([
+      PosColumn(text: '', width: 8),
+      PosColumn(text: '────────────────', width: 4, styles: const PosStyles(align: PosAlign.right)),
+    ]);
     bytes += gen.row([
       PosColumn(text: 'TOTAL', width: 8, styles: const PosStyles(bold: true, align: PosAlign.right)),
       PosColumn(text: currency.format(total), width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
@@ -447,9 +479,12 @@ class ThermalPrinterService {
 
   List<int> _footerBytes(Generator gen, _CompanyConfig company) {
     var bytes = <int>[];
+    bytes += gen.hr(ch: '=');
     bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.feed(1);
     bytes += gen.text(company.footerMessage, styles: const PosStyles(align: PosAlign.center));
     if (company.footerTerms.isNotEmpty) {
+      bytes += gen.feed(1);
       bytes += gen.text(company.footerTerms, styles: const PosStyles(align: PosAlign.center));
     }
     bytes += gen.setStyles(const PosStyles());
