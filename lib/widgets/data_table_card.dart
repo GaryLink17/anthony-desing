@@ -47,7 +47,10 @@ class DataTableCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: ThemeHelper.getCardColor(context),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          border: Border.all(
+            color: ThemeHelper.getBorderColor(context),
+            width: 0.5,
+          ),
         ),
         child: const Center(child: CircularProgressIndicator()),
       );
@@ -58,7 +61,10 @@ class DataTableCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: ThemeHelper.getCardColor(context),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          border: Border.all(
+            color: ThemeHelper.getBorderColor(context),
+            width: 0.5,
+          ),
         ),
         child: Center(
           child: Padding(
@@ -67,7 +73,11 @@ class DataTableCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (emptyIcon != null)
-                  Icon(emptyIcon, size: 48, color: ThemeHelper.getBorderColor(context)),
+                  Icon(
+                    emptyIcon,
+                    size: 48,
+                    color: ThemeHelper.getBorderColor(context),
+                  ),
                 if (emptyIcon != null) const SizedBox(height: 12),
                 if (emptyMessage != null)
                   Text(
@@ -88,7 +98,10 @@ class DataTableCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         children: [
@@ -115,7 +128,9 @@ class DataTableCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: ThemeHelper.getBorderColor(context))),
+        border: Border(
+          bottom: BorderSide(color: ThemeHelper.getBorderColor(context)),
+        ),
       ),
       child: Row(
         children: columns.map((col) {

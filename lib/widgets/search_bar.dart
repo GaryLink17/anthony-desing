@@ -183,7 +183,10 @@ class _SearchBarState extends State<SearchBar> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.07), width: 0.5),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.07),
+          width: 0.5,
+        ),
       ),
       child: PopupMenuButton<String>(
         onSelected: onSelect,

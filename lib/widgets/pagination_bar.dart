@@ -51,7 +51,10 @@ class PaginationBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,

@@ -32,10 +32,7 @@ class ProductRepository {
       );
       return result.map(Product.fromMap).toList();
     } catch (e) {
-      throw AppException(
-        'Error al buscar productos.',
-        technical: e.toString(),
-      );
+      throw AppException('Error al buscar productos.', technical: e.toString());
     }
   }
 
@@ -87,10 +84,10 @@ class ProductRepository {
   Future<void> decreaseStock(int productId, int quantity) async {
     try {
       final db = await _db.database;
-      await db.rawUpdate(
-        'UPDATE products SET stock = stock - ? WHERE id = ?',
-        [quantity, productId],
-      );
+      await db.rawUpdate('UPDATE products SET stock = stock - ? WHERE id = ?', [
+        quantity,
+        productId,
+      ]);
     } catch (e) {
       throw AppException(
         'Error al actualizar el stock.',

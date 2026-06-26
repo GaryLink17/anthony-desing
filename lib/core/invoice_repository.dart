@@ -51,10 +51,7 @@ class InvoiceRepository {
       );
       return result.map(Invoice.fromMap).toList();
     } catch (e) {
-      throw AppException(
-        'Error al buscar facturas.',
-        technical: e.toString(),
-      );
+      throw AppException('Error al buscar facturas.', technical: e.toString());
     }
   }
 

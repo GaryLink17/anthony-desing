@@ -19,9 +19,7 @@ class DatabaseHelper {
   static Future<void> initialize() async {
     if (_initialized) return;
     if (kIsWeb) {
-      throw UnsupportedError(
-        'Web no soportado. Usa la versión de escritorio.',
-      );
+      throw UnsupportedError('Web no soportado. Usa la versión de escritorio.');
     }
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;

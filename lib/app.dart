@@ -129,16 +129,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           themeMode: themeProvider.isDarkMode
               ? ThemeMode.dark
               : ThemeMode.light,
-          initialRoute:
-              StatePersistence().getString(StorageKeys.lastRoute, defaultValue: AppRoutes.home),
+          initialRoute: StatePersistence().getString(
+            StorageKeys.lastRoute,
+            defaultValue: AppRoutes.home,
+          ),
           onGenerateRoute: (settings) {
             final routeName = settings.name ?? AppRoutes.home;
             final args = settings.arguments;
-            final int? focusInventoryProductId =
-                args is int ? args : null;
+            final int? focusInventoryProductId = args is int ? args : null;
             if (!AppRoutes.all.contains(routeName)) {
               return _buildNoAnimationRoute(
-                builder: (_) => const MainLayoutWrapper(initialRoute: AppRoutes.home),
+                builder: (_) =>
+                    const MainLayoutWrapper(initialRoute: AppRoutes.home),
                 settings: const RouteSettings(name: AppRoutes.home),
               );
             }
@@ -147,7 +149,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 initialRoute: routeName,
                 focusInventoryProductId: focusInventoryProductId,
               ),
-              settings: RouteSettings(name: routeName, arguments: settings.arguments),
+              settings: RouteSettings(
+                name: routeName,
+                arguments: settings.arguments,
+              ),
             );
           },
         );

@@ -24,10 +24,13 @@ class Invoice {
 
   /// La factura fue anulada.
   bool get isCancelled => status == 'cancelled';
+
   /// La factura está activa (no anulada).
   bool get isActive => status == 'active';
+
   /// El pago fue realizado.
   bool get isPaid => paymentStatus == 'paid';
+
   /// El pago está pendiente.
   bool get isPending => paymentStatus == 'pending';
 

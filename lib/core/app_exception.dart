@@ -14,5 +14,6 @@ class AppException implements Exception {
   const AppException(this.message, {this.technical, this.stackTrace});
 
   @override
-  String toString() => 'AppException: $message${technical != null ? ' ($technical)' : ''}';
+  String toString() =>
+      'AppException: $message${technical != null ? ' ($technical)' : ''}';
 }

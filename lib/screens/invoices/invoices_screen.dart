@@ -10,6 +10,7 @@ import '../../models/invoice_item.dart';
 import '../../models/product.dart';
 import '../../core/pdf_service.dart';
 import '../../widgets/state_builder.dart';
+import '../../widgets/form_components.dart';
 import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../services/document_totals_service.dart';
@@ -20,7 +21,6 @@ import '../../utils/currency_config.dart';
 import '../../widgets/documents/document_summary_rows.dart';
 import '../../widgets/pagination_bar.dart';
 import 'invoice_preview_screen.dart';
-
 
 /// Pantalla de gestión de facturas.
 ///
@@ -82,7 +82,11 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => InvoicePreviewScreen(pdfBytes: pdfBytes, invoice: inv, items: items),
+          builder: (_) => InvoicePreviewScreen(
+            pdfBytes: pdfBytes,
+            invoice: inv,
+            items: items,
+          ),
         ),
       );
     } on AppException catch (e) {
@@ -207,39 +211,65 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             ),
             Text(
               '${_invoices.length} facturas generadas',
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ],
         ),
         Row(
           children: [
-            OutlinedButton.icon(
-              onPressed: _invoices.isEmpty ? null : _exportExcel,
-              icon: const Icon(
-                Icons.table_chart_rounded,
-                size: 16,
-              ),
-              label: const Text('Excel'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF217346),
-                side: const BorderSide(color: Color(0xFF217346)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            Tooltip(
+              message: 'Exportar a Excel (Ctrl+E)',
+              child: OutlinedButton.icon(
+                onPressed: _invoices.isEmpty ? null : _exportExcel,
+                icon: const Icon(Icons.table_chart_rounded, size: 16),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Excel'),
+                    const SizedBox(width: 6),
+                    ShortcutHint('Ctrl+E', backgroundColor: const Color(0xFF217346).withValues(alpha: 0.10), textColor: const Color(0xFF217346).withValues(alpha: 0.70)),
+                  ],
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF217346),
+                  side: const BorderSide(color: Color(0xFF217346)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
-            ElevatedButton.icon(
-              onPressed: _openNewInvoice,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nueva factura'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentMagenta,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            Tooltip(
+              message: 'Crear nueva factura (Ctrl+N)',
+              child: ElevatedButton.icon(
+                onPressed: _openNewInvoice,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Nueva factura'),
+                    const SizedBox(width: 6),
+                    ShortcutHint('Ctrl+N', backgroundColor: Colors.white.withValues(alpha: 0.15), textColor: Colors.white.withValues(alpha: 0.75)),
+                  ],
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentMagenta,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
@@ -259,18 +289,35 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         onChanged: (q) => _debouncer(() => _load(q)),
         decoration: InputDecoration(
           hintText: 'Buscar por cliente...',
-          hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
-          prefixIcon: Icon(Icons.search_rounded, size: 18, color: ThemeHelper.getHintColor(context)),
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: ThemeHelper.getHintColor(context),
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 18,
+            color: ThemeHelper.getHintColor(context),
+          ),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: ShortcutHint('Ctrl+F'),
+          ),
           filled: true,
           fillColor: ThemeHelper.getCardColor(context),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+            borderSide: BorderSide(
+              color: ThemeHelper.getBorderColor(context),
+              width: 0.5,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+            borderSide: BorderSide(
+              color: ThemeHelper.getBorderColor(context),
+              width: 0.5,
+            ),
           ),
         ),
       ),
@@ -291,7 +338,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         decoration: BoxDecoration(
           color: ThemeHelper.getCardColor(context),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          border: Border.all(
+            color: ThemeHelper.getBorderColor(context),
+            width: 0.5,
+          ),
         ),
         child: Column(
           children: [
@@ -299,7 +349,10 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             Expanded(
               child: ListView.builder(
                 itemCount: _paginatedInvoices.length,
-                itemBuilder: (_, i) => _buildRow(_paginatedInvoices[i], i + _currentPage * _pageSize),
+                itemBuilder: (_, i) => _buildRow(
+                  _paginatedInvoices[i],
+                  i + _currentPage * _pageSize,
+                ),
                 key: const PageStorageKey<String>('invoice_list'),
               ),
             ),
@@ -326,7 +379,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: ThemeHelper.getBorderColor(context))),
+        border: Border(
+          bottom: BorderSide(color: ThemeHelper.getBorderColor(context)),
+        ),
       ),
       child: Row(
         children: [
@@ -374,17 +429,24 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: isCancelled
                         ? const Color(0xFFE24B4A)
                         : inv.isPaid
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFE65100),
+                        ? const Color(0xFF2E7D32)
+                        : const Color(0xFFE65100),
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
-                    isCancelled ? 'ANULADA' : inv.isPaid ? 'PAGADA' : 'PENDIENTE',
+                    isCancelled
+                        ? 'ANULADA'
+                        : inv.isPaid
+                        ? 'PAGADA'
+                        : 'PENDIENTE',
                     style: const TextStyle(
                       fontSize: 7,
                       color: Colors.white,
@@ -492,21 +554,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                   padding: const EdgeInsets.all(6),
                 ),
                 IconButton(
-                  onPressed: isCancelled ? null : () => _togglePaymentStatus(inv),
+                  onPressed: isCancelled
+                      ? null
+                      : () => _togglePaymentStatus(inv),
                   icon: Icon(
-                    inv.isPaid ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    inv.isPaid
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
                     size: 16,
                     color: isCancelled
                         ? ThemeHelper.getTextLightColor(context)
                         : inv.isPaid
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFE65100),
+                        ? const Color(0xFF2E7D32)
+                        : const Color(0xFFE65100),
                   ),
                   tooltip: isCancelled
                       ? 'Factura anulada'
                       : inv.isPaid
-                          ? 'Marcar como pendiente'
-                          : 'Marcar como pagada',
+                      ? 'Marcar como pendiente'
+                      : 'Marcar como pagada',
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(6),
                 ),
@@ -635,17 +701,26 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'La factura quedará registrada pero marcada como anulada y no se incluirá en los reportes.',
-                      style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ThemeHelper.getTextLightColor(context),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       '¿Desea reponer el stock de los productos?',
-                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextMediumColor(context)),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: ThemeHelper.getTextMediumColor(context),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Seleccione "Sí" si el cliente devolvió los productos.',
-                      style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: ThemeHelper.getTextLightColor(context),
+                      ),
                     ),
                   ],
                 ),
@@ -664,8 +739,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: ThemeHelper.getTextLightColor(context),
-                          side: BorderSide(color: ThemeHelper.getBorderColor(context)),
+                          foregroundColor: ThemeHelper.getTextLightColor(
+                            context,
+                          ),
+                          side: BorderSide(
+                            color: ThemeHelper.getBorderColor(context),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
@@ -679,9 +758,15 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                       child: OutlinedButton(
                         onPressed: () async {
                           try {
-                            await _invoiceRepo.cancel(inv.id!, restoreStock: false);
+                            await _invoiceRepo.cancel(
+                              inv.id!,
+                              restoreStock: false,
+                            );
                             NotificationService().success('Factura anulada');
-                            if (mounted) { Navigator.pop(context); _load(); }
+                            if (mounted) {
+                              Navigator.pop(context);
+                              _load();
+                            }
                           } on AppException catch (e) {
                             if (mounted) Navigator.pop(context);
                             NotificationService().error(e.message);
@@ -703,9 +788,15 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
                       child: ElevatedButton(
                         onPressed: () async {
                           try {
-                            await _invoiceRepo.cancel(inv.id!, restoreStock: true);
+                            await _invoiceRepo.cancel(
+                              inv.id!,
+                              restoreStock: true,
+                            );
                             NotificationService().success('Factura anulada');
-                            if (mounted) { Navigator.pop(context); _load(); }
+                            if (mounted) {
+                              Navigator.pop(context);
+                              _load();
+                            }
                           } on AppException catch (e) {
                             if (mounted) Navigator.pop(context);
                             NotificationService().error(e.message);
@@ -760,8 +851,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   /// y muestra notificación si es necesario.
   Future<void> _checkLowStock(List<int> productIds) async {
     try {
-      final lowStock =
-          await ProductRepository().getLowStockForProducts(productIds);
+      final lowStock = await ProductRepository().getLowStockForProducts(
+        productIds,
+      );
       if (lowStock.isEmpty) return;
 
       final names = lowStock.map((p) => p.name).take(3).join(', ');
@@ -961,7 +1053,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     if (!_validateStock()) {
-      NotificationService().error('No hay stock suficiente para algunos productos');
+      NotificationService().error(
+        'No hay stock suficiente para algunos productos',
+      );
       return;
     }
 
@@ -1016,52 +1110,54 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
         child: PopScope(
-        canPop: _canPop,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('¿Descartar cambios?'),
-              content: const Text('Los datos ingresados se perderán.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Seguir editando'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
+          canPop: _canPop,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('¿Descartar cambios?'),
+                content: const Text('Los datos ingresados se perderán.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Seguir editando'),
                   ),
-                  child: const Text('Descartar'),
-                ),
-              ],
-            ),
-          );
-          if (confirm == true && mounted) {
-            setState(() => _canPop = true);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) Navigator.of(context).pop();
-            });
-          }
-        },
-        child: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: 700,
-          height: 580,
-          child: Column(
-            children: [
-              _buildDialogHeader(),
-              Expanded(
-                child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
-                ),
-              ],
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Descartar'),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              setState(() => _canPop = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop();
+              });
+            }
+          },
+          child: Form(
+            key: _formKey,
+            child: SizedBox(
+              width: 700,
+              height: 580,
+              child: Column(
+                children: [
+                  _buildDialogHeader(),
+                  Expanded(
+                    child: Row(
+                      children: [_buildLeftPanel(), _buildRightPanel()],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -1142,10 +1238,16 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                   child: TextFormField(
                     controller: _discountCtrl,
                     keyboardType: TextInputType.number,
-                    style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Desc. %',
-                      labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        color: ThemeHelper.getTextMediumColor(context),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1178,10 +1280,16 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
             TextField(
               controller: _searchCtrl,
               onChanged: _filterProducts,
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextColor(context),
+              ),
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
-                hintStyle: TextStyle(fontSize: 12, color: ThemeHelper.getHintColor(context)),
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: ThemeHelper.getHintColor(context),
+                ),
                 prefixIcon: const Icon(Icons.search, size: 18),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1197,7 +1305,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
               child: _showProductList || _searchCtrl.text.isNotEmpty
                   ? Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                        border: Border.all(
+                          color: ThemeHelper.getBorderColor(context),
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: ListView.builder(
@@ -1208,11 +1318,17 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                             dense: true,
                             title: Text(
                               p.name,
-                              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: ThemeHelper.getTextColor(context),
+                              ),
                             ),
                             subtitle: Text(
                               '${_currency.format(p.salePrice)} - Stock: ${p.stock}',
-                              style: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: ThemeHelper.getTextMediumColor(context),
+                              ),
                             ),
                             onTap: p.stock > 0 ? () => _addProduct(p) : null,
                           );
@@ -1234,7 +1350,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
       child: Container(
         decoration: BoxDecoration(
           color: ThemeHelper.getAltRowColor(context),
-          border: Border(left: BorderSide(color: ThemeHelper.getBorderColor(context))),
+          border: Border(
+            left: BorderSide(color: ThemeHelper.getBorderColor(context)),
+          ),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1276,7 +1394,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                           decoration: BoxDecoration(
                             color: ThemeHelper.getCardColor(context),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                            border: Border.all(
+                              color: ThemeHelper.getBorderColor(context),
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -1299,7 +1419,9 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
                                       '${disc > 0 ? ' (-${disc.toStringAsFixed(0)}%)' : ''}',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: ThemeHelper.getTextLightColor(context),
+                                        color: ThemeHelper.getTextLightColor(
+                                          context,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -1440,7 +1562,9 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
               context: context,
               builder: (ctx) => AlertDialog(
                 title: const Text('¿Descartar cambios?'),
-                content: const Text('La configuración del producto se perderá.'),
+                content: const Text(
+                  'La configuración del producto se perderá.',
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
@@ -1483,7 +1607,10 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                   ),
                   Text(
                     'Stock disponible: ${widget.product.stock}',
-                    style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: ThemeHelper.getTextLightColor(context),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -1492,11 +1619,17 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                         child: TextFormField(
                           controller: _quantityCtrl,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
                             labelText: 'Cantidad',
-                            labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                            labelStyle: TextStyle(
+                              fontSize: 11,
+                              color: ThemeHelper.getTextMediumColor(context),
+                            ),
                             border: const OutlineInputBorder(),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -1506,7 +1639,8 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                           validator: (v) {
                             final n = int.tryParse(v ?? '');
                             if (n == null || n < 1) return 'Mín. 1';
-                            if (n > widget.product.stock) return 'Stock: ${widget.product.stock}';
+                            if (n > widget.product.stock)
+                              return 'Stock: ${widget.product.stock}';
                             return null;
                           },
                         ),
@@ -1516,11 +1650,17 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                         child: TextFormField(
                           controller: _discountCtrl,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
                             labelText: 'Desc. %',
-                            labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                            labelStyle: TextStyle(
+                              fontSize: 11,
+                              color: ThemeHelper.getTextMediumColor(context),
+                            ),
                             border: const OutlineInputBorder(),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -1543,11 +1683,17 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                   TextFormField(
                     controller: _priceCtrl,
                     keyboardType: TextInputType.number,
-                    style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       labelText: 'Precio unitario',
-                      labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                      labelStyle: TextStyle(
+                        fontSize: 11,
+                        color: ThemeHelper.getTextMediumColor(context),
+                      ),
                       border: const OutlineInputBorder(),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -1596,7 +1742,11 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
+                        style: TextButton.styleFrom(
+                          foregroundColor: ThemeHelper.getTextMediumColor(
+                            context,
+                          ),
+                        ),
                         child: const Text('Cancelar'),
                       ),
                       const SizedBox(width: 12),
@@ -1609,7 +1759,8 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                               Navigator.pop(context, {
                                 'quantity': int.parse(_quantityCtrl.text),
                                 'unitPrice': double.parse(_priceCtrl.text),
-                                'discount': double.tryParse(_discountCtrl.text) ?? 0,
+                                'discount':
+                                    double.tryParse(_discountCtrl.text) ?? 0,
                               });
                             }
                           });

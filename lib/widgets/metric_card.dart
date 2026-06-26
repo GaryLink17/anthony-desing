@@ -43,10 +43,7 @@ class MetricCard extends StatelessWidget {
                 child: Icon(icon, size: 18, color: iconColor),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: deltaPositive
                       ? ThemeHelper.getSuccessLightBg(context)

@@ -3,7 +3,7 @@ import '../theme/app_theme.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-
+import 'form_components.dart';
 
 /// Modelo de un elemento del menú lateral.
 class SidebarItem {
@@ -87,18 +87,9 @@ class Sidebar extends StatelessWidget {
               ),
             ),
           ),
-          _buildGroup(
-            context,
-            isDark,
-            'Sistema',
-            const [
-              SidebarItem(
-                label: 'Configuración',
-                icon: Icons.settings_rounded,
-              ),
-            ],
-            startIndex: 6,
-          ),
+          _buildGroup(context, isDark, 'Sistema', const [
+            SidebarItem(label: 'Configuración', icon: Icons.settings_rounded),
+          ], startIndex: 6),
           const SizedBox(height: 12),
         ],
       ),
@@ -145,7 +136,8 @@ class Sidebar extends StatelessWidget {
                 ? Image.file(
                     File(companyLogo),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => _buildLogoFallback(initials, isDark),
+                    errorBuilder: (_, _, _) =>
+                        _buildLogoFallback(initials, isDark),
                   )
                 : _buildLogoFallback(initials, isDark),
           ),
@@ -159,9 +151,7 @@ class Sidebar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AppTheme.darkTextLight
-                        : AppTheme.textDark,
+                    color: isDark ? AppTheme.darkTextLight : AppTheme.textDark,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -190,9 +180,7 @@ class Sidebar extends StatelessWidget {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: isDark
-              ? AppTheme.accentMagenta
-              : AppTheme.primaryBlue,
+          color: isDark ? AppTheme.accentMagenta : AppTheme.primaryBlue,
         ),
       ),
     );
@@ -228,13 +216,7 @@ class Sidebar extends StatelessWidget {
           final index = startIndex + entry.key;
           final item = entry.value;
           final isActive = selectedIndex == index;
-          return _buildNavItem(
-            context,
-            isDark,
-            item,
-            index,
-            isActive,
-          );
+          return _buildNavItem(context, isDark, item, index, isActive);
         }),
       ],
     );
@@ -248,8 +230,9 @@ class Sidebar extends StatelessWidget {
     bool isActive,
   ) {
     // Colores según tema
-    final activeIconColor =
-        isDark ? AppTheme.accentMagenta : AppTheme.primaryBlue;
+    final activeIconColor = isDark
+        ? AppTheme.accentMagenta
+        : AppTheme.primaryBlue;
     final inactiveIconColor = isDark
         ? AppTheme.darkTextMedium
         : AppTheme.textLight;
@@ -263,7 +246,7 @@ class Sidebar extends StatelessWidget {
 
     if (isCollapsed) {
       return Tooltip(
-        message: item.label,
+        message: '${item.label} (${index + 1})',
         preferBelow: false,
         child: InkWell(
           onTap: () => onItemSelected(index),
@@ -318,10 +301,7 @@ class Sidebar extends StatelessWidget {
             ),
             if (item.badgeCount != null)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.accentMagenta.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
@@ -335,6 +315,8 @@ class Sidebar extends StatelessWidget {
                   ),
                 ),
               ),
+            const SizedBox(width: 6),
+            ShortcutHint('${index + 1}'),
           ],
         ),
       ),

@@ -8,7 +8,6 @@ import '../../core/app_exception.dart';
 import '../../services/notification_service.dart';
 import '../../utils/currency_config.dart';
 
-
 /// Pantalla de reportes de ventas con filtro por fechas.
 ///
 /// Muestra cuatro tarjetas con métricas (total, ganancia, facturas,
@@ -156,9 +155,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final topCategories = results[3];
 
       if (summary != null) _summary = summary as Map<String, dynamic>;
-      if (chartData != null) _chartData = chartData as List<Map<String, dynamic>>;
-      if (topProducts != null) _topProducts = topProducts as List<Map<String, dynamic>>;
-      if (topCategories != null) _topCategories = topCategories as List<Map<String, dynamic>>;
+      if (chartData != null)
+        _chartData = chartData as List<Map<String, dynamic>>;
+      if (topProducts != null)
+        _topProducts = topProducts as List<Map<String, dynamic>>;
+      if (topCategories != null)
+        _topCategories = topCategories as List<Map<String, dynamic>>;
 
       setState(() => _loading = false);
     }
@@ -181,23 +183,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Scaffold(
         backgroundColor: context.bgColor,
         body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: context.responsivePadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  _buildMetrics(),
-                  const SizedBox(height: 20),
-                  _buildChart(),
-                  const SizedBox(height: 20),
-                  _buildBottomRow(),
-                ],
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: context.responsivePadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 24),
+                    _buildMetrics(),
+                    const SizedBox(height: 20),
+                    _buildChart(),
+                    const SizedBox(height: 20),
+                    _buildBottomRow(),
+                  ],
+                ),
               ),
-            ),
-          ),
+      ),
     );
   }
 
@@ -229,53 +231,58 @@ class _ReportsScreenState extends State<ReportsScreen> {
             const SizedBox(height: 4),
             Text(
               'Resumen de ventas y ganancias',
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ],
         ),
-          Row(
-            children: [
-              _buildDateField('Desde', _startDate, _selectStartDate),
-              const SizedBox(width: 8),
-              _buildDateField('Hasta', _endDate, _selectEndDate),
-              const SizedBox(width: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: isToday ? ThemeHelper.getSuccessLightBg(context) : ThemeHelper.getCardColor(context),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isToday
-                        ? ThemeHelper.getSuccessTextColor(context)
-                        : ThemeHelper.getBorderColor(context),
-                    width: 0.5,
-                  ),
+        Row(
+          children: [
+            _buildDateField('Desde', _startDate, _selectStartDate),
+            const SizedBox(width: 8),
+            _buildDateField('Hasta', _endDate, _selectEndDate),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: isToday
+                    ? ThemeHelper.getSuccessLightBg(context)
+                    : ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isToday
+                      ? ThemeHelper.getSuccessTextColor(context)
+                      : ThemeHelper.getBorderColor(context),
+                  width: 0.5,
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _setToday,
-                    borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Text(
-                        'Hoy',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isToday
-                              ? ThemeHelper.getSuccessTextColor(context)
-                              : ThemeHelper.getTextLightColor(context),
-                        ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _setToday,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Hoy',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isToday
+                            ? ThemeHelper.getSuccessTextColor(context)
+                            : ThemeHelper.getTextLightColor(context),
                       ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -368,7 +375,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 16, color: ThemeHelper.getTextLightColor(context)),
+        child: Icon(
+          icon,
+          size: 16,
+          color: ThemeHelper.getTextLightColor(context),
+        ),
       ),
     );
   }
@@ -432,7 +443,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
               'Sin ventas en este período',
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ),
         ),
@@ -535,7 +549,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: _topProducts.isEmpty
           ? Text(
               'Sin datos para este período',
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             )
           : Column(
               children: _topProducts.asMap().entries.map((entry) {
@@ -617,7 +634,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: _topCategories.isEmpty
           ? Text(
               'Sin datos para este período',
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             )
           : Column(
               children: _topCategories.map((cat) {
@@ -683,7 +703,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,7 +752,10 @@ class _MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,13 +781,19 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
+            style: TextStyle(
+              fontSize: 11,
+              color: ThemeHelper.getTextLightColor(context),
+            ),
           ),
           if (sub != null) ...[
             const SizedBox(height: 2),
             Text(
               sub!,
-              style: TextStyle(fontSize: 10, color: ThemeHelper.getSuccessTextColor(context)),
+              style: TextStyle(
+                fontSize: 10,
+                color: ThemeHelper.getSuccessTextColor(context),
+              ),
             ),
           ],
         ],

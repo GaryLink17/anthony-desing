@@ -55,7 +55,10 @@ class InvoicePreviewScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.07), width: 0.5),
+          bottom: BorderSide(
+            color: Colors.black.withValues(alpha: 0.07),
+            width: 0.5,
+          ),
         ),
       ),
       child: Row(
@@ -97,7 +100,10 @@ class InvoicePreviewScreen extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () async {
               try {
-                await ThermalPrinterService.instance.printInvoice(invoice, items);
+                await ThermalPrinterService.instance.printInvoice(
+                  invoice,
+                  items,
+                );
               } on AppException catch (e) {
                 if (context.mounted) NotificationService().error(e.message);
               }

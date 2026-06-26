@@ -75,7 +75,10 @@ class StateBuilder extends StatelessWidget {
             Text(
               errorMessage!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
             const SizedBox(height: 16),
             if (onRetry != null)
@@ -113,7 +116,10 @@ class StateBuilder extends StatelessWidget {
             Text(
               emptyDescription,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ],
         ),

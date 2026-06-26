@@ -90,79 +90,77 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: context.bgColor,
         body: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            // Fila 1: Hero + Facturas
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _HeroSalesCard(
-                      sales: provider.monthlySales,
-                      weeklySales: provider.weeklySales,
-                      currency: _currency,
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              // Fila 1: Hero + Facturas
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: _HeroSalesCard(
+                        sales: provider.monthlySales,
+                        weeklySales: provider.weeklySales,
+                        currency: _currency,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _InvoiceStatCard(count: provider.invoiceCount),
-                  ),
-                ],
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _InvoiceStatCard(count: provider.invoiceCount),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Fila 2: Inventario + Ganancia + Stock
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _SmallStatCard(
-                      icon: Icons.inventory_2_rounded,
-                      iconBg: AppTheme.lightOrange,
-                      iconColor: AppTheme.accentOrange,
-                      value: '${provider.totalProducts}',
-                      label: 'Productos activos',
+              const SizedBox(height: 16),
+              // Fila 2: Inventario + Ganancia + Stock
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _SmallStatCard(
+                        icon: Icons.inventory_2_rounded,
+                        iconBg: AppTheme.lightOrange,
+                        iconColor: AppTheme.accentOrange,
+                        value: '${provider.totalProducts}',
+                        label: 'Productos activos',
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _SmallStatCard(
-                      icon: Icons.account_balance_wallet_rounded,
-                      iconBg: AppTheme.lightMagenta,
-                      iconColor: AppTheme.accentMagenta,
-                      value: _currency.format(provider.monthlyProfit),
-                      label: 'Ganancia neta',
-                      sublabel: provider.monthlySales > 0
-                          ? 'Margen ${((provider.monthlyProfit / provider.monthlySales) * 100).toStringAsFixed(1)}%'
-                          : null,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _SmallStatCard(
+                        icon: Icons.account_balance_wallet_rounded,
+                        iconBg: AppTheme.lightMagenta,
+                        iconColor: AppTheme.accentMagenta,
+                        value: _currency.format(provider.monthlyProfit),
+                        label: 'Ganancia neta',
+                        sublabel: provider.monthlySales > 0
+                            ? 'Margen ${((provider.monthlyProfit / provider.monthlySales) * 100).toStringAsFixed(1)}%'
+                            : null,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _StockCard(
-                      products: provider.lowStockProducts,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _StockCard(products: provider.lowStockProducts),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Fila 3: Últimas facturas full-width
-            _RecentInvoicesCard(
-              invoices: provider.recentInvoices,
-              currency: _currency,
-            ),
-          ],
+              const SizedBox(height: 16),
+              // Fila 3: Últimas facturas full-width
+              _RecentInvoicesCard(
+                invoices: provider.recentInvoices,
+                currency: _currency,
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -565,10 +563,9 @@ class _StockCard extends StatelessWidget {
     final id = p.id;
     if (id == null) return;
     StatePersistence().setString(StorageKeys.lastRoute, AppRoutes.inventory);
-    Navigator.of(context).pushReplacementNamed(
-      AppRoutes.inventory,
-      arguments: id,
-    );
+    Navigator.of(
+      context,
+    ).pushReplacementNamed(AppRoutes.inventory, arguments: id);
   }
 
   @override

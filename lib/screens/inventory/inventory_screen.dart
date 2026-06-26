@@ -5,6 +5,7 @@ import '../../models/product.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/theme_helper.dart';
 import '../../widgets/state_builder.dart';
+import '../../widgets/form_components.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import 'widgets/product_dialog.dart';
@@ -13,7 +14,6 @@ import '../../services/notification_service.dart';
 import '../../services/excel_service.dart';
 import '../../utils/currency_config.dart';
 import '../../widgets/pagination_bar.dart';
-
 
 /// Pantalla de gestión del inventario de productos.
 ///
@@ -193,39 +193,56 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ),
         Row(
           children: [
-            OutlinedButton.icon(
-              onPressed: _products.isEmpty ? null : _exportExcel,
-              icon: const Icon(
-                Icons.table_chart_rounded,
-                size: 16,
-              ),
-              label: const Text('Excel'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF217346),
-                side: const BorderSide(color: Color(0xFF217346)),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+            Tooltip(
+              message: 'Exportar a Excel (Ctrl+E)',
+              child: OutlinedButton.icon(
+                onPressed: _products.isEmpty ? null : _exportExcel,
+                icon: const Icon(Icons.table_chart_rounded, size: 16),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Excel'),
+                    const SizedBox(width: 6),
+                    ShortcutHint('Ctrl+E', backgroundColor: const Color(0xFF217346).withValues(alpha: 0.10), textColor: const Color(0xFF217346).withValues(alpha: 0.70)),
+                  ],
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF217346),
+                  side: const BorderSide(color: Color(0xFF217346)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
-            ElevatedButton.icon(
-              onPressed: _showProductDialog,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nuevo producto'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentMagenta,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+            Tooltip(
+              message: 'Crear nuevo producto (Ctrl+N)',
+              child: ElevatedButton.icon(
+                onPressed: _showProductDialog,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Nuevo producto'),
+                    const SizedBox(width: 6),
+                    ShortcutHint('Ctrl+N', backgroundColor: Colors.white.withValues(alpha: 0.15), textColor: Colors.white.withValues(alpha: 0.75)),
+                  ],
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentMagenta,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
@@ -268,6 +285,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
             size: 18,
             color: ThemeHelper.getHintColor(context),
           ),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: ShortcutHint('Ctrl+F'),
+          ),
           filled: true,
           fillColor: ThemeHelper.getCardColor(context),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -296,7 +317,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       isLoading: _loading,
       isEmpty: _products.isEmpty,
       errorMessage: _errorMessage,
-      onRetry: _errorMessage != null ? () => _loadProducts(_searchController.text) : null,
+      onRetry: _errorMessage != null
+          ? () => _loadProducts(_searchController.text)
+          : null,
       icon: Icons.inventory_2_outlined,
       emptyTitle: 'No hay productos aún',
       emptyDescription: 'Presiona "Nuevo producto" para agregar el primero',
@@ -312,22 +335,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
         child: Column(
           children: [
             _buildTableHeader(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _paginatedProducts.length,
-              itemBuilder: (_, i) => KeyedSubtree(
-                key: ValueKey(_paginatedProducts[i].id),
-                child: _buildTableRow(_paginatedProducts[i], i + _currentPage * _pageSize),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _paginatedProducts.length,
+                itemBuilder: (_, i) => KeyedSubtree(
+                  key: ValueKey(_paginatedProducts[i].id),
+                  child: _buildTableRow(
+                    _paginatedProducts[i],
+                    i + _currentPage * _pageSize,
+                  ),
+                ),
               ),
             ),
-          ),
-          if (_totalPages > 1)
-            PaginationBar(
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              totalItems: _products.length,
-              onPageChanged: (p) => setState(() => _currentPage = p),
-            ),
+            if (_totalPages > 1)
+              PaginationBar(
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                totalItems: _products.length,
+                onPageChanged: (p) => setState(() => _currentPage = p),
+              ),
           ],
         ),
       ),

@@ -104,5 +104,3 @@ class PerformanceMonitor {
     _measurements.clear();
   }
 }
-
-

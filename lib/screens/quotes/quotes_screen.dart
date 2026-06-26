@@ -19,10 +19,10 @@ import '../../models/product.dart';
 import '../../utils/responsive_helper.dart';
 import '../../utils/performance_helpers.dart';
 import '../../widgets/documents/document_summary_rows.dart';
+import '../../widgets/form_components.dart';
 import '../../widgets/pagination_bar.dart';
 import '../../services/thermal_printer_service.dart';
 import '../../utils/currency_config.dart';
-
 
 /// Pantalla de gestión de cotizaciones.
 ///
@@ -167,20 +167,33 @@ class _QuotesScreenState extends State<QuotesScreen> {
             ),
             Text(
               '${_quotes.length} cotizaciones generadas',
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ],
         ),
-        ElevatedButton.icon(
-          onPressed: _openNewQuote,
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Nueva cotización'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryBlue,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        Tooltip(
+          message: 'Crear nueva cotización (Ctrl+N)',
+          child: ElevatedButton.icon(
+            onPressed: _openNewQuote,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Nueva cotización'),
+                const SizedBox(width: 6),
+                ShortcutHint('Ctrl+N', backgroundColor: Colors.white.withValues(alpha: 0.15), textColor: Colors.white.withValues(alpha: 0.75)),
+              ],
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ),
@@ -198,18 +211,35 @@ class _QuotesScreenState extends State<QuotesScreen> {
         onChanged: (q) => _debouncer(() => _load(q)),
         decoration: InputDecoration(
           hintText: 'Buscar por cliente...',
-          hintStyle: TextStyle(fontSize: 13, color: ThemeHelper.getHintColor(context)),
-          prefixIcon: Icon(Icons.search_rounded, size: 18, color: ThemeHelper.getHintColor(context)),
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: ThemeHelper.getHintColor(context),
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 18,
+            color: ThemeHelper.getHintColor(context),
+          ),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: ShortcutHint('Ctrl+F'),
+          ),
           filled: true,
           fillColor: ThemeHelper.getCardColor(context),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+            borderSide: BorderSide(
+              color: ThemeHelper.getBorderColor(context),
+              width: 0.5,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+            borderSide: BorderSide(
+              color: ThemeHelper.getBorderColor(context),
+              width: 0.5,
+            ),
           ),
         ),
       ),
@@ -225,17 +255,28 @@ class _QuotesScreenState extends State<QuotesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: AppTheme.errorColor,
+            ),
             const SizedBox(height: 12),
             Text(
               'Oops! Algo salió mal',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: ThemeHelper.getTextColor(context)),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: ThemeHelper.getTextColor(context),
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               _errorMessage!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
@@ -265,22 +306,39 @@ class _QuotesScreenState extends State<QuotesScreen> {
             const SizedBox(height: 12),
             Text(
               'No hay cotizaciones aún',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Presiona "Nueva cotización" para comenzar',
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _openNewQuote,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nueva cotización'),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Nueva cotización'),
+                  const SizedBox(width: 6),
+                  ShortcutHint('Ctrl+N', backgroundColor: Colors.white.withValues(alpha: 0.15), textColor: Colors.white.withValues(alpha: 0.75)),
+                ],
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -292,7 +350,10 @@ class _QuotesScreenState extends State<QuotesScreen> {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         children: [
@@ -300,7 +361,8 @@ class _QuotesScreenState extends State<QuotesScreen> {
           Expanded(
             child: ListView.builder(
               itemCount: _paginatedQuotes.length,
-              itemBuilder: (_, i) => _buildRow(_paginatedQuotes[i], i + _currentPage * _pageSize),
+              itemBuilder: (_, i) =>
+                  _buildRow(_paginatedQuotes[i], i + _currentPage * _pageSize),
               key: const PageStorageKey<String>('quote_list'),
             ),
           ),
@@ -326,7 +388,9 @@ class _QuotesScreenState extends State<QuotesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: ThemeHelper.getBorderColor(context))),
+        border: Border(
+          bottom: BorderSide(color: ThemeHelper.getBorderColor(context)),
+        ),
       ),
       child: Row(
         children: [
@@ -385,14 +449,20 @@ class _QuotesScreenState extends State<QuotesScreen> {
             flex: 3,
             child: Text(
               quote.customerName ?? 'Cliente general',
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextColor(context),
+              ),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               date,
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ),
           Expanded(
@@ -538,7 +608,9 @@ class _QuotesScreenState extends State<QuotesScreen> {
               expiresAt: updatedQuote.expiresAt,
             );
             await _quoteRepo.update(quote.id!, newQuote, items);
-            NotificationService().success('Cotización actualizada correctamente');
+            NotificationService().success(
+              'Cotización actualizada correctamente',
+            );
             _load();
           } on AppException catch (e) {
             NotificationService().error(e.message);
@@ -561,7 +633,11 @@ class _QuotesScreenState extends State<QuotesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => _QuotePreviewScreen(pdfBytes: pdfBytes, quote: quote, items: items),
+          builder: (_) => _QuotePreviewScreen(
+            pdfBytes: pdfBytes,
+            quote: quote,
+            items: items,
+          ),
         ),
       );
     } on AppException catch (e) {
@@ -572,78 +648,80 @@ class _QuotesScreenState extends State<QuotesScreen> {
   /// Convierte una cotización en factura, descontando el stock de los productos.
   void _convertToInvoice(Quote quote) async {
     try {
-    final items = await _quoteRepo.getItems(quote.id!);
+      final items = await _quoteRepo.getItems(quote.id!);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Convertir a factura'),
-        content: const Text(
-          '¿Deseas convertir esta cotización en una factura?\n\n'
-          'Se creará una factura y se descontará el stock de los productos.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
-            child: const Text('Cancelar'),
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Convertir a factura'),
+          content: const Text(
+            '¿Deseas convertir esta cotización en una factura?\n\n'
+            'Se creará una factura y se descontará el stock de los productos.',
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentMagenta,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(
+                foregroundColor: ThemeHelper.getTextMediumColor(context),
+              ),
+              child: const Text('Cancelar'),
             ),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentMagenta,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        ),
+      );
 
-    if (confirmed != true) return;
+      if (confirmed != true) return;
 
-    final productRepo = ProductRepository();
-    final outOfStock = <String>[];
+      final productRepo = ProductRepository();
+      final outOfStock = <String>[];
 
-    for (final item in items) {
-      final product = await productRepo.getById(item.productId);
-      if (product == null) {
-        outOfStock.add('${item.productName} (producto eliminado)');
-      } else if (item.quantity > product.stock) {
-        outOfStock.add(
-          '${item.productName}: disponible ${product.stock}, solicitado ${item.quantity}',
-        );
+      for (final item in items) {
+        final product = await productRepo.getById(item.productId);
+        if (product == null) {
+          outOfStock.add('${item.productName} (producto eliminado)');
+        } else if (item.quantity > product.stock) {
+          outOfStock.add(
+            '${item.productName}: disponible ${product.stock}, solicitado ${item.quantity}',
+          );
+        }
       }
-    }
 
-    if (outOfStock.isNotEmpty) {
-      NotificationService().error(
-        'No hay stock suficiente para convertir:\n${outOfStock.join('\n')}',
+      if (outOfStock.isNotEmpty) {
+        NotificationService().error(
+          'No hay stock suficiente para convertir:\n${outOfStock.join('\n')}',
+        );
+        return;
+      }
+
+      final invoice = Invoice(
+        customerName: quote.customerName,
+        subtotal: quote.subtotal,
+        discountGlobal: quote.discountGlobal,
+        total: quote.total,
+        createdAt: DateTime.now().toIso8601String(),
       );
-      return;
-    }
 
-    final invoice = Invoice(
-      customerName: quote.customerName,
-      subtotal: quote.subtotal,
-      discountGlobal: quote.discountGlobal,
-      total: quote.total,
-      createdAt: DateTime.now().toIso8601String(),
-    );
-
-    final invoiceItems = items.map((item) {
-      return InvoiceItem(
-        invoiceId: 0,
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discountItem: item.discountItem,
-        subtotal: item.subtotal,
-      );
-    }).toList();
+      final invoiceItems = items.map((item) {
+        return InvoiceItem(
+          invoiceId: 0,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountItem: item.discountItem,
+          subtotal: item.subtotal,
+        );
+      }).toList();
 
       await _invoiceRepo.save(invoice, invoiceItems);
       await _quoteRepo.markAsConverted(quote.id!);
@@ -666,7 +744,9 @@ class _QuotesScreenState extends State<QuotesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
+            style: TextButton.styleFrom(
+              foregroundColor: ThemeHelper.getTextMediumColor(context),
+            ),
             child: const Text('Cancelar'),
           ),
           TextButton(
@@ -734,7 +814,10 @@ class _QuotePreviewScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         border: Border(
-          bottom: BorderSide(color: ThemeHelper.getBorderColor(context), width: 0.5),
+          bottom: BorderSide(
+            color: ThemeHelper.getBorderColor(context),
+            width: 0.5,
+          ),
         ),
       ),
       child: Row(
@@ -924,9 +1007,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   /// Abre el diálogo de configuración y agrega un producto a la lista de items.
   void _addProduct(Product p) async {
     if (p.stock <= 0) {
-      NotificationService().warning(
-        '${p.name} no tiene stock disponible.',
-      );
+      NotificationService().warning('${p.name} no tiene stock disponible.');
       return;
     }
 
@@ -1021,50 +1102,50 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
         child: PopScope(
-        canPop: _canPop,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('¿Descartar cambios?'),
-              content: const Text(
-                'Los datos ingresados se perderán.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Seguir editando'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
+          canPop: _canPop,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('¿Descartar cambios?'),
+                content: const Text('Los datos ingresados se perderán.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Seguir editando'),
                   ),
-                  child: const Text('Descartar'),
-                ),
-              ],
-            ),
-          );
-          if (confirm == true && mounted) {
-            setState(() => _canPop = true);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) Navigator.of(context).pop();
-            });
-          }
-        },
-        child: Form(
-          key: _formKey,
-          child: SizedBox(
-            width: 700,
-            height: 580,
-            child: Column(
-              children: [
-                _buildDialogHeader(),
-                Expanded(
-                  child: Row(children: [_buildLeftPanel(), _buildRightPanel()]),
-                ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Descartar'),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true && mounted) {
+              setState(() => _canPop = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop();
+              });
+            }
+          },
+          child: Form(
+            key: _formKey,
+            child: SizedBox(
+              width: 700,
+              height: 580,
+              child: Column(
+                children: [
+                  _buildDialogHeader(),
+                  Expanded(
+                    child: Row(
+                      children: [_buildLeftPanel(), _buildRightPanel()],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1151,7 +1232,10 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: 'Válida hasta',
-                        labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          color: ThemeHelper.getTextMediumColor(context),
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1165,7 +1249,10 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                         children: [
                           Text(
                             DateFormat('dd/MM/yyyy').format(_expiresAt),
-                            style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: ThemeHelper.getTextColor(context),
+                            ),
                           ),
                           const Icon(Icons.calendar_today, size: 16),
                         ],
@@ -1179,10 +1266,16 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                   child: TextFormField(
                     controller: _discountCtrl,
                     keyboardType: TextInputType.number,
-                    style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Desc. %',
-                      labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        color: ThemeHelper.getTextMediumColor(context),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1215,10 +1308,16 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
             TextField(
               controller: _searchCtrl,
               onChanged: _filterProducts,
-              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+              style: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getTextColor(context),
+              ),
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
-                hintStyle: TextStyle(fontSize: 12, color: ThemeHelper.getHintColor(context)),
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: ThemeHelper.getHintColor(context),
+                ),
                 prefixIcon: const Icon(Icons.search, size: 18),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1234,7 +1333,9 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
               child: _showProductList || _searchCtrl.text.isNotEmpty
                   ? Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                        border: Border.all(
+                          color: ThemeHelper.getBorderColor(context),
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: ListView.builder(
@@ -1245,11 +1346,17 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                             dense: true,
                             title: Text(
                               p.name,
-                              style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: ThemeHelper.getTextColor(context),
+                              ),
                             ),
                             subtitle: Text(
                               '${_currency.format(p.salePrice)} - Stock: ${p.stock}',
-                              style: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: ThemeHelper.getTextMediumColor(context),
+                              ),
                             ),
                             onTap: p.stock > 0 ? () => _addProduct(p) : null,
                           );
@@ -1271,7 +1378,9 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
       child: Container(
         decoration: BoxDecoration(
           color: ThemeHelper.getAltRowColor(context),
-          border: Border(left: BorderSide(color: ThemeHelper.getBorderColor(context))),
+          border: Border(
+            left: BorderSide(color: ThemeHelper.getBorderColor(context)),
+          ),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1313,7 +1422,9 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                           decoration: BoxDecoration(
                             color: ThemeHelper.getCardColor(context),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                            border: Border.all(
+                              color: ThemeHelper.getBorderColor(context),
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -1336,7 +1447,9 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
                                       '${disc > 0 ? ' (-${disc.toStringAsFixed(0)}%)' : ''}',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: ThemeHelper.getTextLightColor(context),
+                                        color: ThemeHelper.getTextLightColor(
+                                          context,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -1471,209 +1584,236 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: PopScope(
-        canPop: _canPop,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          if (_canPop) {
-            if (mounted) Navigator.of(context).pop();
-            return;
-          }
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('¿Descartar cambios?'),
-              content: const Text('La configuración del producto se perderá.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Seguir editando'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Descartar'),
-                ),
-              ],
-            ),
-          );
-          if (confirm == true && mounted) {
-            setState(() => _canPop = true);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
+          canPop: _canPop,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            if (_canPop) {
               if (mounted) Navigator.of(context).pop();
-            });
-          }
-        },
-        child: Container(
-          width: 320,
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              Text(
-                widget.product.name,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: ThemeHelper.getTextColor(context),
+              return;
+            }
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('¿Descartar cambios?'),
+                content: const Text(
+                  'La configuración del producto se perderá.',
                 ),
-              ),
-              Text(
-                'Stock disponible: ${widget.product.stock}',
-                style: TextStyle(fontSize: 11, color: ThemeHelper.getTextLightColor(context)),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _quantityCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Cantidad',
-                        labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                      ),
-                      validator: (v) {
-                        final n = int.tryParse(v ?? '');
-                        if (n == null || n < 1) return 'Mín. 1';
-                        if (n > widget.product.stock) {
-                          return 'Solo hay ${widget.product.stock} en stock';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _discountCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Desc. %',
-                        labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                      ),
-                      validator: (v) {
-                        final text = v?.trim() ?? '';
-                        if (text.isEmpty) return null;
-                        final n = double.tryParse(text);
-                        if (n == null) return 'Número inválido';
-                        if (n < 0 || n > 100) return '0 - 100';
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _priceCtrl,
-                keyboardType: TextInputType.number,
-                style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  labelText: 'Precio unitario',
-                  labelStyle: TextStyle(fontSize: 11, color: ThemeHelper.getTextMediumColor(context)),
-                  border: const OutlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                ),
-                validator: (v) {
-                  final n = double.tryParse(v ?? '');
-                  if (n == null) return 'Ingresa un precio válido';
-                  if (n <= 0) return 'Debe ser mayor a 0';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: ThemeHelper.getAltRowColor(context),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Subtotal:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: ThemeHelper.getTextColor(context),
-                      ),
-                    ),
-                    Text(
-                      widget.currency.format(_subtotal),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: ThemeHelper.getTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(foregroundColor: ThemeHelper.getTextMediumColor(context)),
-                    child: const Text('Cancelar'),
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Seguir editando'),
                   ),
-                  const SizedBox(width: 12),
                   ElevatedButton(
-                    onPressed: () {
-                      if (!_formKey.currentState!.validate()) return;
-                      setState(() => _canPop = true);
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          Navigator.pop(context, {
-                            'quantity': int.parse(_quantityCtrl.text),
-                            'unitPrice': double.parse(_priceCtrl.text),
-                            'discount': double.tryParse(_discountCtrl.text) ?? 0,
-                          });
-                        }
-                      });
-                    },
+                    onPressed: () => Navigator.pop(ctx, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentMagenta,
+                      backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
-                      elevation: 0,
                     ),
-                    child: const Text('Agregar'),
+                    child: const Text('Descartar'),
                   ),
                 ],
               ),
-            ],
+            );
+            if (confirm == true && mounted) {
+              setState(() => _canPop = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop();
+              });
+            }
+          },
+          child: Container(
+            width: 320,
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.product.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
+                  ),
+                  Text(
+                    'Stock disponible: ${widget.product.stock}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: ThemeHelper.getTextLightColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _quantityCtrl,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Cantidad',
+                            labelStyle: TextStyle(
+                              fontSize: 11,
+                              color: ThemeHelper.getTextMediumColor(context),
+                            ),
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                          validator: (v) {
+                            final n = int.tryParse(v ?? '');
+                            if (n == null || n < 1) return 'Mín. 1';
+                            if (n > widget.product.stock) {
+                              return 'Solo hay ${widget.product.stock} en stock';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _discountCtrl,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Desc. %',
+                            labelStyle: TextStyle(
+                              fontSize: 11,
+                              color: ThemeHelper.getTextMediumColor(context),
+                            ),
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                          validator: (v) {
+                            final text = v?.trim() ?? '';
+                            if (text.isEmpty) return null;
+                            final n = double.tryParse(text);
+                            if (n == null) return 'Número inválido';
+                            if (n < 0 || n > 100) return '0 - 100';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _priceCtrl,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: 'Precio unitario',
+                      labelStyle: TextStyle(
+                        fontSize: 11,
+                        color: ThemeHelper.getTextMediumColor(context),
+                      ),
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                    validator: (v) {
+                      final n = double.tryParse(v ?? '');
+                      if (n == null) return 'Ingresa un precio válido';
+                      if (n <= 0) return 'Debe ser mayor a 0';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ThemeHelper.getAltRowColor(context),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Subtotal:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
+                        ),
+                        Text(
+                          widget.currency.format(_subtotal),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: ThemeHelper.getTextColor(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: ThemeHelper.getTextMediumColor(
+                            context,
+                          ),
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => _canPop = true);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              Navigator.pop(context, {
+                                'quantity': int.parse(_quantityCtrl.text),
+                                'unitPrice': double.parse(_priceCtrl.text),
+                                'discount':
+                                    double.tryParse(_discountCtrl.text) ?? 0,
+                              });
+                            }
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentMagenta,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                        child: const Text('Agregar'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-      ),
-    ),
-  );
+    );
   }
 }
-

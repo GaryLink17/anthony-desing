@@ -194,10 +194,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
           validator: widget.validator,
           hint: widget.hint != null ? Text(widget.hint!) : null,
           decoration: const InputDecoration(
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
           style: const TextStyle(fontSize: 13),
         ),
@@ -320,6 +317,55 @@ class _CustomDateFieldState extends State<CustomDateField> {
   }
 }
 
+/// Indicador visual de atajo de teclado.
+///
+/// Muestra un badge estilizado con el texto del atajo (ej. "Ctrl+N")
+/// para informar al usuario qué combinación de teclas ejecuta la acción.
+///
+/// Por defecto se adapta al tema claro/oscuro. Si se usa sobre un fondo
+/// de color, pasa [backgroundColor] y [textColor] para mantener contraste.
+class ShortcutHint extends StatelessWidget {
+  final String shortcut;
+  final Color? backgroundColor;
+  final Color? textColor;
+
+  const ShortcutHint(
+    this.shortcut, {
+    super.key,
+    this.backgroundColor,
+    this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = backgroundColor ??
+        (isDark
+            ? Colors.white.withValues(alpha: 0.12)
+            : Colors.black.withValues(alpha: 0.08));
+    final fg = textColor ??
+        (isDark
+            ? Colors.white.withValues(alpha: 0.60)
+            : Colors.black.withValues(alpha: 0.45));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        shortcut,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          color: fg,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
 /// Contenedor para secciones de formulario
 class FormCard extends StatelessWidget {
   final String title;
@@ -342,7 +388,10 @@ class FormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,18 +408,19 @@ class FormCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+              style: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextLightColor(context),
+              ),
             ),
           ],
           const SizedBox(height: 16),
-          ...children
-              .map(
-                (child) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: child,
-                ),
-              )
-              ,
+          ...children.map(
+            (child) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: child,
+            ),
+          ),
         ],
       ),
     );

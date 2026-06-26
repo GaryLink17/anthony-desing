@@ -55,39 +55,39 @@ class AppProvider extends ChangeNotifier {
     final perf = PerformanceMonitor();
     perf.startMeasure('loadDashboard');
     try {
-    final db = await _db.database;
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
+      final db = await _db.database;
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
 
-    // Total de ventas del mes actual
-    final salesResult = await db.rawQuery(
-      '''
+      // Total de ventas del mes actual
+      final salesResult = await db.rawQuery(
+        '''
       SELECT COALESCE(SUM(total), 0) as total
       FROM invoices WHERE created_at >= ? AND status = 'active'
     ''',
-      [monthStart],
-    );
-    _monthlySales = (salesResult.first['total'] as num).toDouble();
+        [monthStart],
+      );
+      _monthlySales = (salesResult.first['total'] as num).toDouble();
 
-    // Cantidad de facturas del mes actual
-    final invoiceResult = await db.rawQuery(
-      '''
+      // Cantidad de facturas del mes actual
+      final invoiceResult = await db.rawQuery(
+        '''
       SELECT COUNT(*) as count
       FROM invoices WHERE created_at >= ? AND status = 'active'
     ''',
-      [monthStart],
-    );
-    _invoiceCount = (invoiceResult.first['count'] as num).toInt();
+        [monthStart],
+      );
+      _invoiceCount = (invoiceResult.first['count'] as num).toInt();
 
-    // Total de productos en inventario
-    final productResult = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM products',
-    );
-    _totalProducts = (productResult.first['count'] as num).toInt();
+      // Total de productos en inventario
+      final productResult = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM products',
+      );
+      _totalProducts = (productResult.first['count'] as num).toInt();
 
-    // Ganancia estimada del mes
-    final profitResult = await db.rawQuery(
-      '''
+      // Ganancia estimada del mes
+      final profitResult = await db.rawQuery(
+        '''
       SELECT COALESCE(SUM(
         (ii.unit_price * (1 - ii.discount_item / 100.0) - p.purchase_price) * ii.quantity
         * CASE WHEN i.subtotal > 0 THEN (i.subtotal - i.discount_global) / i.subtotal ELSE 1 END
@@ -97,52 +97,63 @@ class AppProvider extends ChangeNotifier {
       JOIN invoices i ON ii.invoice_id = i.id
       WHERE i.created_at >= ? AND i.status = 'active'
     ''',
-      [monthStart],
-    );
-    _monthlyProfit = (profitResult.first['profit'] as num).toDouble();
+        [monthStart],
+      );
+      _monthlyProfit = (profitResult.first['profit'] as num).toDouble();
 
-    // Productos con stock bajo (top 5)
-    final lowStockResult = await db.query(
-      'products',
-      where: 'stock <= min_stock',
-      orderBy: 'stock ASC',
-      limit: 5,
-    );
-    _lowStockProducts = lowStockResult.map(Product.fromMap).toList();
+      // Productos con stock bajo (top 5)
+      final lowStockResult = await db.query(
+        'products',
+        where: 'stock <= min_stock',
+        orderBy: 'stock ASC',
+        limit: 5,
+      );
+      _lowStockProducts = lowStockResult.map(Product.fromMap).toList();
 
-    // Últimas 5 facturas
-    _recentInvoices = await db.query(
-      'invoices',
-      orderBy: 'created_at DESC',
-      limit: 5,
-    );
+      // Últimas 5 facturas
+      _recentInvoices = await db.query(
+        'invoices',
+        orderBy: 'created_at DESC',
+        limit: 5,
+      );
 
-    // Ventas de los últimos 7 días — single query con GROUP BY en vez de 7 queries
-    final weekAgo = DateTime(now.year, now.month, now.day - 6);
-    final weekStart = DateTime(weekAgo.year, weekAgo.month, weekAgo.day).toIso8601String();
-    final weekEnd = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
-    final weeklyResult = await db.rawQuery(
-      '''
+      // Ventas de los últimos 7 días — single query con GROUP BY en vez de 7 queries
+      final weekAgo = DateTime(now.year, now.month, now.day - 6);
+      final weekStart = DateTime(
+        weekAgo.year,
+        weekAgo.month,
+        weekAgo.day,
+      ).toIso8601String();
+      final weekEnd = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        23,
+        59,
+        59,
+      ).toIso8601String();
+      final weeklyResult = await db.rawQuery(
+        '''
       SELECT DATE(created_at) as day, COALESCE(SUM(total), 0) as total
       FROM invoices WHERE created_at >= ? AND created_at <= ? AND status = 'active'
       GROUP BY DATE(created_at)
     ''',
-      [weekStart, weekEnd],
-    );
+        [weekStart, weekEnd],
+      );
 
-    _weeklySales = List.filled(7, 0);
-    for (final row in weeklyResult) {
-      final dayStr = row['day'] as String;
-      final dayDate = DateTime.tryParse(dayStr);
-      if (dayDate == null) continue;
-      final diff = now.difference(dayDate).inDays;
-      if (diff >= 0 && diff < 7) {
-        _weeklySales[6 - diff] = (row['total'] as num).toDouble();
+      _weeklySales = List.filled(7, 0);
+      for (final row in weeklyResult) {
+        final dayStr = row['day'] as String;
+        final dayDate = DateTime.tryParse(dayStr);
+        if (dayDate == null) continue;
+        final diff = now.difference(dayDate).inDays;
+        if (diff >= 0 && diff < 7) {
+          _weeklySales[6 - diff] = (row['total'] as num).toDouble();
+        }
       }
-    }
 
-    notifyListeners();
-    _lastDashboardLoadMs = perf.endMeasure('loadDashboard');
+      notifyListeners();
+      _lastDashboardLoadMs = perf.endMeasure('loadDashboard');
     } catch (e) {
       notifyListeners();
       _lastDashboardLoadMs = null;

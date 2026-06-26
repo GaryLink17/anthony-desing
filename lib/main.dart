@@ -9,7 +9,6 @@ import 'core/database.dart';
 import 'core/backup_service.dart';
 import 'utils/state_persistence.dart';
 
-
 /// Punto de entrada de la aplicación.
 ///
 /// Inicializa la base de datos, la persistencia de estado, los providers

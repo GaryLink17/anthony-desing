@@ -95,23 +95,26 @@ class NotificationService {
     final icon = _getIcon(config.type);
     late _NotificationItem item;
 
-    final entry = OverlayEntry(builder: (_) {
-      final index = _active.indexOf(item);
-      const toastHeight = 64.0;
-      const gap = 8.0;
-      final bottomOffset = 24.0 + (index < 0 ? 0 : index) * (toastHeight + gap);
-      return Positioned(
-        right: 24,
-        bottom: bottomOffset,
-        width: 340,
-        child: _ToastWidget(
-          config: config,
-          color: color,
-          icon: icon,
-          onDismiss: () => _removeItem(item),
-        ),
-      );
-    });
+    final entry = OverlayEntry(
+      builder: (_) {
+        final index = _active.indexOf(item);
+        const toastHeight = 64.0;
+        const gap = 8.0;
+        final bottomOffset =
+            24.0 + (index < 0 ? 0 : index) * (toastHeight + gap);
+        return Positioned(
+          right: 24,
+          bottom: bottomOffset,
+          width: 340,
+          child: _ToastWidget(
+            config: config,
+            color: color,
+            icon: icon,
+            onDismiss: () => _removeItem(item),
+          ),
+        );
+      },
+    );
 
     final timer = Timer(config.duration, () => _removeItem(item));
     item = _NotificationItem(entry: entry, timer: timer, config: config);
@@ -245,9 +248,10 @@ class _ToastWidgetState extends State<_ToastWidget>
       begin: const Offset(1.0, 0.0),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
   }
 

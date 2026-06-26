@@ -134,9 +134,12 @@ class BackupService {
   Future<List<FileSystemEntity>> getExistingAutoBackups() async {
     final dir = await getAutoBackupsFolder();
     final files = await dir.list().where((entity) {
-      return entity is File && p.basename(entity.path).startsWith('auto_backup_');
+      return entity is File &&
+          p.basename(entity.path).startsWith('auto_backup_');
     }).toList();
-    files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+    files.sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
     return files;
   }
 
@@ -287,12 +290,17 @@ class BackupService {
   void _enforceRetentionPolicySync(Directory backupDir) {
     if (!backupDir.existsSync()) return;
     final files = backupDir.listSync().where((entity) {
-      return entity is File && p.basename(entity.path).startsWith('auto_backup_');
+      return entity is File &&
+          p.basename(entity.path).startsWith('auto_backup_');
     }).toList();
-    files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+    files.sort(
+      (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+    );
     if (files.length <= maxAutoBackups) return;
     for (final entity in files.sublist(maxAutoBackups)) {
-      try { entity.deleteSync(); } catch (e) {
+      try {
+        entity.deleteSync();
+      } catch (e) {
         debugPrint('_enforceRetentionPolicySync: $e');
       }
     }
@@ -319,7 +327,9 @@ class BackupService {
     final sourcePath = p.join(appDir.path, 'control_gastos.db');
     final sourceFile = File(sourcePath);
     if (!await sourceFile.exists()) {
-      throw const AppException('No se encontró la base de datos para respaldar.');
+      throw const AppException(
+        'No se encontró la base de datos para respaldar.',
+      );
     }
 
     final String? selectedDir = await getDirectoryPath(
@@ -342,7 +352,10 @@ class BackupService {
       await sourceFile.copy(destPath);
       return destPath;
     } catch (e) {
-      throw AppException('No se pudo guardar el respaldo.', technical: e.toString());
+      throw AppException(
+        'No se pudo guardar el respaldo.',
+        technical: e.toString(),
+      );
     }
   }
 
@@ -359,7 +372,9 @@ class BackupService {
       throw const AppException('El archivo seleccionado no existe.');
     }
     if (await sourceFile.length() < 100) {
-      throw const AppException('El archivo no parece ser una base de datos válida.');
+      throw const AppException(
+        'El archivo no parece ser una base de datos válida.',
+      );
     }
 
     final appDir = await getApplicationSupportDirectory();
@@ -382,7 +397,10 @@ class BackupService {
         await File(safetyPath).copy(destPath);
         await DatabaseHelper.closeAndReset();
       }
-      throw AppException('No se pudo restaurar la base de datos.', technical: e.toString());
+      throw AppException(
+        'No se pudo restaurar la base de datos.',
+        technical: e.toString(),
+      );
     }
 
     try {

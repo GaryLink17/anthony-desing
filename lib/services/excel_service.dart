@@ -14,17 +14,17 @@ class ExcelService {
 
   /// Estilo para celdas de encabezado (fondo verde, texto blanco, negrita).
   static CellStyle _headerStyle() => CellStyle(
-        bold: true,
-        backgroundColorHex: ExcelColor.fromHexString('#1A3A2A'),
-        fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
-        horizontalAlign: HorizontalAlign.Center,
-      );
+    bold: true,
+    backgroundColorHex: ExcelColor.fromHexString('#1A3A2A'),
+    fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
+    horizontalAlign: HorizontalAlign.Center,
+  );
 
   /// Estilo para fila de totales (fondo gris claro, negrita).
   static CellStyle _totalStyle() => CellStyle(
-        bold: true,
-        backgroundColorHex: ExcelColor.fromHexString('#F0F0F0'),
-      );
+    bold: true,
+    backgroundColorHex: ExcelColor.fromHexString('#F0F0F0'),
+  );
 
   /// Exporta la lista de facturas con sus items a un archivo Excel.
   /// Crea dos hojas: "Facturas" (resumen) y "Detalle Items".
@@ -59,8 +59,14 @@ class ExcelService {
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) {
     final headers = [
-      '#', 'Cliente', /* 'RNC', */ 'Fecha', 'Subtotal', 'Descuento',
-      'Total', 'Estado Pago', 'Estado',
+      '#',
+      'Cliente',
+      /* 'RNC', */ 'Fecha',
+      'Subtotal',
+      'Descuento',
+      'Total',
+      'Estado Pago',
+      'Estado',
     ];
     _writeHeaders(sheet, headers);
 
@@ -69,24 +75,50 @@ class ExcelService {
     for (final entry in invoicesWithItems) {
       final inv = entry.key;
       final date = _date.format(DateTime.parse(inv.createdAt));
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-          .value = TextCellValue('#${inv.id.toString().padLeft(4, '0')}');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-          .value = TextCellValue(inv.customerName ?? 'Cliente general');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
-          .value = TextCellValue(date);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
-          .value = DoubleCellValue(inv.subtotal);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
-          .value = DoubleCellValue(inv.discountGlobal);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
-          .value = DoubleCellValue(inv.total);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
           .value = TextCellValue(
-            inv.isCancelled ? 'ANULADA' : inv.isPaid ? 'PAGADA' : 'PENDIENTE',
-          );
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
-          .value = TextCellValue(inv.isCancelled ? 'Anulada' : 'Activa');
+        '#${inv.id.toString().padLeft(4, '0')}',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
+          .value = TextCellValue(
+        inv.customerName ?? 'Cliente general',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
+          .value = TextCellValue(
+        date,
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
+          .value = DoubleCellValue(
+        inv.subtotal,
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
+          .value = DoubleCellValue(
+        inv.discountGlobal,
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
+          .value = DoubleCellValue(
+        inv.total,
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
+          .value = TextCellValue(
+        inv.isCancelled
+            ? 'ANULADA'
+            : inv.isPaid
+            ? 'PAGADA'
+            : 'PENDIENTE',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
+          .value = TextCellValue(
+        inv.isCancelled ? 'Anulada' : 'Activa',
+      );
 
       if (!inv.isCancelled) totalSum += inv.total;
       row++;
@@ -113,8 +145,13 @@ class ExcelService {
     List<MapEntry<Invoice, List<InvoiceItem>>> invoicesWithItems,
   ) {
     final headers = [
-      'Factura #', 'Cliente', 'Producto', 'Cantidad',
-      'Precio Unit.', 'Descuento %', 'Subtotal',
+      'Factura #',
+      'Cliente',
+      'Producto',
+      'Cantidad',
+      'Precio Unit.',
+      'Descuento %',
+      'Subtotal',
     ];
     _writeHeaders(sheet, headers);
 
@@ -122,20 +159,41 @@ class ExcelService {
     for (final entry in invoicesWithItems) {
       final inv = entry.key;
       for (final item in entry.value) {
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-            .value = TextCellValue('#${inv.id.toString().padLeft(4, '0')}');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-            .value = TextCellValue(inv.customerName ?? 'Cliente general');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
-            .value = TextCellValue(item.productName);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
-            .value = IntCellValue(item.quantity);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
-            .value = DoubleCellValue(item.unitPrice);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
-            .value = DoubleCellValue(item.discountItem);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
-            .value = DoubleCellValue(item.subtotal);
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
+            .value = TextCellValue(
+          '#${inv.id.toString().padLeft(4, '0')}',
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
+            .value = TextCellValue(
+          inv.customerName ?? 'Cliente general',
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
+            .value = TextCellValue(
+          item.productName,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
+            .value = IntCellValue(
+          item.quantity,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
+            .value = DoubleCellValue(
+          item.unitPrice,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
+            .value = DoubleCellValue(
+          item.discountItem,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
+            .value = DoubleCellValue(
+          item.subtotal,
+        );
         row++;
       }
     }
@@ -148,8 +206,14 @@ class ExcelService {
       final sheet = excel['Inventario'];
 
       final headers = [
-        'Nombre', 'Categoría', 'Precio Compra', 'Precio Venta',
-        'Stock', 'Stock Mínimo', 'Margen %', 'Estado Stock',
+        'Nombre',
+        'Categoría',
+        'Precio Compra',
+        'Precio Venta',
+        'Stock',
+        'Stock Mínimo',
+        'Margen %',
+        'Estado Stock',
       ];
       _writeHeaders(sheet, headers);
 
@@ -161,25 +225,49 @@ class ExcelService {
         final stockStatus = p.stock <= 0
             ? 'Sin stock'
             : p.stock <= p.minStock
-                ? 'Stock bajo'
-                : 'OK';
+            ? 'Stock bajo'
+            : 'OK';
 
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-            .value = TextCellValue(p.name);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-            .value = TextCellValue(p.category ?? '—');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
-            .value = DoubleCellValue(p.purchasePrice);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
-            .value = DoubleCellValue(p.salePrice);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
-            .value = IntCellValue(p.stock);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
-            .value = IntCellValue(p.minStock);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
-            .value = DoubleCellValue(margin.roundToDouble());
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
-            .value = TextCellValue(stockStatus);
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
+            .value = TextCellValue(
+          p.name,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
+            .value = TextCellValue(
+          p.category ?? '—',
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
+            .value = DoubleCellValue(
+          p.purchasePrice,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
+            .value = DoubleCellValue(
+          p.salePrice,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
+            .value = IntCellValue(
+          p.stock,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
+            .value = IntCellValue(
+          p.minStock,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
+            .value = DoubleCellValue(
+          margin.roundToDouble(),
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row))
+            .value = TextCellValue(
+          stockStatus,
+        );
         row++;
       }
 
@@ -215,10 +303,7 @@ class ExcelService {
     final location = await getSaveLocation(
       suggestedName: fileName,
       acceptedTypeGroups: [
-        const XTypeGroup(
-          label: 'Excel',
-          extensions: ['xlsx'],
-        ),
+        const XTypeGroup(label: 'Excel', extensions: ['xlsx']),
       ],
     );
 

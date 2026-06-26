@@ -122,172 +122,186 @@ class _ProductDialogState extends State<ProductDialog> {
             }
           },
           child: SizedBox(
-        width: 460,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: ThemeHelper.getCardColor(context),
-                border: Border(
-                  bottom: BorderSide(color: ThemeHelper.getBorderColor(context)),
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getCardColor(context),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: ThemeHelper.getBorderColor(context),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        isEdit ? 'Editar producto' : 'Nuevo producto',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: ThemeHelper.getTextColor(context),
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: ThemeHelper.getTextLightColor(context),
+                          size: 18,
+                        ),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    isEdit ? 'Editar producto' : 'Nuevo producto',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: ThemeHelper.getTextColor(context),
+                // Contenido
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _field(
+                          _nameCtrl,
+                          'Nombre del producto',
+                          required: true,
+                        ),
+                        const SizedBox(height: 12),
+                        _field(_categoryCtrl, 'Categoría (opcional)'),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _field(
+                                _purchaseCtrl,
+                                'Precio de compra',
+                                number: true,
+                                required: true,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _field(
+                                _saleCtrl,
+                                'Precio de venta',
+                                number: true,
+                                required: true,
+                                allowZero: false,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _field(
+                                _stockCtrl,
+                                'Stock actual',
+                                number: true,
+                                required: true,
+                                isInteger: true,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _field(
+                                _minStockCtrl,
+                                'Stock mínimo',
+                                number: true,
+                                isInteger: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _profit >= 0
+                                ? ThemeHelper.getSuccessLightBg(context)
+                                : ThemeHelper.getErrorLightBg(context),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Ganancia por unidad:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: ThemeHelper.getTextMediumColor(
+                                    context,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${currencyFormatter().format(_profit)}  (${_margin.toStringAsFixed(1)}%)',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: _profit >= 0
+                                      ? ThemeHelper.getSuccessTextColor(context)
+                                      : ThemeHelper.getErrorTextColor(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: ThemeHelper.getTextMediumColor(
+                                  context,
+                                ),
+                                side: BorderSide(
+                                  color: ThemeHelper.getBorderColor(context),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text('Cancelar'),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: _save,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentMagenta,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                isEdit ? 'Guardar cambios' : 'Agregar',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: ThemeHelper.getTextLightColor(context),
-                      size: 18,
-                    ),
-                    constraints: const BoxConstraints(),
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Contenido
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _field(_nameCtrl, 'Nombre del producto', required: true),
-                    const SizedBox(height: 12),
-                    _field(_categoryCtrl, 'Categoría (opcional)'),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _field(
-                            _purchaseCtrl,
-                            'Precio de compra',
-                            number: true,
-                            required: true,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _field(
-                            _saleCtrl,
-                            'Precio de venta',
-                            number: true,
-                            required: true,
-                            allowZero: false,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _field(
-                            _stockCtrl,
-                            'Stock actual',
-                            number: true,
-                            required: true,
-                            isInteger: true,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _field(
-                            _minStockCtrl,
-                            'Stock mínimo',
-                            number: true,
-                            isInteger: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _profit >= 0
-                            ? ThemeHelper.getSuccessLightBg(context)
-                            : ThemeHelper.getErrorLightBg(context),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Ganancia por unidad:',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: ThemeHelper.getTextMediumColor(context),
-                            ),
-                          ),
-                          Text(
-                            '${currencyFormatter().format(_profit)}  (${_margin.toStringAsFixed(1)}%)',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: _profit >= 0
-                                  ? ThemeHelper.getSuccessTextColor(context)
-                                  : ThemeHelper.getErrorTextColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor:
-                                ThemeHelper.getTextMediumColor(context),
-                            side: BorderSide(
-                              color: ThemeHelper.getBorderColor(context),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Cancelar'),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: _save,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.accentMagenta,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(isEdit ? 'Guardar cambios' : 'Agregar'),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            ),
-          ],
-        ),
           ),
         ),
       ),

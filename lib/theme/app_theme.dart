@@ -68,9 +68,7 @@ class AppTheme {
         color: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       // Tema de botones elevados
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -78,9 +76,7 @@ class AppTheme {
           backgroundColor: accentMagenta,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       // Tema de botones outline
@@ -88,9 +84,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: textMedium,
           side: const BorderSide(color: borderColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       // Tema de date picker
@@ -201,9 +195,7 @@ class AppTheme {
         color: darkCardColor,
         elevation: 0,
         shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       // Tema de botones elevados
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -211,9 +203,7 @@ class AppTheme {
           backgroundColor: accentMagenta,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       // Tema de botones outline
@@ -221,9 +211,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: darkTextMedium,
           side: const BorderSide(color: darkBorderColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       // Tema de date picker

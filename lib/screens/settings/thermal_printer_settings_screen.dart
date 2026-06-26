@@ -14,10 +14,12 @@ class ThermalPrinterSettingsScreen extends StatefulWidget {
   const ThermalPrinterSettingsScreen({super.key});
 
   @override
-  State<ThermalPrinterSettingsScreen> createState() => _ThermalPrinterSettingsScreenState();
+  State<ThermalPrinterSettingsScreen> createState() =>
+      _ThermalPrinterSettingsScreenState();
 }
 
-class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScreen> {
+class _ThermalPrinterSettingsScreenState
+    extends State<ThermalPrinterSettingsScreen> {
   final _ipCtrl = TextEditingController();
   final _portCtrl = TextEditingController();
   String _connectionType = 'network';
@@ -80,7 +82,9 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
         _scanning = false;
       });
       if (ports.isEmpty) {
-        NotificationService().info('No se detectaron puertos USB. Conecta la impresora.');
+        NotificationService().info(
+          'No se detectaron puertos USB. Conecta la impresora.',
+        );
       }
     } catch (_) {
       if (mounted) {
@@ -199,16 +203,27 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
           const SizedBox(height: 16),
           SegmentedButton<String>(
             segments: const [
-              ButtonSegment(value: 'network', label: Text('Red', style: TextStyle(fontSize: 12))),
-              ButtonSegment(value: 'usb', label: Text('USB', style: TextStyle(fontSize: 12))),
+              ButtonSegment(
+                value: 'network',
+                label: Text('Red', style: TextStyle(fontSize: 12)),
+              ),
+              ButtonSegment(
+                value: 'usb',
+                label: Text('USB', style: TextStyle(fontSize: 12)),
+              ),
             ],
             selected: {_connectionType},
-            onSelectionChanged: (v) => setState(() => _connectionType = v.first),
+            onSelectionChanged: (v) =>
+                setState(() => _connectionType = v.first),
             style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: AppTheme.accentMagenta.withValues(alpha: 0.15),
+              selectedBackgroundColor: AppTheme.accentMagenta.withValues(
+                alpha: 0.15,
+              ),
               selectedForegroundColor: AppTheme.accentMagenta,
               foregroundColor: ThemeHelper.getTextMediumColor(context),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -225,29 +240,47 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
         TextFormField(
           controller: _ipCtrl,
           enabled: _enabled,
-          style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+          style: TextStyle(
+            fontSize: 13,
+            color: ThemeHelper.getTextColor(context),
+          ),
           keyboardType: TextInputType.url,
           decoration: InputDecoration(
             labelText: 'Dirección IP',
             hintText: '192.168.1.100',
-            labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+            labelStyle: TextStyle(
+              fontSize: 12,
+              color: ThemeHelper.getTextMediumColor(context),
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _portCtrl,
           enabled: _enabled,
-          style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+          style: TextStyle(
+            fontSize: 13,
+            color: ThemeHelper.getTextColor(context),
+          ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: InputDecoration(
             labelText: 'Puerto',
             hintText: '9100',
-            labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+            labelStyle: TextStyle(
+              fontSize: 12,
+              color: ThemeHelper.getTextMediumColor(context),
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
         ),
       ],
@@ -264,25 +297,60 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
               child: InputDecorator(
                 decoration: InputDecoration(
                   labelText: 'Puerto USB',
-                  hintText: _availablePorts.isEmpty ? 'Conecta la impresora y escanea' : 'Selecciona un puerto',
-                  labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  hintText: _availablePorts.isEmpty
+                      ? 'Conecta la impresora y escanea'
+                      : 'Selecciona un puerto',
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    color: ThemeHelper.getTextMediumColor(context),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: _usbPortName.isNotEmpty && _availablePorts.contains(_usbPortName)
+                    value:
+                        _usbPortName.isNotEmpty &&
+                            _availablePorts.contains(_usbPortName)
                         ? _usbPortName
                         : null,
-                    items: _availablePorts.map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 13)))).toList(),
-                    onChanged: _enabled ? (v) => setState(() => _usbPortName = v ?? '') : null,
-                    style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+                    items: _availablePorts
+                        .map(
+                          (p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(
+                              p,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _enabled
+                        ? (v) => setState(() => _usbPortName = v ?? '')
+                        : null,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: ThemeHelper.getTextColor(context),
+                    ),
                     dropdownColor: ThemeHelper.getCardColor(context),
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                    ),
                     isExpanded: true,
                     hint: Text(
-                      _availablePorts.isEmpty ? 'Conecta la impresora y escanea' : 'Selecciona un puerto',
-                      style: TextStyle(fontSize: 13, color: ThemeHelper.getTextLightColor(context)),
+                      _availablePorts.isEmpty
+                          ? 'Conecta la impresora y escanea'
+                          : 'Selecciona un puerto',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: ThemeHelper.getTextLightColor(context),
+                      ),
                     ),
                   ),
                 ),
@@ -291,7 +359,9 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
             if (_usbPortName.isNotEmpty) ...[
               const SizedBox(width: 8),
               IconButton(
-                onPressed: _enabled ? () => setState(() => _usbPortName = '') : null,
+                onPressed: _enabled
+                    ? () => setState(() => _usbPortName = '')
+                    : null,
                 icon: const Icon(Icons.close_rounded, size: 18),
                 color: ThemeHelper.getTextMediumColor(context),
                 tooltip: 'Limpiar selección',
@@ -309,12 +379,17 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.usb_rounded, size: 16),
-          label: const Text('Detectar puertos USB', style: TextStyle(fontSize: 12)),
+          label: const Text(
+            'Detectar puertos USB',
+            style: TextStyle(fontSize: 12),
+          ),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppTheme.primaryBlue,
             side: const BorderSide(color: AppTheme.primaryBlue),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       ],
@@ -345,13 +420,9 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: _buildPaperOption(58, '58 mm', '32 caracteres'),
-              ),
+              Expanded(child: _buildPaperOption(58, '58 mm', '32 caracteres')),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildPaperOption(80, '80 mm', '48 caracteres'),
-              ),
+              Expanded(child: _buildPaperOption(80, '80 mm', '48 caracteres')),
             ],
           ),
         ],
@@ -371,7 +442,9 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
               : ThemeHelper.getCardColor(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selected ? AppTheme.accentMagenta : ThemeHelper.getBorderColor(context),
+            color: selected
+                ? AppTheme.accentMagenta
+                : ThemeHelper.getBorderColor(context),
             width: selected ? 2 : 0.5,
           ),
         ),
@@ -382,7 +455,9 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: selected ? AppTheme.accentMagenta : ThemeHelper.getTextColor(context),
+                color: selected
+                    ? AppTheme.accentMagenta
+                    : ThemeHelper.getTextColor(context),
               ),
             ),
             const SizedBox(height: 4),
@@ -423,7 +498,10 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
           const SizedBox(height: 4),
           Text(
             'Envía un ticket de prueba para verificar la conexión',
-            style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+            style: TextStyle(
+              fontSize: 12,
+              color: ThemeHelper.getTextLightColor(context),
+            ),
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
@@ -440,7 +518,9 @@ class _ThermalPrinterSettingsScreenState extends State<ThermalPrinterSettingsScr
               foregroundColor: AppTheme.primaryBlue,
               side: const BorderSide(color: AppTheme.primaryBlue),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ],

@@ -16,8 +16,6 @@ import '../../core/backup_service.dart';
 import '../../services/notification_service.dart';
 import 'thermal_printer_settings_screen.dart';
 
-
-
 /// Pantalla de configuración global del negocio.
 ///
 /// Permite editar datos de la empresa (nombre, RNC, teléfono, email,
@@ -73,8 +71,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final appDir = await getApplicationSupportDirectory();
 
     final autoSettings = await BackupService.instance.getAutoBackupSettings();
-    final lastTimeFormatted =
-        await BackupService.instance.getLastAutoBackupTimeFormatted();
+    final lastTimeFormatted = await BackupService.instance
+        .getLastAutoBackupTimeFormatted();
 
     setState(() {
       _nameCtrl.text = prefs.getString('company_name') ?? '';
@@ -157,30 +155,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: context.bgColor,
       body: Form(
-      key: _formKey,
+        key: _formKey,
         child: SingleChildScrollView(
-        padding: context.responsivePadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            _buildCompanySection(),
-            const SizedBox(height: 20),
-            _buildAppearanceSection(),
-            const SizedBox(height: 20),
-            _buildBackupSection(),
-            const SizedBox(height: 20),
-            _buildAutoBackupSection(),
-            const SizedBox(height: 20),
-            _buildThermalPrinterSection(),
-            const SizedBox(height: 20),
-            _buildFooterSection(),
-            const SizedBox(height: 24),
-            _buildSaveButton(),
-          ],
+          padding: context.responsivePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildCompanySection(),
+              const SizedBox(height: 20),
+              _buildAppearanceSection(),
+              const SizedBox(height: 20),
+              _buildBackupSection(),
+              const SizedBox(height: 20),
+              _buildAutoBackupSection(),
+              const SizedBox(height: 20),
+              _buildThermalPrinterSection(),
+              const SizedBox(height: 20),
+              _buildFooterSection(),
+              const SizedBox(height: 24),
+              _buildSaveButton(),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -189,10 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Configuración',
-          style: ThemeHelper.getTitleStyle(context),
-        ),
+        Text('Configuración', style: ThemeHelper.getTitleStyle(context)),
         const SizedBox(height: 4),
         Text(
           'Datos del negocio y opciones de factura',
@@ -243,7 +238,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: Image.file(
                                 File(_logoPath!),
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => _buildLogoFallback(context),
+                                errorBuilder: (_, _, _) =>
+                                    _buildLogoFallback(context),
                               ),
                             )
                           : _buildLogoFallback(context),
@@ -375,7 +371,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ThemeHelper.getBorderColor(context), width: 0.5),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +390,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 4),
           Text(
             'Ambos textos aparecen al final de cada factura impresa',
-            style: TextStyle(fontSize: 12, color: ThemeHelper.getTextLightColor(context)),
+            style: TextStyle(
+              fontSize: 12,
+              color: ThemeHelper.getTextLightColor(context),
+            ),
           ),
           const SizedBox(height: 16),
           _field(_footerMsgCtrl, 'Mensaje de agradecimiento'),
@@ -399,12 +401,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextField(
             controller: _footerTermsCtrl,
             maxLines: 3,
-            style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
+            style: TextStyle(
+              fontSize: 13,
+              color: ThemeHelper.getTextColor(context),
+            ),
             decoration: InputDecoration(
               labelText: 'Términos y condiciones',
-              labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+              labelStyle: TextStyle(
+                fontSize: 12,
+                color: ThemeHelper.getTextMediumColor(context),
+              ),
               alignLabelWithHint: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               contentPadding: const EdgeInsets.all(12),
             ),
           ),
@@ -413,12 +423,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-
   Widget _buildThermalPrinterSection() {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ThermalPrinterSettingsScreen()),
+          MaterialPageRoute(
+            builder: (_) => const ThermalPrinterSettingsScreen(),
+          ),
         );
       },
       child: Container(
@@ -433,7 +444,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: AppTheme.accentMagenta.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.receipt_long_rounded, size: 20, color: AppTheme.accentMagenta),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                size: 20,
+                color: AppTheme.accentMagenta,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -495,7 +510,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 6),
           Text(
             'Guardado correctamente',
-            style: TextStyle(fontSize: 13, color: ThemeHelper.getSuccessTextColor(context)),
+            style: TextStyle(
+              fontSize: 13,
+              color: ThemeHelper.getSuccessTextColor(context),
+            ),
           ),
         ],
       ],
@@ -526,45 +544,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _backupLoading ? null : _exportBackup,
-                  icon: _backupLoading
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.upload_rounded, size: 16),
-                  label: const Text('Exportar respaldo'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ThemeHelper.getInteractiveColor(context),
-                    side: BorderSide(color: ThemeHelper.getInteractiveColor(context)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _backupLoading ? null : _exportBackup,
+                icon: _backupLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_rounded, size: 16),
+                label: const Text('Exportar respaldo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ThemeHelper.getInteractiveColor(context),
+                  side: BorderSide(
+                    color: ThemeHelper.getInteractiveColor(context),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: _restoreLoading ? null : _restoreBackup,
-                  icon: _restoreLoading
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.download_rounded, size: 16),
-                  label: const Text('Restaurar respaldo'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ThemeHelper.getWarningTextColor(context),
-                    side: BorderSide(color: ThemeHelper.getWarningTextColor(context)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: _restoreLoading ? null : _restoreBackup,
+                icon: _restoreLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_rounded, size: 16),
+                label: const Text('Restaurar respaldo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ThemeHelper.getWarningTextColor(context),
+                  side: BorderSide(
+                    color: ThemeHelper.getWarningTextColor(context),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -581,7 +613,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on AppException catch (e) {
       if (mounted) NotificationService().error(e.message);
     } catch (e) {
-      if (mounted) NotificationService().error('Error inesperado al exportar el respaldo.');
+      if (mounted)
+        NotificationService().error(
+          'Error inesperado al exportar el respaldo.',
+        );
     } finally {
       if (mounted) setState(() => _backupLoading = false);
     }
@@ -686,7 +721,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                    border: Border.all(
+                      color: ThemeHelper.getBorderColor(context),
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButtonHideUnderline(
@@ -698,10 +735,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: ThemeHelper.getTextColor(context),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'hourly', child: Text('Cada hora')),
-                        DropdownMenuItem(value: 'daily', child: Text('Cada 24 horas')),
-                        DropdownMenuItem(value: 'weekly', child: Text('Cada semana')),
-                        DropdownMenuItem(value: 'on_close', child: Text('Al cerrar la app')),
+                        DropdownMenuItem(
+                          value: 'hourly',
+                          child: Text('Cada hora'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'daily',
+                          child: Text('Cada 24 horas'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'weekly',
+                          child: Text('Cada semana'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'on_close',
+                          child: Text('Al cerrar la app'),
+                        ),
                       ],
                       onChanged: _onAutoBackupFrequencyChanged,
                     ),
@@ -747,7 +796,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 TextButton(
                   onPressed: _handlePickAutoBackupFolder,
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -851,11 +903,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         frequency: _autoBackupFrequency,
         path: path,
       );
-      final formatted = await BackupService.instance.getLastAutoBackupTimeFormatted();
+      final formatted = await BackupService.instance
+          .getLastAutoBackupTimeFormatted();
       if (mounted) setState(() => _autoBackupLastTimeFormatted = formatted);
       NotificationService().success('Carpeta de backup actualizada');
     }
-  }  /// Campo de formulario reutilizable con validación opcional y
+  }
+
+  /// Campo de formulario reutilizable con validación opcional y
   /// formateo para teléfono.
   Widget _field(
     TextEditingController ctrl,
@@ -872,7 +927,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : null,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(fontSize: 12, color: ThemeHelper.getTextMediumColor(context)),
+        labelStyle: TextStyle(
+          fontSize: 12,
+          color: ThemeHelper.getTextMediumColor(context),
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,

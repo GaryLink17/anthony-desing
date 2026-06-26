@@ -92,9 +92,7 @@ class ThemeHelper {
   }
 
   static Color getAltRowColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF2A2A2A)
-        : AppTheme.altRowLight;
+    return _isDark(context) ? const Color(0xFF2A2A2A) : AppTheme.altRowLight;
   }
 
   static Color getInteractiveColor(BuildContext context) {
@@ -102,27 +100,19 @@ class ThemeHelper {
   }
 
   static Color getSelectedColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF37373D)
-        : AppTheme.selectedLight;
+    return _isDark(context) ? const Color(0xFF37373D) : AppTheme.selectedLight;
   }
 
   static Color getUnselectedColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF2D2D2D)
-        : AppTheme.bgLight2;
+    return _isDark(context) ? const Color(0xFF2D2D2D) : AppTheme.bgLight2;
   }
 
   static Color getInputBgColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF2D2D2D)
-        : const Color(0xFFF9FAFB);
+    return _isDark(context) ? const Color(0xFF2D2D2D) : const Color(0xFFF9FAFB);
   }
 
   static Color getHoverColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF2A2A2A)
-        : AppTheme.bgLight1;
+    return _isDark(context) ? const Color(0xFF2A2A2A) : AppTheme.bgLight1;
   }
 
   static Color getSuccessColor(BuildContext context, {required bool isDark}) {
@@ -141,45 +131,31 @@ class ThemeHelper {
   }
 
   static Color getSuccessTextColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF6DD880)
-        : AppTheme.successMedium;
+    return _isDark(context) ? const Color(0xFF6DD880) : AppTheme.successMedium;
   }
 
   static Color getErrorTextColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFFFF7070)
-        : AppTheme.errorDark;
+    return _isDark(context) ? const Color(0xFFFF7070) : AppTheme.errorDark;
   }
 
   static Color getWarningTextColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFFFFC04D)
-        : AppTheme.warningDark;
+    return _isDark(context) ? const Color(0xFFFFC04D) : AppTheme.warningDark;
   }
 
   static Color getSuccessLightBg(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF1E3320)
-        : AppTheme.successLight;
+    return _isDark(context) ? const Color(0xFF1E3320) : AppTheme.successLight;
   }
 
   static Color getErrorLightBg(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF3A2020)
-        : AppTheme.errorLight;
+    return _isDark(context) ? const Color(0xFF3A2020) : AppTheme.errorLight;
   }
 
   static Color getWarningLightBg(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF352A1A)
-        : AppTheme.warningLight;
+    return _isDark(context) ? const Color(0xFF352A1A) : AppTheme.warningLight;
   }
 
   static Color getInfoLightBg(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF1E2530)
-        : AppTheme.infoLight;
+    return _isDark(context) ? const Color(0xFF1E2530) : AppTheme.infoLight;
   }
 
   /// Decoración de card moderna: sombra sutil en claro, superficie plana en oscuro

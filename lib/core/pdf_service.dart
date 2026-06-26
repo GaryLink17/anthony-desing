@@ -11,7 +11,6 @@ import '../models/quote_item.dart';
 import 'dart:typed_data';
 import '../utils/currency_config.dart';
 
-
 /// Configuración de empresa cargada desde SharedPreferences para el PDF.
 class _PdfCompanyConfig {
   final String companyName;
@@ -157,21 +156,30 @@ class PdfService {
                   pw.SizedBox(height: 3),
                   pw.Text(
                     companyAddress,
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
                 if (companyEmail.isNotEmpty) ...[
                   pw.SizedBox(height: 3),
                   pw.Text(
                     companyEmail,
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
                 if (companyPhone.isNotEmpty) ...[
                   pw.SizedBox(height: 3),
                   pw.Text(
                     'Tel: $companyPhone',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
               ],
@@ -204,7 +212,10 @@ class PdfService {
               pw.SizedBox(height: 8),
               pw.Text(
                 'Cliente: ${invoice.customerName}',
-                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                style: const pw.TextStyle(
+                  fontSize: 11,
+                  color: PdfColors.grey700,
+                ),
               ),
             ],
             // if (invoice.customerRnc != null && invoice.customerRnc!.isNotEmpty) ...[
@@ -477,7 +488,9 @@ class PdfService {
     Quote quote,
     NumberFormat currency,
   ) {
-    final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(quote.createdAt));
+    final date = DateFormat(
+      'dd/MM/yyyy',
+    ).format(DateTime.parse(quote.createdAt));
     final expiresDate = quote.expiresAt != null
         ? DateFormat('dd/MM/yyyy').format(DateTime.parse(quote.expiresAt!))
         : 'N/A';
@@ -517,21 +530,30 @@ class PdfService {
                   pw.SizedBox(height: 3),
                   pw.Text(
                     companyAddress,
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
                 if (companyEmail.isNotEmpty) ...[
                   pw.SizedBox(height: 3),
                   pw.Text(
                     companyEmail,
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
                 if (companyPhone.isNotEmpty) ...[
                   pw.SizedBox(height: 3),
                   pw.Text(
                     'Tel: $companyPhone',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
               ],
@@ -568,7 +590,10 @@ class PdfService {
               pw.SizedBox(height: 8),
               pw.Text(
                 'Cliente: ${quote.customerName}',
-                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                style: const pw.TextStyle(
+                  fontSize: 11,
+                  color: PdfColors.grey700,
+                ),
               ),
             ],
             // if (quote.customerRnc != null && quote.customerRnc!.isNotEmpty) ...[
