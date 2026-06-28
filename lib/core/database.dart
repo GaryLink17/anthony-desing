@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -44,11 +45,12 @@ class DatabaseHelper {
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 6,
+        version: 7,
         onCreate: _createDB,
         onUpgrade: _upgradeDB,
         onConfigure: (db) async {
           await db.execute('PRAGMA foreign_keys = ON');
+          await db.execute('PRAGMA journal_mode = WAL');
         },
       ),
     );
@@ -110,6 +112,17 @@ class DatabaseHelper {
     if (oldVersion < 6) {
       // v6: Agrega columna rnc a customers (schema drift entre _createDB y _upgradeDB v5)
       await db.execute('ALTER TABLE customers ADD COLUMN rnc TEXT');
+    }
+    if (oldVersion < 7) {
+      // v7: Índices para rendimiento con >10k registros
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_created_status ON invoices(created_at, status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_customer_name ON invoices(customer_name)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_products_stock_min ON products(stock, min_stock)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_quotes_created ON quotes(created_at)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_quotes_customer_name ON quotes(customer_name)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_quote_items_quote_id ON quote_items(quote_id)');
     }
   }
 
@@ -201,6 +214,16 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
+
+    // Índices para rendimiento
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_created_status ON invoices(created_at, status)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_customer_name ON invoices(customer_name)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_products_stock_min ON products(stock, min_stock)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_quotes_created ON quotes(created_at)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_quotes_customer_name ON quotes(customer_name)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_quote_items_quote_id ON quote_items(quote_id)');
   }
 
   /// Cierra la conexión y reinicia el estado interno de la base de datos.
@@ -211,5 +234,25 @@ class DatabaseHelper {
       _database = null;
     }
     _dbFuture = null;
+  }
+
+  /// Hace checkpoint del WAL y copia el archivo de BD a [destPath] sin cerrar la conexión.
+  /// La base de datos permanece abierta y operativa durante la copia.
+  /// Retorna true si la copia fue exitosa.
+  static Future<bool> copyDatabaseFile(String destPath) async {
+    try {
+      final db = await instance.database;
+      // Forzar checkpoint para volcar WAL al archivo principal
+      await db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+      final appDir = await getApplicationSupportDirectory();
+      final sourcePath = join(appDir.path, 'control_gastos.db');
+      final sourceFile = File(sourcePath);
+      if (!await sourceFile.exists()) return false;
+      await sourceFile.copy(destPath);
+      return true;
+    } catch (e) {
+      debugPrint('copyDatabaseFile: $e');
+      return false;
+    }
   }
 }

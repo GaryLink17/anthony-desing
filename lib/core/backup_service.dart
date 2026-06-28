@@ -214,16 +214,9 @@ class BackupService {
   }
 
   /// Realiza una copia de seguridad automática en la carpeta backups/.
+  /// Usa checkpoint + copy para no interrumpir las operaciones de la BD.
   /// Retorna la ruta del archivo creado o null si falló.
   Future<String?> performAutoBackup() async {
-    final appDir = await getApplicationSupportDirectory();
-    final sourcePath = p.join(appDir.path, 'control_gastos.db');
-    final sourceFile = File(sourcePath);
-    if (!await sourceFile.exists()) return null;
-
-    // Cerrar DB antes de copiar para liberar bloqueo de archivo en Windows
-    await DatabaseHelper.closeAndReset();
-
     final backupDir = await getAutoBackupsFolder();
     final now = DateTime.now();
     final stamp =
@@ -234,8 +227,10 @@ class BackupService {
         '${now.minute.toString().padLeft(2, '0')}';
     final destPath = p.join(backupDir.path, 'auto_backup_$stamp.db');
 
+    final ok = await DatabaseHelper.copyDatabaseFile(destPath);
+    if (!ok) return null;
+
     try {
-      await sourceFile.copy(destPath);
       await _updateLastBackupTime();
       await enforceRetentionPolicy();
       return destPath;
@@ -321,17 +316,9 @@ class BackupService {
   }
 
   /// Copia la BD a una carpeta elegida por el usuario.
+  /// Usa checkpoint + copy para no interrumpir las operaciones de la BD.
   /// Retorna la ruta del archivo creado, o null si el usuario canceló.
   Future<String?> exportBackup() async {
-    final appDir = await getApplicationSupportDirectory();
-    final sourcePath = p.join(appDir.path, 'control_gastos.db');
-    final sourceFile = File(sourcePath);
-    if (!await sourceFile.exists()) {
-      throw const AppException(
-        'No se encontró la base de datos para respaldar.',
-      );
-    }
-
     final String? selectedDir = await getDirectoryPath(
       confirmButtonText: 'Guardar aquí',
     );
@@ -346,17 +333,14 @@ class BackupService {
         '${now.minute.toString().padLeft(2, '0')}';
     final destPath = p.join(selectedDir, 'respaldo_$stamp.db');
 
-    try {
-      // Cerrar DB antes de copiar para liberar bloqueo de archivo en Windows
-      await DatabaseHelper.closeAndReset();
-      await sourceFile.copy(destPath);
-      return destPath;
-    } catch (e) {
-      throw AppException(
-        'No se pudo guardar el respaldo.',
-        technical: e.toString(),
+    final ok = await DatabaseHelper.copyDatabaseFile(destPath);
+    if (!ok) {
+      throw const AppException(
+        'No se encontró la base de datos para respaldar.',
       );
     }
+
+    return destPath;
   }
 
   /// El usuario elige un archivo .db, se cierra la BD actual,

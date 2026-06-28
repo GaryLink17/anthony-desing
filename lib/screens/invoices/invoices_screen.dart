@@ -281,46 +281,49 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   /// Barra de búsqueda por nombre de cliente con debounce.
   Widget _buildSearchBar() {
-    return SizedBox(
-      width: 320,
-      child: TextField(
-        controller: _searchCtrl,
-        focusNode: _searchFocusNode,
-        onChanged: (q) => _debouncer(() => _load(q)),
-        decoration: InputDecoration(
-          hintText: 'Buscar por cliente...',
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: ThemeHelper.getHintColor(context),
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 18,
-            color: ThemeHelper.getHintColor(context),
-          ),
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: ShortcutHint('Ctrl+F'),
-          ),
-          filled: true,
-          fillColor: ThemeHelper.getCardColor(context),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: ThemeHelper.getBorderColor(context),
-              width: 0.5,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: ThemeHelper.getBorderColor(context),
-              width: 0.5,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 320,
+          child: TextField(
+            controller: _searchCtrl,
+            focusNode: _searchFocusNode,
+            onChanged: (q) => _debouncer(() => _load(q)),
+            decoration: InputDecoration(
+              hintText: 'Buscar por cliente...',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getHintColor(context),
+              ),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: ThemeHelper.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeHelper.getCardColor(context),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: ThemeHelper.getBorderColor(context),
+                  width: 0.5,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: ThemeHelper.getBorderColor(context),
+                  width: 0.5,
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        const SizedBox(width: 6),
+        const ShortcutHint('Ctrl+F'),
+      ],
     );
   }
 
@@ -1100,7 +1103,7 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).pop();
+          Navigator.of(context).maybePop();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -1520,7 +1523,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
     super.initState();
     _quantityCtrl = TextEditingController(text: '1');
     _priceCtrl = TextEditingController(
-      text: widget.product.salePrice.toStringAsFixed(0),
+      text: widget.product.salePrice.toStringAsFixed(2),
     );
     _discountCtrl = TextEditingController(text: '0');
   }
@@ -1547,7 +1550,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).pop();
+          Navigator.of(context).maybePop();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

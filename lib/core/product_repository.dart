@@ -68,11 +68,34 @@ class ProductRepository {
   }
 
   /// Elimina un producto por su ID.
+  /// Lanza [AppException] si el producto está referenciado en facturas o cotizaciones.
   Future<void> delete(int id) async {
     try {
       final db = await _db.database;
+
+      final invCount = await db.rawQuery(
+        'SELECT COUNT(*) as cnt FROM invoice_items WHERE product_id = ?',
+        [id],
+      );
+      if ((invCount.first['cnt'] as num).toInt() > 0) {
+        throw const AppException(
+          'No se puede eliminar el producto porque está registrado en una o más facturas.',
+        );
+      }
+
+      final quoteCount = await db.rawQuery(
+        'SELECT COUNT(*) as cnt FROM quote_items WHERE product_id = ?',
+        [id],
+      );
+      if ((quoteCount.first['cnt'] as num).toInt() > 0) {
+        throw const AppException(
+          'No se puede eliminar el producto porque está registrado en una o más cotizaciones.',
+        );
+      }
+
       await db.delete('products', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
+      if (e is AppException) rethrow;
       throw AppException(
         'No se pudo eliminar el producto.',
         technical: e.toString(),

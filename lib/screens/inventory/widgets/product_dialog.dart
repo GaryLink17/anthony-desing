@@ -40,8 +40,8 @@ class _ProductDialogState extends State<ProductDialog> {
       // Modo edición: precargar datos del producto existente.
       _nameCtrl.text = p.name;
       _categoryCtrl.text = p.category ?? '';
-      _purchaseCtrl.text = p.purchasePrice.toStringAsFixed(0);
-      _saleCtrl.text = p.salePrice.toStringAsFixed(0);
+      _purchaseCtrl.text = p.purchasePrice.toStringAsFixed(2);
+      _saleCtrl.text = p.salePrice.toStringAsFixed(2);
       _stockCtrl.text = p.stock.toString();
       _minStockCtrl.text = p.minStock.toString();
       _updateProfit();
@@ -80,7 +80,7 @@ class _ProductDialogState extends State<ProductDialog> {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).pop();
+          Navigator.of(context).maybePop();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

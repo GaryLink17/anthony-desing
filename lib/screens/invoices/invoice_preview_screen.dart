@@ -104,8 +104,15 @@ class InvoicePreviewScreen extends StatelessWidget {
                   invoice,
                   items,
                 );
+                if (context.mounted) {
+                  NotificationService().success('Impresión enviada');
+                }
               } on AppException catch (e) {
                 if (context.mounted) NotificationService().error(e.message);
+              } catch (e) {
+                if (context.mounted) {
+                  NotificationService().error('Error al imprimir en POS');
+                }
               }
             },
             icon: const Icon(Icons.receipt_long_rounded, size: 16),

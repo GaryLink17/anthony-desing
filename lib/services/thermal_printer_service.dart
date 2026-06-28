@@ -76,7 +76,14 @@ class ThermalPrinterService {
         );
       }
 
-      printer.rawBytes(bytes);
+      try {
+        printer.rawBytes(bytes);
+      } on Exception catch (e) {
+        throw AppException(
+          'Error al enviar datos a la impresora',
+          technical: e.toString(),
+        );
+      }
     } finally {
       printer.disconnect();
     }
@@ -134,11 +141,36 @@ class ThermalPrinterService {
     }
   }
 
+  /// Escapa caracteres peligrosos del nombre de impresora para evitar
+  /// inyección de comandos PowerShell.
+  String _sanitizePrinterName(String name) {
+    return name
+        .replaceAll('`', '``')
+        .replaceAll('"', '`"')
+        .replaceAll(r'$', r'`$')
+        .replaceAll('\n', '')
+        .replaceAll('\r', '')
+        .trim();
+  }
+
+  static String _sanitizeText(String text) {
+    return text
+        .replaceAll('Á', 'A').replaceAll('á', 'a')
+        .replaceAll('É', 'E').replaceAll('é', 'e')
+        .replaceAll('Í', 'I').replaceAll('í', 'i')
+        .replaceAll('Ó', 'O').replaceAll('ó', 'o')
+        .replaceAll('Ú', 'U').replaceAll('ú', 'u')
+        .replaceAll('Ü', 'U').replaceAll('ü', 'u')
+        .replaceAll('Ñ', 'N').replaceAll('ñ', 'n')
+        .replaceAll('¿', '?').replaceAll('¡', '!');
+  }
+
   /// Envía bytes raw a una impresora Windows por su nombre de dispositivo.
   /// Usa Write-Printer de PowerShell 5+ (no requiere compartir la impresora)
   /// con fallback a copy /b (requiere compartir).
   Future<void> _sendWindowsPrinter(List<int> bytes, String printerName) async {
     try {
+      final safeName = _sanitizePrinterName(printerName);
       final tempFile = File(
         p.join(
           Directory.systemTemp.path,
@@ -152,7 +184,7 @@ class ThermalPrinterService {
         '-NoProfile',
         '-Command',
         '\$data = [System.IO.File]::ReadAllBytes(\'${tempFile.path}\'); '
-            'Write-Printer -Name "$printerName" -Data \$data',
+            'Write-Printer -Name "$safeName" -Data \$data',
       ], runInShell: true);
 
       // Estrategia 2 (fallback): copy /b a ruta compartida
@@ -297,21 +329,37 @@ class ThermalPrinterService {
   }
 
   Future<void> printInvoice(Invoice invoice, List<InvoiceItem> items) async {
-    final config = await _loadConfig();
-    final gen = await _getGenerator(config);
-    final company = await _loadCompanyConfig();
-
-    final bytes = _buildInvoiceBytes(gen, company, invoice, items);
-    await _routeBytes(bytes, config);
+    try {
+      final config = await _loadConfig();
+      final gen = await _getGenerator(config);
+      final company = await _loadCompanyConfig();
+      final bytes = _buildInvoiceBytes(gen, company, invoice, items);
+      await _routeBytes(bytes, config);
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw AppException(
+        'Error al imprimir factura: $e',
+        technical: e.toString(),
+      );
+    }
   }
 
   Future<void> printQuote(Quote quote, List<QuoteItem> items) async {
-    final config = await _loadConfig();
-    final gen = await _getGenerator(config);
-    final company = await _loadCompanyConfig();
-
-    final bytes = _buildQuoteBytes(gen, company, quote, items);
-    await _routeBytes(bytes, config);
+    try {
+      final config = await _loadConfig();
+      final gen = await _getGenerator(config);
+      final company = await _loadCompanyConfig();
+      final bytes = _buildQuoteBytes(gen, company, quote, items);
+      await _routeBytes(bytes, config);
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw AppException(
+        'Error al imprimir cotización: ${e.runtimeType}',
+        technical: e.toString(),
+      );
+    }
   }
 
   Future<void> printTest() async {
@@ -381,9 +429,14 @@ class ThermalPrinterService {
       quote.customerName,
     );
     if (quote.expiresAt != null && quote.expiresAt!.isNotEmpty) {
-      final expires = DateFormat(
-        'dd/MM/yyyy',
-      ).format(DateTime.parse(quote.expiresAt!));
+      String expires;
+      try {
+        expires = DateFormat(
+          'dd/MM/yyyy',
+        ).format(DateTime.parse(quote.expiresAt!));
+      } catch (_) {
+        expires = quote.expiresAt!;
+      }
       bytes += gen.text(
         'Válida hasta:  $expires',
         styles: const PosStyles(align: PosAlign.left),
@@ -413,7 +466,10 @@ class ThermalPrinterService {
 
   List<int> _buildTestBytes(Generator gen) {
     var bytes = <int>[];
-    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.setStyles(const PosStyles(
+      align: PosAlign.center,
+      codeTable: 'CP1252',
+    ));
     bytes += gen.text(
       'IMPRESIÓN DE PRUEBA',
       styles: const PosStyles(
@@ -440,10 +496,13 @@ class ThermalPrinterService {
 
   List<int> _companyHeaderBytes(Generator gen, _CompanyConfig company) {
     var bytes = <int>[];
-    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
+    bytes += gen.setStyles(const PosStyles(
+      align: PosAlign.center,
+      codeTable: 'CP1252',
+    ));
     bytes += gen.feed(1);
     bytes += gen.text(
-      company.companyName,
+      _sanitizeText(company.companyName),
       styles: const PosStyles(
         bold: true,
         height: PosTextSize.size2,
@@ -454,19 +513,19 @@ class ThermalPrinterService {
     bytes += gen.feed(1);
     if (company.companyAddress.isNotEmpty) {
       bytes += gen.text(
-        company.companyAddress,
+        _sanitizeText(company.companyAddress),
         styles: const PosStyles(align: PosAlign.center),
       );
     }
     if (company.companyPhone.isNotEmpty) {
       bytes += gen.text(
-        'Tel: ${company.companyPhone}',
+        'Tel: ${_sanitizeText(company.companyPhone)}',
         styles: const PosStyles(align: PosAlign.center),
       );
     }
     if (company.companyEmail.isNotEmpty) {
       bytes += gen.text(
-        company.companyEmail,
+        _sanitizeText(company.companyEmail),
         styles: const PosStyles(align: PosAlign.center),
       );
     }
@@ -485,32 +544,33 @@ class ThermalPrinterService {
     var bytes = <int>[];
     bytes += gen.hr(ch: '=');
     bytes += gen.feed(1);
-    bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
-    bytes += gen.text(
-      docType,
-      styles: const PosStyles(
-        bold: true,
-        height: PosTextSize.size2,
-        align: PosAlign.center,
-      ),
-    );
-    if (docNumber.isNotEmpty) {
+    final abbr = docType == 'COTIZACIÓN' ? 'C.' : 'F.';
+    final number = docNumber.replaceAll('#', '');
+    if (number.isNotEmpty) {
       bytes += gen.text(
-        docNumber,
-        styles: const PosStyles(bold: true, align: PosAlign.center),
+        '$abbr No: $number',
+        styles: const PosStyles(bold: true, align: PosAlign.left),
       );
     }
-    bytes += gen.setStyles(const PosStyles());
-    bytes += gen.feed(1);
-    final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(createdAt));
-    final time = DateFormat('HH:mm').format(DateTime.parse(createdAt));
+    String safeDate;
+    String safeTime;
+    try {
+      final dt = DateTime.parse(createdAt);
+      safeDate = DateFormat('dd/MM/yyyy').format(dt);
+      safeTime = DateFormat('HH:mm').format(dt);
+    } catch (_) {
+      safeDate = createdAt.isNotEmpty ? createdAt : '--/--/----';
+      safeTime = '--:--';
+    }
+    final date = safeDate;
+    final time = safeTime;
     bytes += gen.text(
       'Fecha:  $date  $time',
       styles: const PosStyles(align: PosAlign.left),
     );
     if (customerName != null && customerName.isNotEmpty) {
       bytes += gen.text(
-        'Cliente:  $customerName',
+        'Cliente:  ${_sanitizeText(customerName)}',
         styles: const PosStyles(align: PosAlign.left),
       );
     }
@@ -556,9 +616,10 @@ class ThermalPrinterService {
   ) {
     var bytes = <int>[];
     final currency = _currency();
-    final truncatedName = productName.length > 15
-        ? '${productName.substring(0, 14)}.'
-        : productName;
+    final sanitized = _sanitizeText(productName);
+    final truncatedName = sanitized.length > 15
+        ? '${sanitized.substring(0, 14)}.'
+        : sanitized;
     bytes += gen.row([
       PosColumn(
         text: _qty().format(quantity),
@@ -624,7 +685,7 @@ class ThermalPrinterService {
     bytes += gen.row([
       PosColumn(text: '', width: 8),
       PosColumn(
-        text: '────────────────',
+        text: '----------------',
         width: 4,
         styles: const PosStyles(align: PosAlign.right),
       ),
@@ -651,13 +712,13 @@ class ThermalPrinterService {
     bytes += gen.setStyles(const PosStyles(align: PosAlign.center));
     bytes += gen.feed(1);
     bytes += gen.text(
-      company.footerMessage,
+      _sanitizeText(company.footerMessage),
       styles: const PosStyles(align: PosAlign.center),
     );
     if (company.footerTerms.isNotEmpty) {
       bytes += gen.feed(1);
       bytes += gen.text(
-        company.footerTerms,
+        _sanitizeText(company.footerTerms),
         styles: const PosStyles(align: PosAlign.center),
       );
     }

@@ -95,7 +95,8 @@ class InvoiceRepository {
   /// Guarda una nueva factura junto con sus items en una transacción.
   /// Valida stock disponible y descuenta automáticamente los productos vendidos,
   /// todo dentro de la misma transacción para evitar condiciones de carrera.
-  Future<int> save(Invoice invoice, List<InvoiceItem> items) async {
+  /// Si [quoteId] se proporciona, marca la cotización como convertida en la misma transacción.
+  Future<int> save(Invoice invoice, List<InvoiceItem> items, {int? quoteId}) async {
     try {
       final db = await _db.database;
       return await db.transaction((txn) async {
@@ -141,8 +142,18 @@ class InvoiceRepository {
           });
 
           await txn.rawUpdate(
-            'UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?',
+            'UPDATE products SET stock = stock - ? WHERE id = ?',
             [item.quantity, item.productId],
+          );
+        }
+
+        // Si viene de una cotización, marcarla como convertida en la misma transacción
+        if (quoteId != null) {
+          await txn.update(
+            'quotes',
+            {'is_converted': 1},
+            where: 'id = ?',
+            whereArgs: [quoteId],
           );
         }
 
@@ -158,10 +169,21 @@ class InvoiceRepository {
   }
 
   /// Anula una factura (status = 'cancelled') y opcionalmente restaura el stock.
+  /// Lanza [AppException] si la factura ya está anulada.
   Future<void> cancel(int invoiceId, {bool restoreStock = true}) async {
     try {
       final db = await _db.database;
       await db.transaction((txn) async {
+        final current = await txn.query(
+          'invoices',
+          columns: ['status'],
+          where: 'id = ?',
+          whereArgs: [invoiceId],
+        );
+        if (current.isNotEmpty && current.first['status'] == 'cancelled') {
+          throw const AppException('La factura ya está anulada.');
+        }
+
         if (restoreStock) {
           final items = await txn.query(
             'invoice_items',
@@ -291,7 +313,7 @@ class InvoiceRepository {
             'subtotal': item.subtotal,
           });
           await txn.rawUpdate(
-            'UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?',
+            'UPDATE products SET stock = stock - ? WHERE id = ?',
             [item.quantity, item.productId],
           );
         }

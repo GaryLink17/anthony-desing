@@ -53,6 +53,8 @@ class _ThermalPrinterSettingsScreenState
       _usbPortName = config.usbPortName;
       _paperWidthMM = config.paperWidthMM;
       _enabled = config.enabled;
+      _availablePorts =
+          _usbPortName.isNotEmpty ? [_usbPortName] : [];
     });
   }
 
@@ -72,16 +74,20 @@ class _ThermalPrinterSettingsScreenState
     }
   }
 
-  Future<void> _scanPorts() async {
+  Future<void> _scanPorts({bool silent = false}) async {
     setState(() => _scanning = true);
     try {
       final ports = await ThermalPrinterService.detectUsbPorts();
       if (!mounted) return;
       setState(() {
         _availablePorts = ports;
+        if (_usbPortName.isNotEmpty &&
+            !_availablePorts.contains(_usbPortName)) {
+          _availablePorts = [_usbPortName, ..._availablePorts];
+        }
         _scanning = false;
       });
-      if (ports.isEmpty) {
+      if (ports.isEmpty && !silent) {
         NotificationService().info(
           'No se detectaron puertos USB. Conecta la impresora.',
         );
@@ -89,7 +95,9 @@ class _ThermalPrinterSettingsScreenState
     } catch (_) {
       if (mounted) {
         setState(() => _scanning = false);
-        NotificationService().error('Error al escanear puertos');
+        if (!silent) {
+          NotificationService().error('Error al escanear puertos');
+        }
       }
     }
   }

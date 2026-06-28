@@ -273,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 12),
                     _field(_phoneCtrl, 'Teléfono', isPhone: true),
                     const SizedBox(height: 12),
-                    _field(_emailCtrl, 'Email'),
+                    _field(_emailCtrl, 'Email', isEmail: true),
                     const SizedBox(height: 12),
                     _field(_addressCtrl, 'Dirección'),
                   ],
@@ -917,11 +917,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String label, {
     bool required = false,
     bool isPhone = false,
+    bool isEmail = false,
   }) {
     return TextFormField(
       controller: ctrl,
       style: TextStyle(fontSize: 13, color: ThemeHelper.getTextColor(context)),
-      keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
+      keyboardType: isEmail
+          ? TextInputType.emailAddress
+          : isPhone
+              ? TextInputType.phone
+              : TextInputType.text,
       inputFormatters: isPhone
           ? [FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-\+\(\)]'))]
           : null,
@@ -937,9 +942,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           vertical: 10,
         ),
       ),
-      validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null
-          : null,
+      validator: (v) {
+        if (required && (v == null || v.trim().isEmpty)) {
+          return 'Campo requerido';
+        }
+        if (isEmail && v != null && v.trim().isNotEmpty) {
+          final emailRegex = RegExp(
+            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+          );
+          if (!emailRegex.hasMatch(v.trim())) {
+            return 'Email inválido';
+          }
+        }
+        return null;
+      },
     );
   }
 }

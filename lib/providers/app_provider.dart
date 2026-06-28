@@ -29,6 +29,7 @@ class AppProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _recentInvoices = [];
   List<double> _weeklySales = List.filled(7, 0);
   int? _lastDashboardLoadMs;
+  DateTime? _lastDashboardLoadTime;
 
   double get monthlySales => _monthlySales;
   int get invoiceCount => _invoiceCount;
@@ -38,6 +39,14 @@ class AppProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get recentInvoices => _recentInvoices;
   List<double> get weeklySales => _weeklySales;
   int? get lastDashboardLoadMs => _lastDashboardLoadMs;
+  DateTime? get lastDashboardLoadTime => _lastDashboardLoadTime;
+
+  /// Retorna true si los datos del dashboard necesitan recargarse
+  /// (última carga fue hace más de 30 segundos o nunca se cargó).
+  bool shouldRefreshDashboard() {
+    if (_lastDashboardLoadTime == null) return true;
+    return DateTime.now().difference(_lastDashboardLoadTime!).inSeconds > 30;
+  }
 
   /// Carga los datos de la empresa desde SharedPreferences.
   Future<void> loadCompanyData() async {
@@ -152,9 +161,11 @@ class AppProvider extends ChangeNotifier {
         }
       }
 
+      _lastDashboardLoadTime = DateTime.now();
       notifyListeners();
       _lastDashboardLoadMs = perf.endMeasure('loadDashboard');
     } catch (e) {
+      _lastDashboardLoadTime = null;
       notifyListeners();
       _lastDashboardLoadMs = null;
       perf.endMeasure('loadDashboard');

@@ -203,46 +203,49 @@ class _QuotesScreenState extends State<QuotesScreen> {
 
   /// Barra de búsqueda por nombre de cliente con debounce.
   Widget _buildSearchBar() {
-    return SizedBox(
-      width: 320,
-      child: TextField(
-        controller: _searchCtrl,
-        focusNode: _searchFocusNode,
-        onChanged: (q) => _debouncer(() => _load(q)),
-        decoration: InputDecoration(
-          hintText: 'Buscar por cliente...',
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: ThemeHelper.getHintColor(context),
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 18,
-            color: ThemeHelper.getHintColor(context),
-          ),
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: ShortcutHint('Ctrl+F'),
-          ),
-          filled: true,
-          fillColor: ThemeHelper.getCardColor(context),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: ThemeHelper.getBorderColor(context),
-              width: 0.5,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: ThemeHelper.getBorderColor(context),
-              width: 0.5,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 320,
+          child: TextField(
+            controller: _searchCtrl,
+            focusNode: _searchFocusNode,
+            onChanged: (q) => _debouncer(() => _load(q)),
+            decoration: InputDecoration(
+              hintText: 'Buscar por cliente...',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getHintColor(context),
+              ),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: ThemeHelper.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeHelper.getCardColor(context),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: ThemeHelper.getBorderColor(context),
+                  width: 0.5,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: ThemeHelper.getBorderColor(context),
+                  width: 0.5,
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        const SizedBox(width: 6),
+        const ShortcutHint('Ctrl+F'),
+      ],
     );
   }
 
@@ -723,8 +726,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
         );
       }).toList();
 
-      await _invoiceRepo.save(invoice, invoiceItems);
-      await _quoteRepo.markAsConverted(quote.id!);
+      await _invoiceRepo.save(invoice, invoiceItems, quoteId: quote.id!);
       NotificationService().success('Cotización convertida a factura');
       if (mounted) _load();
     } on AppException catch (e) {
@@ -860,8 +862,15 @@ class _QuotePreviewScreen extends StatelessWidget {
             onPressed: () async {
               try {
                 await ThermalPrinterService.instance.printQuote(quote, items);
+                if (context.mounted) {
+                  NotificationService().success('Impresión enviada');
+                }
               } on AppException catch (e) {
                 if (context.mounted) NotificationService().error(e.message);
+              } catch (e) {
+                if (context.mounted) {
+                  NotificationService().error('Error al imprimir en POS');
+                }
               }
             },
             icon: const Icon(Icons.receipt_long_rounded, size: 16),
@@ -1092,7 +1101,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).pop();
+          Navigator.of(context).maybePop();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -1549,7 +1558,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
     super.initState();
     _quantityCtrl = TextEditingController(text: '1');
     _priceCtrl = TextEditingController(
-      text: widget.product.salePrice.toStringAsFixed(0),
+      text: widget.product.salePrice.toStringAsFixed(2),
     );
     _discountCtrl = TextEditingController(text: '0');
   }
@@ -1576,7 +1585,7 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).pop();
+          Navigator.of(context).maybePop();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

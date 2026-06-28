@@ -63,6 +63,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
 
+    // Recargar dashboard si está obsoleto (navegación de regreso, etc.)
+    if (!_loading && mounted && provider.shouldRefreshDashboard()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        try {
+          await context.read<AppProvider>().loadDashboard();
+        } on AppException catch (e) {
+          NotificationService().error(e.message);
+        }
+      });
+    }
+
     if (_loading) {
       return Scaffold(
         backgroundColor: context.bgColor,
@@ -297,21 +309,6 @@ class _HeroSalesCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: ThemeHelper.getSuccessLightBg(context),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '+12% vs anterior',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: ThemeHelper.getSuccessTextColor(context),
-                  ),
-                ),
               ),
             ],
           ),

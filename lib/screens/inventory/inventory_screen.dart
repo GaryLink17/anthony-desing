@@ -268,28 +268,27 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   /// Barra de búsqueda con debounce.
   Widget _buildToolbar() {
-    return SizedBox(
-      width: 320,
-      child: TextField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
-        onChanged: (q) => _debouncer(() => _loadProducts(q)),
-        decoration: InputDecoration(
-          hintText: 'Buscar producto...',
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: ThemeHelper.getHintColor(context),
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 18,
-            color: ThemeHelper.getHintColor(context),
-          ),
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: ShortcutHint('Ctrl+F'),
-          ),
-          filled: true,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 320,
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            onChanged: (q) => _debouncer(() => _loadProducts(q)),
+            decoration: InputDecoration(
+              hintText: 'Buscar producto...',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: ThemeHelper.getHintColor(context),
+              ),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: ThemeHelper.getHintColor(context),
+              ),
+              filled: true,
           fillColor: ThemeHelper.getCardColor(context),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
@@ -308,6 +307,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
         ),
       ),
+    ),
+      const SizedBox(width: 6),
+      const ShortcutHint('Ctrl+F'),
+    ],
     );
   }
 
