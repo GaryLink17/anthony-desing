@@ -53,10 +53,10 @@ class InvoicePreviewScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         border: Border(
           bottom: BorderSide(
-            color: Colors.black.withValues(alpha: 0.07),
+            color: context.borderColor,
             width: 0.5,
           ),
         ),
@@ -66,7 +66,7 @@ class InvoicePreviewScreen extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_rounded, size: 20),
-            color: const Color(0xFF444441),
+            color: context.textMedium,
             tooltip: 'Volver',
             constraints: const BoxConstraints(),
             padding: EdgeInsets.zero,
@@ -74,10 +74,10 @@ class InvoicePreviewScreen extends StatelessWidget {
           const SizedBox(width: 16),
           Text(
             'Vista previa — Factura #${invoice.id.toString().padLeft(4, '0')}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C2C2A),
+              color: context.textDark,
             ),
           ),
           const Spacer(),

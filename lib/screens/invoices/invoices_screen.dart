@@ -1030,13 +1030,12 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   }
 
   /// Verifica que todos los productos tengan stock suficiente.
-  bool _validateStock() {
+  Future<bool> _validateStock() async {
     for (final item in _items) {
       final p = item['product'] as Product;
       final qty = item['quantity'] as int;
-      if (qty > p.stock) {
-        return false;
-      }
+      final hasStock = await ProductRepository().hasStock(p.id!, qty);
+      if (!hasStock) return false;
     }
     return true;
   }
@@ -1051,11 +1050,11 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
 
   /// Valida el formulario, construye la factura y los items y
   /// entrega todo mediante el callback [onSave].
-  void _save() {
+  Future<void> _save() async {
     if (_items.isEmpty) return;
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_validateStock()) {
+    if (!await _validateStock()) {
       NotificationService().error(
         'No hay stock suficiente para algunos productos',
       );
@@ -1100,14 +1099,6 @@ class _NewInvoiceDialogState extends State<_NewInvoiceDialog> {
   Widget build(BuildContext context) {
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).maybePop();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
       child: Dialog(
         backgroundColor: ThemeHelper.getCardColor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1547,14 +1538,6 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
   Widget build(BuildContext context) {
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).maybePop();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: PopScope(

@@ -39,7 +39,7 @@ class BackupService {
     _cachedFrequency = prefs.getString(_keyAutoFrequency) ?? 'daily';
     _cachedPath = prefs.getString(_keyAutoBackupPath) ?? '';
     final appDir = await getApplicationSupportDirectory();
-    _cachedDbPath = p.join(appDir.path, 'control_gastos.db');
+    _cachedDbPath = p.join(appDir.path, DatabaseHelper.dbName);
     _lastBackupTimePath = p.join(appDir.path, '.last_backup_time');
   }
 
@@ -69,7 +69,7 @@ class BackupService {
     _cachedPath = (settings['path'] as String?) ?? '';
     if (_cachedDbPath.isEmpty) {
       final appDir = await getApplicationSupportDirectory();
-      _cachedDbPath = p.join(appDir.path, 'control_gastos.db');
+      _cachedDbPath = p.join(appDir.path, DatabaseHelper.dbName);
     }
     return settings;
   }
@@ -362,11 +362,11 @@ class BackupService {
     }
 
     final appDir = await getApplicationSupportDirectory();
-    final destPath = p.join(appDir.path, 'control_gastos.db');
+    final destPath = p.join(appDir.path, DatabaseHelper.dbName);
 
     // Copia de seguridad automática antes de sobreescribir
     final currentDb = File(destPath);
-    final safetyPath = p.join(appDir.path, 'control_gastos_pre_restore.db');
+    final safetyPath = p.join(appDir.path, '${DatabaseHelper.dbName}_pre_restore');
     if (await currentDb.exists()) {
       await currentDb.copy(safetyPath);
     }

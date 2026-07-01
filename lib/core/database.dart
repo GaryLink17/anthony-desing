@@ -12,6 +12,10 @@ class DatabaseHelper {
   static Future<Database>? _dbFuture;
   static bool _initialized = false;
 
+  /// Nombre del archivo de base de datos.
+  static const String dbName = 'inventario.db';
+  static const String _oldDbName = 'control_gastos.db';
+
   DatabaseHelper._init();
 
   /// Inicializa el motor FFI de SQLite (necesario en Windows/desktop).
@@ -30,7 +34,7 @@ class DatabaseHelper {
   /// Obtiene la instancia de la base de datos, creándola si es necesario.
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _dbFuture ??= _initDB('control_gastos.db');
+    _dbFuture ??= _initDB(dbName);
     _database = await _dbFuture;
     return _database!;
   }
@@ -41,6 +45,13 @@ class DatabaseHelper {
 
     final appDir = await getApplicationSupportDirectory();
     final path = join(appDir.path, fileName);
+
+    // Migrar desde el nombre antiguo si existe
+    final oldPath = join(appDir.path, _oldDbName);
+    final oldFile = File(oldPath);
+    if (await oldFile.exists() && !await File(path).exists()) {
+      await oldFile.rename(path);
+    }
 
     return await databaseFactory.openDatabase(
       path,
@@ -245,7 +256,7 @@ class DatabaseHelper {
       // Forzar checkpoint para volcar WAL al archivo principal
       await db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
       final appDir = await getApplicationSupportDirectory();
-      final sourcePath = join(appDir.path, 'control_gastos.db');
+      final sourcePath = join(appDir.path, dbName);
       final sourceFile = File(sourcePath);
       if (!await sourceFile.exists()) return false;
       await sourceFile.copy(destPath);

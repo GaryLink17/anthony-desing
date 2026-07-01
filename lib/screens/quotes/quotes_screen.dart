@@ -1091,21 +1091,16 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }).toList();
 
     widget.onSave(quote, items);
-    Navigator.pop(context);
+    setState(() => _canPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).maybePop();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
       child: Dialog(
         backgroundColor: ThemeHelper.getCardColor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1582,14 +1577,6 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
   Widget build(BuildContext context) {
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.of(context).maybePop();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: PopScope(

@@ -82,7 +82,7 @@ void _scheduleStartupBackup() {
         await BackupService.instance.performAutoBackup();
       }
     } catch (_) {
-      // No impedir el inicio de la app por un error de backup
+      // No impedir el inicio de la app por un error de backupDi
     }
   });
 }
