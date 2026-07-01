@@ -588,12 +588,12 @@ class ThermalPrinterService {
       ),
       PosColumn(
         text: 'DESCRIPCIÓN',
-        width: 5,
+        width: 4,
         styles: const PosStyles(bold: true),
       ),
       PosColumn(
         text: 'P/U',
-        width: 2,
+        width: 3,
         styles: const PosStyles(bold: true, align: PosAlign.right),
       ),
       PosColumn(
@@ -617,8 +617,8 @@ class ThermalPrinterService {
     var bytes = <int>[];
     final currency = _currency();
     final sanitized = _sanitizeText(productName);
-    final truncatedName = sanitized.length > 15
-        ? '${sanitized.substring(0, 14)}.'
+    final truncatedName = sanitized.length > 12
+        ? '${sanitized.substring(0, 11)}.'
         : sanitized;
     bytes += gen.row([
       PosColumn(
@@ -626,10 +626,10 @@ class ThermalPrinterService {
         width: 2,
         styles: const PosStyles(align: PosAlign.center),
       ),
-      PosColumn(text: truncatedName, width: 5),
+      PosColumn(text: truncatedName, width: 4),
       PosColumn(
         text: currency.format(unitPrice),
-        width: 2,
+        width: 3,
         styles: const PosStyles(align: PosAlign.right),
       ),
       PosColumn(

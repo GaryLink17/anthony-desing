@@ -939,8 +939,6 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
   final List<Map<String, dynamic>> _items = [];
   List<Product> _filteredProducts = [];
   final bool _showProductList = true;
-  bool _canPop = false;
-
   static final _currency = currencyFormatter();
 
   @override
@@ -1091,52 +1089,50 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
     }).toList();
 
     widget.onSave(quote, items);
-    setState(() => _canPop = true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  void _confirmAndClose() {
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Desea descartar los cambios'),
+        content: const Text('Los datos ingresados se perderán.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Continuar con la cotización'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    ).then((confirm) {
+      if (confirm == true && mounted) Navigator.of(context).pop();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      autofocus: true,
-      child: Dialog(
+    return CallbackShortcuts(
+      bindings: {
+        SingleActivator(LogicalKeyboardKey.escape): _confirmAndClose,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Dialog(
         backgroundColor: ThemeHelper.getCardColor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
         child: PopScope(
-          canPop: _canPop,
-          onPopInvokedWithResult: (didPop, _) async {
-            if (didPop) return;
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('¿Descartar cambios?'),
-                content: const Text('Los datos ingresados se perderán.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Seguir editando'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Descartar'),
-                  ),
-                ],
-              ),
-            );
-            if (confirm == true && mounted) {
-              setState(() => _canPop = true);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) Navigator.of(context).pop();
-              });
-            }
-          },
+          canPop: true,
           child: Form(
             key: _formKey,
             child: SizedBox(
@@ -1155,6 +1151,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -1183,7 +1180,7 @@ class _NewQuoteDialogState extends State<_NewQuoteDialog> {
           ),
           const Spacer(),
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _confirmAndClose,
             icon: Icon(
               Icons.close_rounded,
               color: ThemeHelper.getTextLightColor(context),

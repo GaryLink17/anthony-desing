@@ -5,22 +5,22 @@ void main() {
   group('currencyFormatter', () {
     test('formatea valores enteros sin decimales', () {
       final formatted = currencyFormatter().format(1500);
-      expect(formatted, 'RD\$ 1,500.00');
+      expect(formatted, 'RD\$ 1,500');
     });
 
     test('formatea cero correctamente', () {
       final formatted = currencyFormatter().format(0);
-      expect(formatted, 'RD\$ 0.00');
+      expect(formatted, 'RD\$ 0');
     });
 
     test('formatea valores grandes con separadores de miles', () {
       final formatted = currencyFormatter().format(1234567);
-      expect(formatted, 'RD\$ 1,234,567.00');
+      expect(formatted, 'RD\$ 1,234,567');
     });
 
     test('usa locale en_US (coma como separador de miles)', () {
       final formatted = currencyFormatter().format(10000);
-      expect(formatted, 'RD\$ 10,000.00');
+      expect(formatted, 'RD\$ 10,000');
     });
   });
 }
