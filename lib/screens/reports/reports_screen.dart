@@ -155,12 +155,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final topCategories = results[3];
 
       if (summary != null) _summary = summary as Map<String, dynamic>;
-      if (chartData != null)
+      if (chartData != null) {
         _chartData = chartData as List<Map<String, dynamic>>;
-      if (topProducts != null)
+      }
+      if (topProducts != null) {
         _topProducts = topProducts as List<Map<String, dynamic>>;
-      if (topCategories != null)
+      }
+      if (topCategories != null) {
         _topCategories = topCategories as List<Map<String, dynamic>>;
+      }
 
       setState(() => _loading = false);
     }

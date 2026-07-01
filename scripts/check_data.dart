@@ -1,10 +1,12 @@
+// ignore_for_file: avoid_print
+
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() async {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
-  final dbPath = r'C:\Users\Gary\AppData\Roaming\com.example\inventario_y_facturacion\control_gastos.db';
+  const dbPath = r'C:\Users\Gary\AppData\Roaming\com.example\inventario_y_facturacion\control_gastos.db';
   final db = await databaseFactory.openDatabase(dbPath);
 
   print('=== TOTALES ===');

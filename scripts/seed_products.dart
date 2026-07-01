@@ -8,7 +8,7 @@ void main() async {
   databaseFactory = databaseFactoryFfi;
 
   final random = Random(42);
-  final dbPath = r'C:\Users\Gary\AppData\Roaming\com.example\inventario_y_facturacion\control_gastos.db';
+  const dbPath = r'C:\Users\Gary\AppData\Roaming\com.example\inventario_y_facturacion\control_gastos.db';
 
   final db = await databaseFactory.openDatabase(dbPath);
 
@@ -44,7 +44,7 @@ void main() async {
 
   final measurements = ['m', 'yd', 'kg', 'g', 'pza', 'doc', 'par', 'm²'];
 
-  final batchSize = 50;
+  const batchSize = 50;
   int inserted = 0;
 
   for (int i = 0; i < 1000; i += batchSize) {

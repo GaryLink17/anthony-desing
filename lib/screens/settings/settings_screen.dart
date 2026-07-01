@@ -613,10 +613,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on AppException catch (e) {
       if (mounted) NotificationService().error(e.message);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         NotificationService().error(
           'Error inesperado al exportar el respaldo.',
         );
+      }
     } finally {
       if (mounted) setState(() => _backupLoading = false);
     }

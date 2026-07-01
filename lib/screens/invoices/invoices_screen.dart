@@ -1625,8 +1625,9 @@ class _ProductConfigDialogState extends State<_ProductConfigDialog> {
                           validator: (v) {
                             final n = int.tryParse(v ?? '');
                             if (n == null || n < 1) return 'Mín. 1';
-                            if (n > widget.product.stock)
+                            if (n > widget.product.stock) {
                               return 'Stock: ${widget.product.stock}';
+                            }
                             return null;
                           },
                         ),
