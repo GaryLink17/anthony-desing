@@ -28,7 +28,7 @@ void main() {
 
   test('exportBackup: closeAndReset + copy funciona en Windows', () async {
     await DatabaseHelper.instance.database;
-    final dbPath = p.join(Directory.systemTemp.path, 'control_gastos.db');
+    final dbPath = p.join(Directory.systemTemp.path, 'inventario.db');
     final sourceFile = File(dbPath);
     expect(await sourceFile.exists(), true, reason: 'La DB debe existir');
 
@@ -112,7 +112,8 @@ void main() {
     expect(db, isNotNull, reason: 'La DB debe estar abierta');
 
     // 2. Hacer una operación para confirmar que funciona
-    await db.execute('CREATE TABLE IF NOT EXISTS test_table (id INTEGER)');
+    await db.execute('DROP TABLE IF EXISTS test_table');
+    await db.execute('CREATE TABLE test_table (id INTEGER)');
     await db.insert('test_table', {'id': 1});
 
     // 3. Cerrar y resetear (como hace el backup)
